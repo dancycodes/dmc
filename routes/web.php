@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\Auth\RegisterController;
 use App\Services\TenantService;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +30,29 @@ Route::get('/', function () {
 
     return view('welcome');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Authentication Routes (accessible on ALL domains)
+|--------------------------------------------------------------------------
+|
+| Auth is a single system across all domains. Users authenticate with
+| their DancyMeals account regardless of whether they are on the main
+| domain or a tenant domain. Tenant branding is shown on tenant domains.
+|
+*/
+Route::middleware('guest')->group(function () {
+    Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
+    Route::post('/register', [RegisterController::class, 'register']);
+
+    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [LoginController::class, 'login']);
+
+    Route::get('/forgot-password', [PasswordResetController::class, 'showRequestForm'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->name('password.email');
+});
+
+Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
 
 /*
 |--------------------------------------------------------------------------

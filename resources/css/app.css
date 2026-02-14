@@ -5,7 +5,157 @@
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
+/* Dark mode via data-theme attribute */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    /* Typography */
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+    /* Teal (Default Primary) */
+    --color-teal-50: #F0FDFA;
+    --color-teal-100: #CCFBF1;
+    --color-teal-200: #99F6E4;
+    --color-teal-300: #5EEAD4;
+    --color-teal-400: #2DD4BF;
+    --color-teal-500: #14B8A6;
+    --color-teal-600: #0D9488;
+    --color-teal-700: #0F766E;
+    --color-teal-800: #115E59;
+    --color-teal-900: #134E4A;
+
+    /* Amber (Default Secondary) */
+    --color-amber-50: #FFFBEB;
+    --color-amber-100: #FEF3C7;
+    --color-amber-200: #FDE68A;
+    --color-amber-300: #FCD34D;
+    --color-amber-400: #FBBF24;
+    --color-amber-500: #F59E0B;
+    --color-amber-600: #D97706;
+    --color-amber-700: #B45309;
+
+    /* Neutrals */
+    --color-neutral-50: #FAFAFA;
+    --color-neutral-100: #F4F4F5;
+    --color-neutral-200: #E4E4E7;
+    --color-neutral-300: #D4D4D8;
+    --color-neutral-400: #A1A1AA;
+    --color-neutral-500: #71717A;
+    --color-neutral-600: #52525B;
+    --color-neutral-700: #3F3F46;
+    --color-neutral-800: #27272A;
+    --color-neutral-900: #18181B;
+    --color-neutral-950: #09090B;
+
+    /* Red (Danger) */
+    --color-red-50: #FEF2F2;
+    --color-red-100: #FEE2E2;
+    --color-red-400: #F87171;
+    --color-red-500: #EF4444;
+    --color-red-600: #DC2626;
+
+    /* Emerald (Success) */
+    --color-emerald-50: #ECFDF5;
+    --color-emerald-500: #10B981;
+    --color-emerald-600: #059669;
+
+    /* Blue (Info) */
+    --color-blue-50: #EFF6FF;
+    --color-blue-500: #3B82F6;
+    --color-blue-600: #2563EB;
+
+    /* Semantic Light Mode Tokens */
+    --color-surface: var(--color-white);
+    --color-surface-alt: var(--color-neutral-100);
+    --color-on-surface: var(--color-neutral-700);
+    --color-on-surface-strong: var(--color-neutral-900);
+    --color-primary: var(--color-teal-600);
+    --color-primary-hover: var(--color-teal-700);
+    --color-primary-subtle: var(--color-teal-50);
+    --color-on-primary: var(--color-white);
+    --color-secondary: var(--color-amber-500);
+    --color-secondary-hover: var(--color-amber-600);
+    --color-secondary-subtle: var(--color-amber-50);
+    --color-on-secondary: var(--color-neutral-900);
+    --color-outline: var(--color-neutral-300);
+    --color-outline-strong: var(--color-neutral-800);
+
+    /* Dark mode variants (suffixed) */
+    --color-surface-dark: var(--color-neutral-900);
+    --color-surface-alt-dark: var(--color-neutral-800);
+    --color-on-surface-dark: var(--color-neutral-300);
+    --color-on-surface-strong-dark: var(--color-neutral-100);
+    --color-primary-dark: var(--color-teal-500);
+    --color-primary-hover-dark: var(--color-teal-400);
+    --color-primary-subtle-dark: var(--color-neutral-800);
+    --color-on-primary-dark: var(--color-neutral-900);
+    --color-secondary-dark: var(--color-amber-400);
+    --color-secondary-hover-dark: var(--color-amber-500);
+    --color-secondary-subtle-dark: var(--color-neutral-800);
+    --color-on-secondary-dark: var(--color-neutral-900);
+    --color-outline-dark: var(--color-neutral-700);
+    --color-outline-strong-dark: var(--color-neutral-300);
+
+    /* Feedback Colors */
+    --color-danger: var(--color-red-600);
+    --color-danger-subtle: var(--color-red-50);
+    --color-on-danger: var(--color-white);
+    --color-success: var(--color-emerald-500);
+    --color-success-subtle: var(--color-emerald-50);
+    --color-on-success: var(--color-white);
+    --color-warning: var(--color-amber-500);
+    --color-warning-subtle: var(--color-amber-50);
+    --color-on-warning: var(--color-neutral-900);
+    --color-info: var(--color-blue-500);
+    --color-info-subtle: var(--color-blue-50);
+    --color-on-info: var(--color-white);
+
+    /* Shadows */
+    --shadow-card: 0 2px 8px 0 rgb(0 0 0 / 0.08);
+    --shadow-dropdown: 0 4px 16px 0 rgb(0 0 0 / 0.12);
+    --shadow-sidebar: 4px 0 12px 0 rgb(0 0 0 / 0.05);
+
+    /* Animations */
+    --animate-fade-in: fade-in 200ms ease-out;
+    --animate-scale-in: scale-in 200ms ease-out;
+    --animate-spin-slow: spin-slow 1s linear infinite;
+
+    @keyframes fade-in {
+        0% { opacity: 0; }
+        100% { opacity: 1; }
+    }
+    @keyframes scale-in {
+        0% { transform: scale(0.95); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes spin-slow {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+}
+
+/* Dark Mode Override */
+[data-theme="dark"] {
+    --color-surface: var(--color-surface-dark);
+    --color-surface-alt: var(--color-surface-alt-dark);
+    --color-on-surface: var(--color-on-surface-dark);
+    --color-on-surface-strong: var(--color-on-surface-strong-dark);
+    --color-primary: var(--color-primary-dark);
+    --color-primary-hover: var(--color-primary-hover-dark);
+    --color-primary-subtle: var(--color-primary-subtle-dark);
+    --color-on-primary: var(--color-on-primary-dark);
+    --color-secondary: var(--color-secondary-dark);
+    --color-secondary-hover: var(--color-secondary-hover-dark);
+    --color-secondary-subtle: var(--color-secondary-subtle-dark);
+    --color-on-secondary: var(--color-on-secondary-dark);
+    --color-outline: var(--color-outline-dark);
+    --color-outline-strong: var(--color-outline-strong-dark);
+    --color-danger-subtle: var(--color-neutral-800);
+    --color-success-subtle: var(--color-neutral-800);
+    --color-warning-subtle: var(--color-neutral-800);
+    --color-info-subtle: var(--color-neutral-800);
+    --shadow-card: 0 2px 8px 0 rgb(0 0 0 / 0.25);
+    --shadow-dropdown: 0 4px 16px 0 rgb(0 0 0 / 0.35);
 }

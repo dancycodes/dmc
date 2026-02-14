@@ -80,11 +80,12 @@ describe('npm Dependencies', function () use ($basePath) {
 });
 
 describe('Alpine.js Integration', function () use ($basePath) {
-    it('has alpine imported in app.js', function () use ($basePath) {
+    it('has alpine available via gale package', function () use ($basePath) {
         $appJs = file_get_contents($basePath.'resources'.DIRECTORY_SEPARATOR.'js'.DIRECTORY_SEPARATOR.'app.js');
 
-        expect($appJs)->toContain("import Alpine from 'alpinejs'");
-        expect($appJs)->toContain('Alpine.start()');
+        // Alpine is provided by Gale (@gale blade directive), not imported directly in app.js
+        // Direct import causes conflicts with Gale's Alpine plugin ($fetching, $action, etc.)
+        expect($appJs)->not->toContain("import Alpine from 'alpinejs'");
     });
 });
 
