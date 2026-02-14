@@ -22,3 +22,8 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+/.executor/
+/.executor_features.json
+/.playwright-mcp/
+*.png
+!public/**/*.png
