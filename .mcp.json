@@ -1,0 +1,29 @@
+{
+    "mcpServers": {
+        "laravel-boost": {
+            "command": "php",
+            "args": [
+                "artisan",
+                "boost:mcp"
+            ]
+        },
+        "herd": {
+            "command": "php",
+            "args": [
+                "C:/Users/pc/.config/herd/bin/herd-mcp.phar"
+            ],
+            "env": {
+                "SITE_PATH": "C:\\Users\\pc\\Herd\\dm"
+            }
+        },
+	"state-manager": {
+            "command": "node",
+            "args": [
+                "C:/Users/pc/.claude/mcp-servers/state-manager/build/index.js"
+            ],
+            "env": {
+                "STATE_DIR": "C:/Users/pc/Herd/dm/.executor"
+            }
+        }
+    }
+}

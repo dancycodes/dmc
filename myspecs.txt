@@ -1,0 +1,180 @@
+# DancyMeals: Functional Specifications
+
+## General Introduction 
+
+### Introduction
+DancyMeals is a multi-tenant platform that empowers freelance cooks in Cameroon to run professional food businesses through their own branded websites. Each cook gets a custom subdomain and/or domain (e.g., latifa.cm for Latifa Roasted Fish cook, powels.dancymeals.com for Powel's mixed meals cook) while DancyMeals handles the technology, payments, and infrastructure.
+
+### Problem Statement
+Freelance cooks in Cameroon currently:
+- Manage orders through WhatsApp groups (chaotic, no history, manual tracking)
+- Collect payments in cash or manual mobile money transfers (no records, trust issues)
+- Have no online presence beyond social media (no professional branding)
+- Cannot scale beyond their immediate network (limited discovery)
+- Lack business analytics (no insight into performance)
+
+### Solution Summary
+DancyMeals provides each cook with:
+- An enhancement of the experience they get dealing with customers on whatsapp
+- A branded website on their own domain and/or dancymeals subdomain 
+- Time-bound meal posts with order windows (mimicking WhatsApp broadcast patterns)
+- Flexible meal component system allowing combos, individual meal items, and build-your-own meals
+- Online ordering with prepaid mobile money payments
+- Order tracking for both cook and customer
+- Recurring meal templates for scheduling and ease of creation
+- Customer testimonials and reputation building
+- Business analytics and insights
+- Automated payment processing with direct payouts (Flutterwave v3)
+
+### Business Model
+- **Revenue:** 10% commission on all transactions (may varry per cook, so sould be configurable)
+- **Payment Flow:** Customer pays, Flutterwave processes, 90% to cook, 10% to DancyMeals (may varry per cook, so sould be configurable)
+- **Marketing:** Word-of-mouth, trust-based network
+
+---
+
+## Technology Stack (Additional to the default)
+- Intervention Image or Spatie Media Library for local image management and proper display formats
+- OpenStreetMap Api for neighbourhood location autodetect or search.
+- Herd MCP should help with how to use herd link for subdomain activation to herd domain
+
+
+## VERY IMPORTANT
+- Use gale skill as reactive framework - Avoid full page reload! Gale is a full reactive framework! Use Gale skill for surgical DOM and State updates always, SPA navigation, Toast notifications! Full page reloads only when necessary
+- Use Gale patterns when it comes to anything view + routing + controllers.
+- Use ui-designer skill for all UI Designs!! All, no exceptions!!
+- Do not overlook extreme creative and professional beauty! Make the site look stunning via the ui-designer skill
+- Use herd link to activate subdomains before testing them! So for cook1.dm.test to work, you must first run command "herd link cook1.dm"
+- In Bash tool, use php.bat and composer.bat
+
+## General Setup
+
+### Common Notions
+- dancymeals.com (either https://dm.test locally during dev) is the main domain. All other subdomains and domains are tenant domains.
+- We'll have one authentication system accessible on any domain (main or tenant) that handles everything (Account creation (client user role by default), login, email verification, and password reset). When a user is authenticating from a tenant domain, though it is the tenant's main info that's present, the user should know to use their DancyMeals accounts.
+- All user accounts are DancyMeals accounts that can be used to access any domain (main or tenant)
+- Users, once authenticated in any main or tenant domain, are authenticated in all domains simultaneously.
+- User accounts have active statuses and only active users can perform actions
+- Every user role can do what a client role does
+- The whole platform uses one PostgreSQL database
+
+### Main Domain (https://dancymeals.com or  locally during dev on https://dm.test)
+- the main domain has two purposes! (1) It serves as global cooks and meals discovery plateform, with intentions to redirect to tenant domain of interest for the rest. (2) It serves as sole management platform for DancyMeals super-admin and admin roles via the '/vault-entry' and '/vault-entry/*' routes
+- the main domain's home page is a discovery page of cooks and available meals that shows a grid layout of different cooks available with their respective informative details (name, description, caroussel of cover images, list of active meals) and link to redirect to their website (tenant domain). This page also has search, filters, and sorts serving as perfect public cooks discovery system per location, meal, brand, etc. People come to DancyMeals to search for what they can eat in their town.
+- DancyMeals main super-admin and admin accesses all admin panel management functionalities via '/vault-entry' and '/vault-entry/*' routes.
+- Everything concerning admin management has to be accessible only through the main domain's '/vault-entry' and '/vault-entry/*' routes, with user account having the right permissions. No tentant domain or wrong permissions should be able to access these routes. 
+- A tenant is created with assigned corresponding cook info only via admin dashboard (/vault-entry/*) accessible only through the main domain.
+- AN artisan command should be created to create the first super-admin account with all permissions.
+
+### Tenant Domain 
+- each tenant has a unique subdomain and/or domain to handle their businesses (cook1.com, cook2.cm, cook3.dancymeals.com etc) - Landing Page, Meals page, Orders Page etc.
+- except from user accounts that are the same across all domains, each tenant has their own data (meals, orders, etc.)
+- Everything is just one platform with Permission Based Access Management - one landing page, one auth system that does not distinguish between admin, cook, manager, client or otherwise, one cook dashboard accessible only by users with role cook in the tenant, one RBAM profile management, etc.
+- Use "herd link subdomain.website" to register a subdomain with Laravel herd and be able to write subdomain.website.test. 
+
+### Permission Based Access Management
+Using Spatie Laravel permissions, Every view or action has to be granularly protected by permissions. A role (client, manager,  cook, admin, super-admin) must be a set of permissions. The super-admin has all permissions and creates roles with specific permissions (can-access-admin-panel, can-create-tenant, etc.. Just examples). The cook too is a role that's a set of permissions amongst which the ability to create a role but only assign certain permissions related to tenant management for managers. A user has one role per tenant that defaults to client role with client possibilities on all tenant domains.
+
+## General Laws
+
+### Localization
+- All user facing texts MUST BE WRITTEN IN ENGLISH!! NOT FRENCH
+- Default language is English
+- All user facing text should use Localization helpers
+- The preferred approach should be __('full text IN ENGLISH'), Not __(page.message) to go read value in lang files And not __('full text IN FRENCH')
+- Always write code in ENGLISH!! Always!!!
+- language switcher between English and French has to be implemented
+- In database follow column_en and column_fr standards for user facing translatable fields. If the value is given for a translation field in a form, then it's translation must always be compulsory.
+
+### UI Design
+- Always use the ui-designer skill for all UI/UX designs.
+- Global navigation loader on gale requests
+- Loaders on server requests
+- Over 90% of user base will access the platform via mobile, therefore a fully responsive website is a MUST. 
+- light and dark mode supported and theme switcher to be implemented
+- In cook's settings of their website (tenant domain) they will be able to select amongst preset themes, fonts, and radiuses to apply throughout their tenant site for uniqueness in design.Example of themes for example will be Arctic, High Contrast, Minimal, Modern, Neo Brutalism etc. while fonts & typography will be Inter, Roboto, Poppins, etc. and radius follows the same trend as available in penguin ui official documentation. The tenant domain site has to dynamically and reactively change theme as cook selects options. 
+
+### PWA
+- We are NOT interested in offline functionalities for now (An Offline page is enough)
+- Push Notifications is a MUST
+- Site Installation as App is a MUST
+
+### SECURITY
+- Tenant-Base Access, No data leakage to other tenants
+- Rate Limiting Implementation
+- Spatie Honey Pot to prevent bot auto form fill handling
+- Spatie Laravel Permissions for rigorous and enterprise grade Role/Permission Based Access Control
+- Best security practices must be implemented
+
+### LOGS
+- Spatie Activity Logs for meticulous management of every user/system actions 
+
+## General Concept
+- Cooks deliver meals in specific towns > quarter > neighbourhood of Cameroon with delivery fees under laws:
+* Cooks must indicate towns they're available in
+* Cooks must indicate quarters in town they're ready to deliver to
+* Neighbourhoods are for clients to specify the exact location in quarter during order (opensitemap can assist them autodetect location or type to select available options)
+* For each quarter, cook must indicate delivery fee (>=0)
+* For ease of management, cook should be able to group quarters and give a common delivery fee.
+- Cooks can set pickup locations under the same laws as delivery locations above (except for the fact that there are no fee)
+- Cooks have schedules (Have to be Highly flexible) with laws:
+* Available on which days ? Schedules should be made and applied to days.
+* Order time interval relative to open work days (same day, day before, n days before) ? E.g. order interval from this time (day before) to this time (same day) relative to the day of the week selected. Proper validation rules must apply.
+* Delivery time interval relative to open days (Always >= order time interval and on the open day) ?
+* Pickup time interval relative to open days (Always >= order time interval and on the open day) ?
+* Schedule templates can be created and applied to several days too
+- Cooks CRUD operations on meals
+- Meals have schedules (Have to be Highly flexible) with laws:
+* Exactly as cook's schedule
+* Automatically inherits cook's schedule by default
+* If a meal's schedule is created on meal, it gains priority over cook's schedule.
+- Meals have delivery and pickup locations (with corresponding fees) with laws:
+* Exactly as cook's delivery and pickup locations
+* Automatically inherits delivery and pickup locations by default
+* If a meal's locations is created on meal, it gains priority over cook's locations.
+- Meals have meal components with laws:
+* A meal component is a sellable combo within a meal. For example, If my meal is Ndole, meal components can be Ndole + plantain for 1000frs/plate, or Ndole + rice for 10000frs/pot, extra plantain for 1000frs etc. 
+* A client can order as many meal components as they want
+* Each meal must have at least one meal component (even to be live for clients to see)
+* Requirement laws in meal component combination in orders must be available, for example, a client can't order extra plantain without ordering at least one of the required meal components such as Ndole + rice. High flexibility must be available
+- Meal components have selling units e.g plate, bowl, pot etc (search for standards) and cooks can define custom units for their tenant domain
+- Meal components have minimum, maximum, and available quantities (with sensible defaults so they must not be available
+- Meal and meal components available statuses can be manually set by cook
+- Meals have statuses (draft or live)
+- Meals have optional images (maximum 3 per meal) that appear as auto animated carousel
+- Clients see, searches, or filters available meals
+- Clients add meal components to constitute overall order.
+- Order has delivery and/or pickup location with laws:
+* client choose if they'll collect on pickup or delivery
+* On delivery, client selects town and quarter as per meal available options
+* If client quarter is not available, clear instruction with cook's WhatsApp/call number is indicated to immediately enquire about client location deliverability. If possible, cook adds client quarter to list in cook dashboard with corresponding delivery fees, so client can complete order.
+- Phone number is compulsory on user account creation and is used to communicate with user during delivery for accurate location.
+- Phone number on order is inherited from user account, but if updated on order, the order value has priority over the user account value on the order.
+- client pays for order with Orange Money or MTN Mobile Money via flutterwave
+- client can see all financial transactions with their details and statuses
+- cook and manager receives Database Notifications and Push Notifications on order creation
+- client receives Database Notifications and Push Notifications on order update
+- cook can do mass order status update.
+- client has digital wallet for refunds, which they can reuse to pass other orders on the platform. They cannot withdraw refunds. The functionality should be implemented but toggleable by admin on wether clients can use it or not.
+- cooks have digital wallet for reception of payment of orders.
+- cooks payment go by laws:
+* When client pays for meal, cook sees amount in wallet but in unwithdrawable section.
+* 3 hours (configurable) after order is marked completed, amount becomes withdrawable. The 3 hours gives a chance to the client to complain if anything goes wrong and auto block cook payment until issue is resolved or client refunded to their wallet
+* plateform commission is paid to DancyMeals only on completed orders! Not before.
+* ANy future justified complain laid by customer that may require a refund even after cook was paid should implement an auto deduction on cook on their future payments to settle the matter
+* Cooks, using flutterwave transfer, should have a withdraw button that auto sends cash indicated to their indicated mobile money account. If flutterwave fails to this automatically, it should appear as task to admins to do it manually. 
+- client, cooks, and admin alike have detailed statistics over time.
+- clients can rate an order ones
+- clients can complain on orders
+- clients can submit special testimonials
+- clients can update their profiles with financial info they want to use on every payment and it should apply
+- clients can update their profiles with delivery addresses they ca select when making orders and it should apply if available.
+- cooks can have managers that help them handle their business in the same cook dashboard, just with permission based access as cook decides (- create and manage meals
+- Manage orders
+- Manage Tenant Managers
+- Manage complaints
+- View Ratings/Testimonials
+- view all round statistics )
+
+## Flutterwave version 3 API Keys
+For proper testing during local development, valid FLUTTERWAVE test keys have been added to the .env file. We are using version 3 of FLUTTERWAVE API. 
