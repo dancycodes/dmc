@@ -53,6 +53,9 @@
     "English": "Anglais",
     "French": "Fran\u00e7ais",
     "Language": "Langue",
+    "Select language": "Choisir la langue",
+    "Please select a language.": "Veuillez choisir une langue.",
+    "The selected language is not supported.": "La langue s\u00e9lectionn\u00e9e n'est pas prise en charge.",
 
     "All rights reserved.": "Tous droits r\u00e9serv\u00e9s.",
     "Terms of Service": "Conditions d'utilisation",

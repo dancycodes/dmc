@@ -53,6 +53,9 @@
     "English": "English",
     "French": "French",
     "Language": "Language",
+    "Select language": "Select language",
+    "Please select a language.": "Please select a language.",
+    "The selected language is not supported.": "The selected language is not supported.",
 
     "All rights reserved.": "All rights reserved.",
     "Terms of Service": "Terms of Service",

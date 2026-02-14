@@ -15,6 +15,11 @@
     @gale
 </head>
 <body class="bg-surface text-on-surface font-sans min-h-screen flex flex-col items-center justify-center px-4 py-8 sm:px-6">
+    {{-- Language Switcher (top-right) --}}
+    <div class="fixed top-4 right-4 z-50">
+        <x-language-switcher />
+    </div>
+
     <div class="w-full max-w-md">
         {{-- Branding --}}
         <div class="text-center mb-8">

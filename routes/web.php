@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\LocaleController;
 use App\Services\TenantService;
 use Illuminate\Support\Facades\Route;
 
@@ -53,6 +54,17 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
+
+/*
+|--------------------------------------------------------------------------
+| Locale Routes (accessible on ALL domains)
+|--------------------------------------------------------------------------
+|
+| Language switching is available to all users (guests and authenticated)
+| on every domain. Persists choice in session and user preference.
+|
+*/
+Route::post('/locale/switch', [LocaleController::class, 'switch'])->name('locale.switch');
 
 /*
 |--------------------------------------------------------------------------
