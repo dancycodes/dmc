@@ -9,7 +9,7 @@
     $currentLocale = app()->getLocale();
     $locales = [
         'en' => ['label' => 'English', 'flag' => 'EN'],
-        'fr' => ['label' => 'Fran\u00e7ais', 'flag' => 'FR'],
+        'fr' => ['label' => 'Français', 'flag' => 'FR'],
     ];
     $currentFlag = $locales[$currentLocale]['flag'] ?? 'EN';
     $currentLabel = $locales[$currentLocale]['label'] ?? 'English';

@@ -40,7 +40,7 @@ class LocaleController extends Controller
         }
 
         if ($request->isGale()) {
-            return gale()->redirect('/')->refresh();
+            return gale()->reload();
         }
 
         return gale()->redirect('/')->back();
