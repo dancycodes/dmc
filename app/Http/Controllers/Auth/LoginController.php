@@ -22,11 +22,26 @@ class LoginController extends Controller
     /**
      * Handle a login request.
      */
-    public function login(LoginRequest $request): mixed
+    public function login(Request $request): mixed
     {
-        $credentials = $request->only('email', 'password');
+        if ($request->isGale()) {
+            $validated = $request->validateState([
+                'email' => ['required', 'string', 'email'],
+                'password' => ['required', 'string'],
+            ]);
 
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+            $email = strtolower(trim($validated['email']));
+            $remember = (bool) $request->state('remember', false);
+        } else {
+            $formRequest = LoginRequest::createFrom($request);
+            $formRequest->setContainer(app())->setRedirector(app('redirect'))->validateResolved();
+            $validated = $formRequest->validated();
+
+            $email = $validated['email'];
+            $remember = $request->boolean('remember');
+        }
+
+        if (! Auth::attempt(['email' => $email, 'password' => $validated['password']], $remember)) {
             return gale()
                 ->messages([
                     'email' => __('These credentials do not match our records.'),

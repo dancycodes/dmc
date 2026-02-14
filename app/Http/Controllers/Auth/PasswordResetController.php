@@ -22,11 +22,23 @@ class PasswordResetController extends Controller
     /**
      * Send a password reset link to the given user.
      */
-    public function sendResetLink(PasswordResetRequest $request): mixed
+    public function sendResetLink(Request $request): mixed
     {
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+        if ($request->isGale()) {
+            $validated = $request->validateState([
+                'email' => ['required', 'email'],
+            ]);
+
+            $email = strtolower(trim($validated['email']));
+        } else {
+            $formRequest = PasswordResetRequest::createFrom($request);
+            $formRequest->setContainer(app())->setRedirector(app('redirect'))->validateResolved();
+            $validated = $formRequest->validated();
+
+            $email = $validated['email'];
+        }
+
+        $status = Password::sendResetLink(['email' => $email]);
 
         if ($status === Password::RESET_LINK_SENT) {
             return gale()

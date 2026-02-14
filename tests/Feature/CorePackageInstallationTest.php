@@ -190,11 +190,12 @@ describe('Alpine.js and Vite Build', function () {
         expect($allDeps)->toHaveKey('alpinejs');
     });
 
-    it('has alpine imported in app.js', function () {
+    it('has alpine available via gale package', function () {
         $appJs = file_get_contents(resource_path('js/app.js'));
 
-        expect($appJs)->toContain("import Alpine from 'alpinejs'");
-        expect($appJs)->toContain('Alpine.start()');
+        // Alpine is provided by Gale (@gale blade directive), not imported directly in app.js
+        // Direct import causes conflicts with Gale's Alpine plugin ($fetching, $action, etc.)
+        expect($appJs)->not->toContain("import Alpine from 'alpinejs'");
     });
 
     it('has compiled CSS output', function () {

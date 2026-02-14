@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rules\Password;
 
 class RegisterController extends Controller
 {
@@ -23,9 +24,23 @@ class RegisterController extends Controller
     /**
      * Handle a registration request.
      */
-    public function register(RegisterRequest $request): mixed
+    public function register(Request $request): mixed
     {
-        $validated = $request->validated();
+        if ($request->isGale()) {
+            $validated = $request->validateState([
+                'name' => ['required', 'string', 'min:1', 'max:255'],
+                'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+                'phone' => ['required', 'string', 'regex:/^(\+?237)?[6][0-9]{8}$/'],
+                'password' => ['required', 'string', Password::min(8), 'confirmed'],
+            ]);
+
+            $validated['name'] = trim($validated['name']);
+            $validated['email'] = strtolower(trim($validated['email']));
+        } else {
+            $formRequest = RegisterRequest::createFrom($request);
+            $formRequest->setContainer(app())->setRedirector(app('redirect'))->validateResolved();
+            $validated = $formRequest->validated();
+        }
 
         $user = User::create([
             'name' => $validated['name'],
