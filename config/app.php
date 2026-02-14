@@ -86,6 +86,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Available Locales
+    |--------------------------------------------------------------------------
+    |
+    | The locales supported by this application. Used by the SetLocale
+    | middleware to validate requested locales and by the language switcher.
+    |
+    */
+
+    'available_locales' => ['en', 'fr'],
+
+    /*
+    |--------------------------------------------------------------------------
     | Encryption Key
     |--------------------------------------------------------------------------
     |
