@@ -5,6 +5,15 @@
     Uses inline CSS for maximum email client compatibility.
     Single-column responsive design for mobile readability.
 
+    Dark mode: Email clients do not support Tailwind dark: classes.
+    Instead, we use @media (prefers-color-scheme: dark) CSS blocks
+    with dark: variant equivalent colors for email client compatibility:
+    - bg-surface / dark:bg-surface => #FFFFFF / #18181B
+    - text-on-surface / dark:text-on-surface => #3F3F46 / #D4D4D8
+    - text-on-surface-strong / dark:text-on-surface-strong => #18181B / #F4F4F5
+    - bg-surface-alt / dark:bg-surface-alt => #F4F4F5 / #27272A
+    - border-outline / dark:border-outline => #E4E4E7 / #3F3F46
+
     Variables available:
     - $appName: Platform name (default: DancyMeals)
     - $appUrl: Platform URL
