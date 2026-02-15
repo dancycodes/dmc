@@ -38,15 +38,30 @@
         {{-- Branding --}}
         <div class="text-center mb-8">
             @if(isset($tenant) && $tenant)
-                <div class="mb-4">
-                    <h2 class="text-2xl font-bold text-on-surface-strong">{{ $tenant->name }}</h2>
+                <div class="mb-3">
+                    @if(isset($tenant->logo_path) && $tenant->logo_path)
+                        <img
+                            src="{{ asset('storage/' . $tenant->logo_path) }}"
+                            alt="{{ $tenant->name }}"
+                            class="h-14 w-14 rounded-full object-cover mx-auto mb-3 border border-outline"
+                        >
+                    @else
+                        <div class="h-14 w-14 rounded-full bg-primary-subtle flex items-center justify-center mx-auto mb-3 border border-outline">
+                            <span class="text-xl font-bold text-primary">{{ mb_substr($tenant->name, 0, 1) }}</span>
+                        </div>
+                    @endif
+                    <h2 class="text-2xl font-bold text-on-surface-strong font-display">{{ $tenant->name }}</h2>
                 </div>
-                <p class="text-sm text-on-surface">
-                    {{ __('Powered by') }}
-                    <a href="{{ config('app.url') }}" class="text-primary hover:text-primary-hover font-medium">
-                        {{ config('app.name', 'DancyMeals') }}
-                    </a>
-                </p>
+                @hasSection('tenant-notice')
+                    @yield('tenant-notice')
+                @else
+                    <p class="text-sm text-on-surface mt-2">
+                        {{ __('Powered by') }}
+                        <a href="{{ config('app.url') }}" class="text-primary hover:text-primary-hover font-medium">
+                            {{ config('app.name', 'DancyMeals') }}
+                        </a>
+                    </p>
+                @endif
             @else
                 <h1 class="text-3xl font-bold text-on-surface-strong font-display">
                     {{ config('app.name', 'DancyMeals') }}
