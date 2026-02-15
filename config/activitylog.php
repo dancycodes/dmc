@@ -10,8 +10,10 @@ return [
     /*
      * When the clean-command is executed, all recording activities older than
      * the number of days specified here will be deleted.
+     *
+     * BR-139: Activity logs are retained for 90 days by default.
      */
-    'delete_records_older_than_days' => 365,
+    'delete_records_older_than_days' => (int) env('ACTIVITY_LOG_RETENTION_DAYS', 90),
 
     /*
      * If no log name is passed to the activity() helper
@@ -49,4 +51,17 @@ return [
      * Laravel's database.default will be used instead.
      */
     'database_connection' => env('ACTIVITY_LOGGER_DB_CONNECTION'),
+
+    /*
+     * Attributes that should NEVER be logged across any model.
+     * BR-138: Sensitive fields must be excluded from logged properties.
+     *
+     * @var list<string>
+     */
+    'excluded_attributes' => [
+        'password',
+        'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+    ],
 ];

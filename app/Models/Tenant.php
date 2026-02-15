@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivityTrait;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 class Tenant extends Model
 {
     /** @use HasFactory<\Database\Factories\TenantFactory> */
-    use HasFactory;
+    use HasFactory, LogsActivityTrait;
 
     /**
      * The table associated with the model.
