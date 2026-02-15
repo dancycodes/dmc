@@ -14,6 +14,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+    {{-- Tenant theme customization: font link + CSS variable overrides --}}
+    <x-tenant-theme-styles />
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @gale
 </head>
