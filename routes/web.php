@@ -42,13 +42,13 @@ Route::get('/', function () {
 */
 Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
-    Route::post('/register', [RegisterController::class, 'register'])->middleware('honeypot');
+    Route::post('/register', [RegisterController::class, 'register'])->middleware(['honeypot', 'throttle:strict']);
 
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [LoginController::class, 'login'])->middleware('honeypot');
+    Route::post('/login', [LoginController::class, 'login'])->middleware(['honeypot', 'throttle:strict']);
 
     Route::get('/forgot-password', [PasswordResetController::class, 'showRequestForm'])->name('password.request');
-    Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->name('password.email')->middleware('honeypot');
+    Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->name('password.email')->middleware(['honeypot', 'throttle:strict']);
 });
 
 Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
@@ -74,7 +74,7 @@ Route::post('/locale/switch', [LocaleController::class, 'switch'])->name('locale
 | This route persists the choice to the database for cross-device sync.
 |
 */
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'throttle:moderate'])->group(function () {
     Route::post('/theme/update', [ThemeController::class, 'update'])->name('theme.update');
     Route::get('/theme/preference', [ThemeController::class, 'show'])->name('theme.show');
 });
@@ -88,7 +88,7 @@ Route::middleware('auth')->group(function () {
 | Works on both main domain and tenant domains (BR-112).
 |
 */
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'throttle:moderate'])->group(function () {
     Route::post('/push/subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
     Route::post('/push/unsubscribe', [PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
 });
@@ -104,7 +104,7 @@ Route::middleware('auth')->group(function () {
 */
 Route::middleware('main.domain')->group(function () {
     // Admin panel routes (BR-129: only on main domain at /vault-entry)
-    Route::prefix('vault-entry')->middleware('auth')->group(function () {
+    Route::prefix('vault-entry')->middleware(['auth', 'throttle:moderate'])->group(function () {
         Route::get('/', [DashboardController::class, 'adminDashboard'])->name('admin.dashboard');
     });
 });
@@ -120,7 +120,7 @@ Route::middleware('main.domain')->group(function () {
 */
 Route::middleware('tenant.domain')->group(function () {
     // Cook/Manager dashboard (BR-130: authenticated cooks/managers on tenant domains)
-    Route::prefix('dashboard')->middleware('auth')->group(function () {
+    Route::prefix('dashboard')->middleware(['auth', 'throttle:moderate'])->group(function () {
         Route::get('/', [DashboardController::class, 'cookDashboard'])->name('cook.dashboard');
     });
 

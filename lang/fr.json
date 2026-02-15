@@ -150,5 +150,11 @@
     "Welcome to the admin panel. Features will be added in upcoming modules.": "Bienvenue dans le panneau d'administration. Les fonctionnalit\u00e9s seront ajout\u00e9es dans les prochains modules.",
     "Welcome to your cook dashboard. Features will be added in upcoming modules.": "Bienvenue dans votre tableau de bord cuisinier. Les fonctionnalit\u00e9s seront ajout\u00e9es dans les prochains modules.",
     "Admin Dashboard": "Tableau de bord admin",
-    "Cook Dashboard": "Tableau de bord cuisinier"
+    "Cook Dashboard": "Tableau de bord cuisinier",
+
+    "Too Many Requests": "Trop de requ\u00eates",
+    "You're making requests a bit too quickly. Please wait a moment and try again.": "Vous envoyez des requ\u00eates un peu trop rapidement. Veuillez patienter un moment et r\u00e9essayer.",
+    "You can try again in": "Vous pouvez r\u00e9essayer dans",
+    "seconds": "secondes",
+    "Go Home": "Accueil"
 }
