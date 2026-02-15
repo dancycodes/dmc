@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Mail\EmailVerificationMail;
 use App\Traits\LogsActivityTrait;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Mail;
 use NotificationChannels\WebPush\HasPushSubscriptions;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -85,5 +87,18 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isActive(): bool
     {
         return $this->is_active;
+    }
+
+    /**
+     * Send the email verification notification using DancyMeals-branded mailable.
+     *
+     * Overrides the default Laravel notification to use our custom
+     * BaseMailableNotification-based email with platform branding,
+     * locale awareness, and high-priority queue routing (BR-038, N-021).
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        Mail::to($this->getEmailForVerification())
+            ->send(new EmailVerificationMail($this));
     }
 }

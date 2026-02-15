@@ -59,5 +59,10 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('generous', function (Request $request) {
             return Limit::perMinute(120)->by($request->ip());
         });
+
+        // BR-042: Email verification resend rate limiting (5 per hour per user)
+        RateLimiter::for('verification-resend', function (Request $request) {
+            return Limit::perHour(5)->by($request->user()?->id ?: $request->ip());
+        });
     }
 }

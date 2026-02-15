@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -58,20 +59,22 @@ Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->
 | Email Verification Routes (accessible on ALL domains)
 |--------------------------------------------------------------------------
 |
-| Placeholder routes for email verification. F-023 will implement the
-| full verification flow. These routes are needed because the Registered
-| event dispatches a verification email that generates a signed URL.
+| Email verification flow (F-023): notice page, verification link handler,
+| and resend endpoint. Uses Laravel's signed URLs for secure verification.
+| Resend is rate-limited to 5/hour per user (BR-042).
 |
 */
 Route::middleware('auth')->group(function () {
-    Route::get('/email/verify', function () {
-        return gale()->view('auth.verify-email', [], web: true);
-    })->name('verification.notice');
+    Route::get('/email/verify', [EmailVerificationController::class, 'notice'])
+        ->name('verification.notice');
 
-    Route::get('/email/verify/{id}/{hash}', function () {
-        // F-023 will implement the full verification handler
-        return gale()->redirect('/')->route('home');
-    })->middleware('signed')->name('verification.verify');
+    Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+        ->middleware('signed')
+        ->name('verification.verify');
+
+    Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])
+        ->middleware('throttle:verification-resend')
+        ->name('verification.send');
 });
 
 /*

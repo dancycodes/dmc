@@ -31,6 +31,9 @@
     {{-- Global Gale Navigation Loading Bar --}}
     <x-nav.loading-bar />
 
+    {{-- Email Verification Banner (BR-044: shown on all pages for unverified users) --}}
+    <x-email-verification-banner />
+
     @yield('body')
 
     {{-- PWA: Install prompt banner --}}
