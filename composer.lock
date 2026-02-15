@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a5890b3f528d05017837ee80963c0f23",
+    "content-hash": "bb92c91af5b3b6a1929b7bb5490c4b32",
     "packages": [
         {
             "name": "brick/math",
@@ -286,16 +286,16 @@
         },
         {
             "name": "dancycodes/gale",
-            "version": "v0.2.4",
+            "version": "v0.2.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/dancycodes/gale.git",
-                "reference": "c95d6ef46f8592c3cdf77b91bfef64bd07615de8"
+                "reference": "740a084e4e16b6a0b72eea3cef6fce9460f5d706"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/dancycodes/gale/zipball/c95d6ef46f8592c3cdf77b91bfef64bd07615de8",
-                "reference": "c95d6ef46f8592c3cdf77b91bfef64bd07615de8",
+                "url": "https://api.github.com/repos/dancycodes/gale/zipball/740a084e4e16b6a0b72eea3cef6fce9460f5d706",
+                "reference": "740a084e4e16b6a0b72eea3cef6fce9460f5d706",
                 "shasum": ""
             },
             "require": {
@@ -359,7 +359,7 @@
                 "issues": "https://github.com/dancycodes/gale/issues",
                 "source": "https://github.com/dancycodes/gale"
             },
-            "time": "2026-02-13T12:41:12+00:00"
+            "time": "2026-02-15T18:43:33+00:00"
         },
         {
             "name": "dflydev/dot-access-data",

@@ -174,7 +174,7 @@
 
 @section('footer')
     {{ __('Already have an account?') }}
-    <a href="{{ route('login') }}" class="text-primary hover:text-primary-hover font-medium transition-colors">
+    <a x-data x-navigate href="{{ route('login') }}" class="text-primary hover:text-primary-hover font-medium transition-colors">
         {{ __('Sign in') }}
     </a>
 @endsection
