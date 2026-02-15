@@ -55,6 +55,27 @@ Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->
 
 /*
 |--------------------------------------------------------------------------
+| Email Verification Routes (accessible on ALL domains)
+|--------------------------------------------------------------------------
+|
+| Placeholder routes for email verification. F-023 will implement the
+| full verification flow. These routes are needed because the Registered
+| event dispatches a verification email that generates a signed URL.
+|
+*/
+Route::middleware('auth')->group(function () {
+    Route::get('/email/verify', function () {
+        return gale()->view('auth.verify-email', [], web: true);
+    })->name('verification.notice');
+
+    Route::get('/email/verify/{id}/{hash}', function () {
+        // F-023 will implement the full verification handler
+        return gale()->redirect('/')->route('home');
+    })->middleware('signed')->name('verification.verify');
+});
+
+/*
+|--------------------------------------------------------------------------
 | Locale Routes (accessible on ALL domains)
 |--------------------------------------------------------------------------
 |

@@ -2,6 +2,10 @@
 
 use App\Models\User;
 
+beforeEach(function () {
+    $this->seedRolesAndPermissions();
+});
+
 test('registration page is accessible', function () {
     $response = $this->get('/register');
 
@@ -28,8 +32,8 @@ test('user can register with valid data', function () {
         'name' => 'Latifa Kamga',
         'email' => 'latifa@example.com',
         'phone' => '690123456',
-        'password' => 'password123',
-        'password_confirmation' => 'password123',
+        'password' => 'Password123',
+        'password_confirmation' => 'Password123',
     ]);
 
     $this->assertAuthenticated();
@@ -46,8 +50,8 @@ test('registration normalizes email to lowercase', function () {
         'name' => 'Test User',
         'email' => 'TEST@EXAMPLE.COM',
         'phone' => '690000001',
-        'password' => 'password123',
-        'password_confirmation' => 'password123',
+        'password' => 'Password123',
+        'password_confirmation' => 'Password123',
     ]);
 
     $this->assertDatabaseHas('users', [
@@ -60,8 +64,8 @@ test('registration trims whitespace from name', function () {
         'name' => '  Latifa Kamga  ',
         'email' => 'latifa2@example.com',
         'phone' => '690000002',
-        'password' => 'password123',
-        'password_confirmation' => 'password123',
+        'password' => 'Password123',
+        'password_confirmation' => 'Password123',
     ]);
 
     $this->assertDatabaseHas('users', [
@@ -76,8 +80,8 @@ test('registration fails with duplicate email', function () {
         'name' => 'Another User',
         'email' => 'taken@example.com',
         'phone' => '690000003',
-        'password' => 'password123',
-        'password_confirmation' => 'password123',
+        'password' => 'Password123',
+        'password_confirmation' => 'Password123',
     ]);
 
     $response->assertSessionHasErrors('email');
@@ -89,8 +93,8 @@ test('registration fails with invalid cameroonian phone', function () {
         'name' => 'Test User',
         'email' => 'phone-test@example.com',
         'phone' => '123456789',
-        'password' => 'password123',
-        'password_confirmation' => 'password123',
+        'password' => 'Password123',
+        'password_confirmation' => 'Password123',
     ]);
 
     $response->assertSessionHasErrors('phone');
@@ -102,8 +106,8 @@ test('registration accepts phone with +237 prefix', function () {
         'name' => 'Test User',
         'email' => 'prefix-test@example.com',
         'phone' => '+237690000004',
-        'password' => 'password123',
-        'password_confirmation' => 'password123',
+        'password' => 'Password123',
+        'password_confirmation' => 'Password123',
     ]);
 
     $this->assertAuthenticated();
@@ -127,8 +131,8 @@ test('registration fails with mismatched password confirmation', function () {
         'name' => 'Test User',
         'email' => 'mismatch@example.com',
         'phone' => '690000006',
-        'password' => 'password123',
-        'password_confirmation' => 'differentpass',
+        'password' => 'Password123',
+        'password_confirmation' => 'DifferentPass1',
     ]);
 
     $response->assertSessionHasErrors('password');
@@ -230,8 +234,8 @@ test('registration on tenant domain creates user with same account system', func
         'name' => 'Tenant User',
         'email' => 'tenant-user@example.com',
         'phone' => '690000007',
-        'password' => 'password123',
-        'password_confirmation' => 'password123',
+        'password' => 'Password123',
+        'password_confirmation' => 'Password123',
     ]);
 
     $this->assertAuthenticated();
