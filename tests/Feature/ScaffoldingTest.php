@@ -11,7 +11,7 @@ test('application name config is DancyMeals', function () {
 });
 
 test('application url config is set for local development', function () {
-    expect(config('app.url'))->toBe('http://dmc.test');
+    expect(config('app.url'))->toBe('https://dmc.test');
 });
 
 test('pgsql database connection is configured', function () {

@@ -65,7 +65,7 @@ test('env.testing file exists with test database configuration', function () use
 
     expect($envContent)
         ->toContain('DB_CONNECTION=pgsql')
-        ->toContain('DB_DATABASE=dancymeals_test');
+        ->toContain('DB_DATABASE=dancymealsdb2_test');
 });
 
 test('phpunit.xml configures pgsql for testing', function () use ($projectRoot) {
