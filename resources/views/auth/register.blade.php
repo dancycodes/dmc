@@ -17,6 +17,8 @@
     </h2>
 
     <form @submit.prevent="submitting = true; $action('{{ route('register') }}')" class="space-y-4">
+        <x-honeypot />
+
         {{-- Name --}}
         <div>
             <label for="name" class="block text-sm font-medium text-on-surface-strong mb-1">
