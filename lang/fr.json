@@ -100,5 +100,19 @@
     "Add DancyMeals to your home screen for quick access.": "Ajoutez DancyMeals \u00e0 votre \u00e9cran d'accueil pour un acc\u00e8s rapide.",
     "Tap the share button and select \"Add to Home Screen\".": "Appuyez sur le bouton de partage et s\u00e9lectionnez \u00ab Ajouter \u00e0 l'\u00e9cran d'accueil \u00bb.",
     "Install": "Installer",
-    "Not now": "Pas maintenant"
+    "Not now": "Pas maintenant",
+
+    "Stay updated on your orders": "Restez inform\u00e9 de vos commandes",
+    "Get real-time updates when your order status changes, payments are confirmed, and more.": "Recevez des mises \u00e0 jour en temps r\u00e9el lorsque le statut de votre commande change, les paiements sont confirm\u00e9s, et plus encore.",
+    "Allow": "Autoriser",
+    "Maybe Later": "Peut-\u00eatre plus tard",
+    "Enabling...": "Activation...",
+    "Push subscription stored successfully.": "Abonnement push enregistr\u00e9 avec succ\u00e8s.",
+    "Push subscription removed successfully.": "Abonnement push supprim\u00e9 avec succ\u00e8s.",
+    "Endpoint is required.": "Le point de terminaison est requis.",
+    "A valid push subscription endpoint is required.": "Un point de terminaison d'abonnement push valide est requis.",
+    "The push subscription endpoint must be a valid URL.": "Le point de terminaison d'abonnement push doit \u00eatre une URL valide.",
+    "Push subscription keys are required.": "Les cl\u00e9s d'abonnement push sont requises.",
+    "The p256dh key is required for push subscriptions.": "La cl\u00e9 p256dh est requise pour les abonnements push.",
+    "The auth key is required for push subscriptions.": "La cl\u00e9 auth est requise pour les abonnements push."
 }

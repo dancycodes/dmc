@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ThemeController;
 use App\Services\TenantService;
 use Illuminate\Support\Facades\Route;
@@ -80,6 +81,20 @@ Route::post('/locale/switch', [LocaleController::class, 'switch'])->name('locale
 Route::middleware('auth')->group(function () {
     Route::post('/theme/update', [ThemeController::class, 'update'])->name('theme.update');
     Route::get('/theme/preference', [ThemeController::class, 'show'])->name('theme.show');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Push Notification Routes (accessible on ALL domains)
+|--------------------------------------------------------------------------
+|
+| Push subscription management for authenticated users.
+| Works on both main domain and tenant domains (BR-112).
+|
+*/
+Route::middleware('auth')->group(function () {
+    Route::post('/push/subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
+    Route::post('/push/unsubscribe', [PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
 });
 
 /*
