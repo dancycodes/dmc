@@ -100,5 +100,19 @@
     "Add DancyMeals to your home screen for quick access.": "Add DancyMeals to your home screen for quick access.",
     "Tap the share button and select \"Add to Home Screen\".": "Tap the share button and select \"Add to Home Screen\".",
     "Install": "Install",
-    "Not now": "Not now"
+    "Not now": "Not now",
+
+    "Stay updated on your orders": "Stay updated on your orders",
+    "Get real-time updates when your order status changes, payments are confirmed, and more.": "Get real-time updates when your order status changes, payments are confirmed, and more.",
+    "Allow": "Allow",
+    "Maybe Later": "Maybe Later",
+    "Enabling...": "Enabling...",
+    "Push subscription stored successfully.": "Push subscription stored successfully.",
+    "Push subscription removed successfully.": "Push subscription removed successfully.",
+    "Endpoint is required.": "Endpoint is required.",
+    "A valid push subscription endpoint is required.": "A valid push subscription endpoint is required.",
+    "The push subscription endpoint must be a valid URL.": "The push subscription endpoint must be a valid URL.",
+    "Push subscription keys are required.": "Push subscription keys are required.",
+    "The p256dh key is required for push subscriptions.": "The p256dh key is required for push subscriptions.",
+    "The auth key is required for push subscriptions.": "The auth key is required for push subscriptions."
 }

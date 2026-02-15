@@ -71,6 +71,9 @@
     {{-- PWA: Install prompt banner --}}
     <x-pwa-install-prompt />
 
+    {{-- Push notification permission prompt --}}
+    <x-push-notification-prompt />
+
     {{-- PWA: Service worker registration --}}
     <script>{!! app(\App\Services\PwaService::class)->getRegistrationScript() !!}</script>
 </body>
