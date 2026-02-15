@@ -68,6 +68,9 @@
         </div>
     </div>
 
+    {{-- PWA: Install prompt banner --}}
+    <x-pwa-install-prompt />
+
     {{-- PWA: Service worker registration --}}
     <script>{!! app(\App\Services\PwaService::class)->getRegistrationScript() !!}</script>
 </body>
