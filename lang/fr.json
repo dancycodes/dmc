@@ -222,5 +222,8 @@
     "Welcome back!": "Bon retour !",
     "User logged in": "L'utilisateur s'est connect\u00e9",
     "Log in with your DancyMeals account.": "Connectez-vous avec votre compte DancyMeals.",
-    "Too many login attempts. Please try again in :seconds seconds.": "Trop de tentatives de connexion. Veuillez r\u00e9essayer dans :seconds secondes."
+    "Too many login attempts. Please try again in :seconds seconds.": "Trop de tentatives de connexion. Veuillez r\u00e9essayer dans :seconds secondes.",
+
+    "User logged out": "L'utilisateur s'est d\u00e9connect\u00e9",
+    "Log Out": "Se d\u00e9connecter"
 }

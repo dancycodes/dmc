@@ -185,10 +185,10 @@ test('authenticated user can logout', function () {
     $this->assertGuest();
 });
 
-test('guest cannot access logout', function () {
+test('guest hitting logout is redirected to home', function () {
     $response = $this->post('/logout');
 
-    $response->assertRedirect('/login');
+    $response->assertRedirect('/');
 });
 
 test('authenticated user is redirected from login page', function () {
