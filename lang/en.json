@@ -170,5 +170,23 @@
     "You're making requests a bit too quickly. Please wait a moment and try again.": "You're making requests a bit too quickly. Please wait a moment and try again.",
     "You can try again in": "You can try again in",
     "seconds": "seconds",
-    "Go Home": "Go Home"
+    "Go Home": "Go Home",
+
+    "Welcome to DancyMeals!": "Welcome to DancyMeals!",
+    "User was registered": "User was registered",
+    "Name is required.": "Name is required.",
+    "Name must be at least one character.": "Name must be at least one character.",
+    "Name must not exceed 255 characters.": "Name must not exceed 255 characters.",
+    "Email address is required.": "Email address is required.",
+    "Please enter a valid email address.": "Please enter a valid email address.",
+    "This email is already registered.": "This email is already registered.",
+    "Phone number is required.": "Phone number is required.",
+    "Please enter a valid Cameroon phone number.": "Please enter a valid Cameroon phone number.",
+    "Password is required.": "Password is required.",
+    "Password confirmation does not match.": "Password confirmation does not match.",
+    "Registration failed. Please try again.": "Registration failed. Please try again.",
+    "Verify Email": "Verify Email",
+    "Verify your email address": "Verify your email address",
+    "A verification link has been sent to your email address.": "A verification link has been sent to your email address.",
+    "Please check your inbox and click the verification link to continue.": "Please check your inbox and click the verification link to continue."
 }
