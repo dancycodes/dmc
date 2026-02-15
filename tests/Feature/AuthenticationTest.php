@@ -206,7 +206,7 @@ test('authenticated user is redirected from register page', function () {
 test('login page is accessible on tenant domain', function () {
     $tenant = \App\Models\Tenant::factory()->withSlug('auth-test', 'Auth Test Cook')->create();
 
-    $response = $this->get('http://auth-test.dm.test/login');
+    $response = $this->get('http://auth-test.dmc.test/login');
 
     $response->assertStatus(200)
         ->assertSee(__('Sign in to your account'))
@@ -216,7 +216,7 @@ test('login page is accessible on tenant domain', function () {
 test('register page is accessible on tenant domain', function () {
     $tenant = \App\Models\Tenant::factory()->withSlug('auth-reg', 'Auth Reg Cook')->create();
 
-    $response = $this->get('http://auth-reg.dm.test/register');
+    $response = $this->get('http://auth-reg.dmc.test/register');
 
     $response->assertStatus(200)
         ->assertSee(__('Create your account'))
@@ -226,7 +226,7 @@ test('register page is accessible on tenant domain', function () {
 test('registration on tenant domain creates user with same account system', function () {
     $tenant = \App\Models\Tenant::factory()->withSlug('tenant-reg', 'Tenant Reg Cook')->create();
 
-    $response = $this->post('http://tenant-reg.dm.test/register', [
+    $response = $this->post('http://tenant-reg.dmc.test/register', [
         'name' => 'Tenant User',
         'email' => 'tenant-user@example.com',
         'phone' => '690000007',

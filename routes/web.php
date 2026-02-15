@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\ThemeController;
 use App\Services\TenantService;
 use Illuminate\Support\Facades\Route;
 
@@ -68,10 +69,25 @@ Route::post('/locale/switch', [LocaleController::class, 'switch'])->name('locale
 
 /*
 |--------------------------------------------------------------------------
+| Theme Routes (accessible on ALL domains)
+|--------------------------------------------------------------------------
+|
+| Theme preference persistence for authenticated users.
+| The frontend handles instant theme application via localStorage.
+| This route persists the choice to the database for cross-device sync.
+|
+*/
+Route::middleware('auth')->group(function () {
+    Route::post('/theme/update', [ThemeController::class, 'update'])->name('theme.update');
+    Route::get('/theme/preference', [ThemeController::class, 'show'])->name('theme.show');
+});
+
+/*
+|--------------------------------------------------------------------------
 | Main Domain Routes
 |--------------------------------------------------------------------------
 |
-| Routes accessible only on the main domain (dm.test / dancymeals.com).
+| Routes accessible only on the main domain (dmc.test / dancymeals.com).
 | Admin panel and other main-domain-only features live here.
 |
 */
@@ -85,7 +101,7 @@ Route::middleware('main.domain')->group(function () {
 | Tenant Domain Routes
 |--------------------------------------------------------------------------
 |
-| Routes accessible only on tenant domains (cook.dm.test / cook.cm).
+| Routes accessible only on tenant domains (cook.dmc.test / cook.cm).
 | Cook landing pages, ordering, and tenant-specific features live here.
 |
 */
