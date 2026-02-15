@@ -58,7 +58,7 @@
 @endsection
 
 @section('footer')
-    <a href="{{ route('login') }}" class="text-primary hover:text-primary-hover font-medium">
+    <a x-data x-navigate href="{{ route('login') }}" class="text-primary hover:text-primary-hover font-medium">
         {{ __('Back to sign in') }}
     </a>
 @endsection

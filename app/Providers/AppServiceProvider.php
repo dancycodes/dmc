@@ -60,6 +60,17 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(120)->by($request->ip());
         });
 
+        // BR-049: Login rate limiting (5 per minute per email+IP combination)
+        RateLimiter::for('login', function (Request $request) {
+            $email = strtolower(trim(
+                $request->isGale()
+                    ? (string) $request->state('email', '')
+                    : (string) $request->input('email', '')
+            ));
+
+            return Limit::perMinute(5)->by($email.'|'.$request->ip());
+        });
+
         // BR-042: Email verification resend rate limiting (5 per hour per user)
         RateLimiter::for('verification-resend', function (Request $request) {
             return Limit::perHour(5)->by($request->user()?->id ?: $request->ip());

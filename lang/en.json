@@ -209,5 +209,18 @@
     "Verify Email Address": "Verify Email Address",
     "This verification link will expire in :minutes minutes.": "This verification link will expire in :minutes minutes.",
     "If the button above does not work, copy and paste this URL into your browser:": "If the button above does not work, copy and paste this URL into your browser:",
-    "Verify your email address to get started with DancyMeals.": "Verify your email address to get started with DancyMeals."
+    "Verify your email address to get started with DancyMeals.": "Verify your email address to get started with DancyMeals.",
+
+    "Sign In": "Sign In",
+    "Sign in to your account": "Sign in to your account",
+    "Signing in...": "Signing in...",
+    "Enter your password": "Enter your password",
+    "Forgot password?": "Forgot password?",
+    "Create one": "Create one",
+    "These credentials do not match our records.": "These credentials do not match our records.",
+    "Your account has been deactivated.": "Your account has been deactivated.",
+    "Welcome back!": "Welcome back!",
+    "User logged in": "User logged in",
+    "Log in with your DancyMeals account.": "Log in with your DancyMeals account.",
+    "Too many login attempts. Please try again in :seconds seconds.": "Too many login attempts. Please try again in :seconds seconds."
 }

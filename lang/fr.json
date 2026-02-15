@@ -209,5 +209,18 @@
     "Verify Email Address": "V\u00e9rifier l'adresse e-mail",
     "This verification link will expire in :minutes minutes.": "Ce lien de v\u00e9rification expirera dans :minutes minutes.",
     "If the button above does not work, copy and paste this URL into your browser:": "Si le bouton ci-dessus ne fonctionne pas, copiez et collez cette URL dans votre navigateur :",
-    "Verify your email address to get started with DancyMeals.": "V\u00e9rifiez votre adresse e-mail pour commencer avec DancyMeals."
+    "Verify your email address to get started with DancyMeals.": "V\u00e9rifiez votre adresse e-mail pour commencer avec DancyMeals.",
+
+    "Sign In": "Se connecter",
+    "Sign in to your account": "Connectez-vous \u00e0 votre compte",
+    "Signing in...": "Connexion...",
+    "Enter your password": "Entrez votre mot de passe",
+    "Forgot password?": "Mot de passe oubli\u00e9 ?",
+    "Create one": "Cr\u00e9er un compte",
+    "These credentials do not match our records.": "Ces identifiants ne correspondent pas \u00e0 nos enregistrements.",
+    "Your account has been deactivated.": "Votre compte a \u00e9t\u00e9 d\u00e9sactiv\u00e9.",
+    "Welcome back!": "Bon retour !",
+    "User logged in": "L'utilisateur s'est connect\u00e9",
+    "Log in with your DancyMeals account.": "Connectez-vous avec votre compte DancyMeals.",
+    "Too many login attempts. Please try again in :seconds seconds.": "Trop de tentatives de connexion. Veuillez r\u00e9essayer dans :seconds secondes."
 }

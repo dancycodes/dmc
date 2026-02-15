@@ -262,25 +262,46 @@ describe('Generous Rate Limiting on Public Pages (BR-153)', function () {
 });
 
 describe('Rate Limiter Key Behavior (BR-155, BR-156)', function () {
-    it('rate limits auth endpoints by IP (different users same IP get same limit)', function () {
+    it('rate limits login by email+IP combination (BR-049)', function () {
         $honeypotFields = rateLimitHoneypotFields();
 
-        // All requests come from the same IP in tests
-        // Exhaust the strict limit with different emails
+        // BR-049: Login rate limiter is per email+IP, not just IP
+        // Same email from same IP should be rate limited after 5 attempts
         for ($i = 1; $i <= 5; $i++) {
             $this->post('/login', array_merge([
-                'email' => "user{$i}@example.com",
+                'email' => 'same@example.com',
                 'password' => 'wrongpassword',
             ], $honeypotFields));
         }
 
-        // 6th attempt with yet another email should still be blocked (same IP)
+        // 6th attempt with same email should be blocked
+        $response = $this->post('/login', array_merge([
+            'email' => 'same@example.com',
+            'password' => 'wrongpassword',
+        ], $honeypotFields));
+
+        expect($response->status())->toBe(429);
+    });
+
+    it('allows different emails from same IP within login rate limit', function () {
+        $honeypotFields = rateLimitHoneypotFields();
+
+        // BR-049: Different emails should have independent rate limits
+        // Exhaust limit for one email
+        for ($i = 1; $i <= 5; $i++) {
+            $this->post('/login', array_merge([
+                'email' => 'blocked@example.com',
+                'password' => 'wrongpassword',
+            ], $honeypotFields));
+        }
+
+        // Different email from same IP should NOT be blocked
         $response = $this->post('/login', array_merge([
             'email' => 'different@example.com',
             'password' => 'wrongpassword',
         ], $honeypotFields));
 
-        expect($response->status())->toBe(429);
+        expect($response->status())->not->toBe(429);
     });
 });
 
@@ -305,13 +326,13 @@ describe('Rate Limiter Registration (Runtime)', function () {
 });
 
 describe('Route Middleware Verification (Runtime)', function () {
-    it('login POST route has strict throttle middleware', function () {
+    it('login POST route has login throttle middleware', function () {
         $routes = app('router')->getRoutes();
         $loginRoute = $routes->match(
             \Illuminate\Http\Request::create('/login', 'POST')
         );
 
-        expect($loginRoute->gatherMiddleware())->toContain('throttle:strict');
+        expect($loginRoute->gatherMiddleware())->toContain('throttle:login');
     });
 
     it('register POST route has strict throttle middleware', function () {

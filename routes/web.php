@@ -46,7 +46,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [RegisterController::class, 'register'])->middleware(['honeypot', 'throttle:strict']);
 
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [LoginController::class, 'login'])->middleware(['honeypot', 'throttle:strict']);
+    Route::post('/login', [LoginController::class, 'login'])->middleware(['honeypot', 'throttle:login']);
 
     Route::get('/forgot-password', [PasswordResetController::class, 'showRequestForm'])->name('password.request');
     Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->name('password.email')->middleware(['honeypot', 'throttle:strict']);
