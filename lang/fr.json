@@ -114,5 +114,10 @@
     "The push subscription endpoint must be a valid URL.": "Le point de terminaison d'abonnement push doit \u00eatre une URL valide.",
     "Push subscription keys are required.": "Les cl\u00e9s d'abonnement push sont requises.",
     "The p256dh key is required for push subscriptions.": "La cl\u00e9 p256dh est requise pour les abonnements push.",
-    "The auth key is required for push subscriptions.": "La cl\u00e9 auth est requise pour les abonnements push."
+    "The auth key is required for push subscriptions.": "La cl\u00e9 auth est requise pour les abonnements push.",
+
+    "Need help? Contact us at": "Besoin d'aide ? Contactez-nous \u00e0",
+    "Manage notification preferences": "G\u00e9rer les pr\u00e9f\u00e9rences de notification",
+    "This email was sent by :appName.": "Cet e-mail a \u00e9t\u00e9 envoy\u00e9 par :appName.",
+    "If you did not request this email, no action is required.": "Si vous n'avez pas demand\u00e9 cet e-mail, aucune action n'est requise."
 }
