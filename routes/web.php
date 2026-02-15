@@ -51,8 +51,9 @@ Route::middleware('guest')->group(function () {
     Route::get('/forgot-password', [PasswordResetController::class, 'showRequestForm'])->name('password.request');
     Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->name('password.email')->middleware(['throttle:password-reset']);
 
-    // Password reset execution (F-027 will implement the controller; route needed for URL generation)
+    // Password reset execution (F-027)
     Route::get('/reset-password/{token}', [PasswordResetController::class, 'showResetForm'])->name('password.reset');
+    Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])->name('password.update')->middleware(['throttle:strict']);
 });
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
