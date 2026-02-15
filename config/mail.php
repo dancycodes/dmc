@@ -111,8 +111,19 @@ return [
     */
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
-        'name' => env('MAIL_FROM_NAME', 'Example'),
+        'address' => env('MAIL_FROM_ADDRESS', 'noreply@dancymeals.com'),
+        'name' => env('MAIL_FROM_NAME', config('app.name', 'DancyMeals')),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Support Email Address
+    |--------------------------------------------------------------------------
+    |
+    | This is the support contact email shown in email footers.
+    |
+    */
+
+    'support_email' => env('MAIL_SUPPORT_ADDRESS', 'support@dancymeals.com'),
 
 ];

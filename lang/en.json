@@ -114,5 +114,10 @@
     "The push subscription endpoint must be a valid URL.": "The push subscription endpoint must be a valid URL.",
     "Push subscription keys are required.": "Push subscription keys are required.",
     "The p256dh key is required for push subscriptions.": "The p256dh key is required for push subscriptions.",
-    "The auth key is required for push subscriptions.": "The auth key is required for push subscriptions."
+    "The auth key is required for push subscriptions.": "The auth key is required for push subscriptions.",
+
+    "Need help? Contact us at": "Need help? Contact us at",
+    "Manage notification preferences": "Manage notification preferences",
+    "This email was sent by :appName.": "This email was sent by :appName.",
+    "If you did not request this email, no action is required.": "If you did not request this email, no action is required."
 }
