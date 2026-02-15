@@ -173,29 +173,15 @@ describe('Honeypot Middleware on Login Route (BR-143)', function () {
     });
 });
 
-describe('Honeypot Middleware on Password Reset Route (BR-143)', function () {
-    it('allows legitimate password reset submissions with valid honeypot fields', function () {
-        $this->travel(3)->seconds();
-
-        $honeypotFields = validHoneypotFields();
-
-        $response = $this->post('/forgot-password', array_merge([
+describe('Password Reset Route Has No Honeypot (BR-069)', function () {
+    it('processes password reset submissions without honeypot fields', function () {
+        // BR-069: Honeypot protection is not required on the password reset form
+        $response = $this->post('/forgot-password', [
             'email' => 'user@example.com',
-        ], $honeypotFields));
+        ]);
 
-        // Should process normally
+        // Should process normally without honeypot fields
         expect($response->status())->toBeIn([200, 302, 422]);
-    });
-
-    it('silently rejects password reset spam with filled honeypot field', function () {
-        $honeypotFields = filledHoneypotFields();
-
-        $response = $this->post('/forgot-password', array_merge([
-            'email' => 'victim@example.com',
-        ], $honeypotFields));
-
-        // Should be silently rejected
-        expect($response->status())->toBeIn([200, 302]);
     });
 });
 
@@ -245,13 +231,14 @@ describe('Honeypot Route Middleware Assignment', function () {
         expect($loginRoute->gatherMiddleware())->toContain('honeypot');
     });
 
-    it('password reset POST route has honeypot middleware', function () {
+    it('password reset POST route does not have honeypot middleware (BR-069)', function () {
         $routes = app('router')->getRoutes();
         $resetRoute = $routes->match(
             \Illuminate\Http\Request::create('/forgot-password', 'POST')
         );
 
-        expect($resetRoute->gatherMiddleware())->toContain('honeypot');
+        // BR-069: Honeypot protection is not required on the password reset form
+        expect($resetRoute->gatherMiddleware())->not->toContain('honeypot');
     });
 
     it('GET routes do not have honeypot middleware', function () {
@@ -311,14 +298,13 @@ describe('Honeypot Component Rendering', function () {
         expect($content)->toContain('aria-hidden="true"');
     });
 
-    it('renders honeypot fields in password reset form view', function () {
+    it('does not render honeypot fields in password reset form view (BR-069)', function () {
         $response = $this->get('/forgot-password');
 
         $response->assertStatus(200);
         $content = $response->getContent();
 
-        expect($content)->toContain('my_name');
-        expect($content)->toContain('valid_from');
-        expect($content)->toContain('aria-hidden="true"');
+        // BR-069: Honeypot is NOT required on the password reset form
+        expect($content)->not->toContain('position: absolute; left: -9999px');
     });
 });

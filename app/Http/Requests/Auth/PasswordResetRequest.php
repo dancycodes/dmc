@@ -22,7 +22,7 @@ class PasswordResetRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'email'],
+            'email' => ['required', 'email', 'max:255'],
         ];
     }
 
@@ -36,6 +36,7 @@ class PasswordResetRequest extends FormRequest
         return [
             'email.required' => __('Email address is required.'),
             'email.email' => __('Please enter a valid email address.'),
+            'email.max' => __('Email address must not exceed 255 characters.'),
         ];
     }
 

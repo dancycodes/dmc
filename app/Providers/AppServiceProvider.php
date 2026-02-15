@@ -75,5 +75,16 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('verification-resend', function (Request $request) {
             return Limit::perHour(5)->by($request->user()?->id ?: $request->ip());
         });
+
+        // BR-065: Password reset rate limiting (3 per 15 minutes per email)
+        RateLimiter::for('password-reset', function (Request $request) {
+            $email = strtolower(trim(
+                $request->isGale()
+                    ? (string) $request->state('email', '')
+                    : (string) $request->input('email', '')
+            ));
+
+            return Limit::perMinutes(15, 3)->by($email ?: $request->ip());
+        });
     }
 }

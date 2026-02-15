@@ -225,5 +225,20 @@
     "Too many login attempts. Please try again in :seconds seconds.": "Trop de tentatives de connexion. Veuillez r\u00e9essayer dans :seconds secondes.",
 
     "User logged out": "L'utilisateur s'est d\u00e9connect\u00e9",
-    "Log Out": "Se d\u00e9connecter"
+    "Log Out": "Se d\u00e9connecter",
+
+    "Reset your password": "R\u00e9initialisez votre mot de passe",
+    "Enter your email address and we will send you a link to reset your password.": "Entrez votre adresse e-mail et nous vous enverrons un lien pour r\u00e9initialiser votre mot de passe.",
+    "Send Reset Link": "Envoyer le lien de r\u00e9initialisation",
+    "Back to sign in": "Retour \u00e0 la connexion",
+    "If an account with that email exists, we've sent a password reset link.": "Si un compte avec cet e-mail existe, nous avons envoy\u00e9 un lien de r\u00e9initialisation.",
+    "Email address must not exceed 255 characters.": "L'adresse e-mail ne doit pas d\u00e9passer 255 caract\u00e8res.",
+    "Reset your DancyMeals account password.": "R\u00e9initialisez le mot de passe de votre compte DancyMeals.",
+    "Didn't receive the email? Check your spam folder or": "Vous n'avez pas re\u00e7u l'e-mail ? V\u00e9rifiez votre dossier spam ou",
+    "try again": "r\u00e9essayer",
+    "Reset your DancyMeals password": "R\u00e9initialisez votre mot de passe DancyMeals",
+    "We received a request to reset your password for your DancyMeals account. Click the button below to set a new password.": "Nous avons re\u00e7u une demande de r\u00e9initialisation de votre mot de passe pour votre compte DancyMeals. Cliquez sur le bouton ci-dessous pour d\u00e9finir un nouveau mot de passe.",
+    "This password reset link will expire in :minutes minutes.": "Ce lien de r\u00e9initialisation expirera dans :minutes minutes.",
+    "If you did not request a password reset, no action is required. Your password will remain unchanged.": "Si vous n'avez pas demand\u00e9 de r\u00e9initialisation de mot de passe, aucune action n'est requise. Votre mot de passe restera inchang\u00e9.",
+    "Reset your DancyMeals password. This link expires in :minutes minutes.": "R\u00e9initialisez votre mot de passe DancyMeals. Ce lien expire dans :minutes minutes."
 }

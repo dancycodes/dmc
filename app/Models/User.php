@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Mail\EmailVerificationMail;
+use App\Mail\PasswordResetMail;
 use App\Traits\LogsActivityTrait;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -100,5 +101,25 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         Mail::to($this->getEmailForVerification())
             ->send(new EmailVerificationMail($this));
+    }
+
+    /**
+     * Send the password reset notification using DancyMeals-branded mailable.
+     *
+     * Overrides the default Laravel notification to use our custom
+     * BaseMailableNotification-based email with platform branding,
+     * locale awareness, and high-priority queue routing (BR-067, N-022).
+     *
+     * @param  string  $token
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $resetUrl = url(route('password.reset', [
+            'token' => $token,
+            'email' => $this->getEmailForPasswordReset(),
+        ], false));
+
+        Mail::to($this->getEmailForPasswordReset())
+            ->send(new PasswordResetMail($this, $resetUrl));
     }
 }

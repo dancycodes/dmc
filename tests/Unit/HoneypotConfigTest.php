@@ -145,10 +145,11 @@ describe('Auth Form Templates Include Honeypot', function () {
         expect($template)->toContain('<x-honeypot');
     });
 
-    it('password reset form includes honeypot component (BR-143)', function () use ($authViewPath) {
+    it('password reset form does not include honeypot component (BR-069)', function () use ($authViewPath) {
         $template = file_get_contents($authViewPath.'passwords'.DIRECTORY_SEPARATOR.'email.blade.php');
 
-        expect($template)->toContain('<x-honeypot');
+        // BR-069: Honeypot protection is not required on the password reset form
+        expect($template)->not->toContain('<x-honeypot');
     });
 });
 
