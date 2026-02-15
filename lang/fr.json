@@ -78,6 +78,17 @@
     "Available": "Disponible",
     "Unavailable": "Indisponible",
 
+    "Theme": "Th\u00e8me",
+    "Light": "Clair",
+    "Dark": "Sombre",
+    "System": "Syst\u00e8me",
+    "Light mode": "Mode clair",
+    "Dark mode": "Mode sombre",
+    "System default": "Par d\u00e9faut du syst\u00e8me",
+    "Theme preference updated.": "Pr\u00e9f\u00e9rence de th\u00e8me mise \u00e0 jour.",
+    "A theme preference is required.": "Une pr\u00e9f\u00e9rence de th\u00e8me est requise.",
+    "The selected theme is not valid. Choose light, dark, or system.": "Le th\u00e8me s\u00e9lectionn\u00e9 n'est pas valide. Choisissez clair, sombre ou syst\u00e8me.",
+
     "Page :current of :total": "Page :current sur :total",
     "Showing :first to :last of :total results": "Affichage de :first \u00e0 :last sur :total r\u00e9sultats"
 }

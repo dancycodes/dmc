@@ -22,8 +22,9 @@
     x-init="$nextTick(() => document.documentElement.classList.add('theme-transition'))"
     class="bg-surface text-on-surface font-sans min-h-screen flex flex-col items-center justify-center px-4 py-8 sm:px-6"
 >
-    {{-- Language Switcher (top-right) --}}
-    <div class="fixed top-4 right-4 z-50">
+    {{-- Theme & Language Switchers (top-right) --}}
+    <div class="fixed top-4 right-4 z-50 flex items-center gap-2">
+        <x-theme-switcher />
         <x-language-switcher />
     </div>
 
