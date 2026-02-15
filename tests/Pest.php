@@ -26,8 +26,12 @@ pest()->extend(Tests\TestCase::class)
 |
 */
 
-expect()->extend('toBeOne', function () {
-    return $this->toBe(1);
+expect()->extend('toBeSuccessful', function () {
+    return $this->toBeGreaterThanOrEqual(200)->toBeLessThan(300);
+});
+
+expect()->extend('toBeRedirect', function () {
+    return $this->toBeGreaterThanOrEqual(300)->toBeLessThan(400);
 });
 
 /*
@@ -41,7 +45,24 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * Create a user with a specific role.
+ *
+ * @param  array<string, mixed>  $attributes
+ */
+function createUser(string $role = 'client', array $attributes = []): App\Models\User
 {
-    // ..
+    return test()->createUserWithRole($role, $attributes);
+}
+
+/**
+ * Create a tenant with its cook owner.
+ *
+ * @param  array<string, mixed>  $tenantAttributes
+ * @param  array<string, mixed>  $cookAttributes
+ * @return array{tenant: App\Models\Tenant, cook: App\Models\User}
+ */
+function createTenantWithCook(array $tenantAttributes = [], array $cookAttributes = []): array
+{
+    return test()->createTenantWithCook($tenantAttributes, $cookAttributes);
 }
