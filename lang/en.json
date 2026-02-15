@@ -184,5 +184,9 @@
     "Please enter a valid Cameroon phone number.": "Please enter a valid Cameroon phone number.",
     "Password is required.": "Password is required.",
     "Password confirmation does not match.": "Password confirmation does not match.",
-    "Registration failed. Please try again.": "Registration failed. Please try again."
+    "Registration failed. Please try again.": "Registration failed. Please try again.",
+    "Verify Email": "Verify Email",
+    "Verify your email address": "Verify your email address",
+    "A verification link has been sent to your email address.": "A verification link has been sent to your email address.",
+    "Please check your inbox and click the verification link to continue.": "Please check your inbox and click the verification link to continue."
 }
