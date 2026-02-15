@@ -100,4 +100,60 @@ class Tenant extends Model
     {
         return 'slug';
     }
+
+    /**
+     * Get a specific setting value from the tenant's settings JSON.
+     */
+    public function getSetting(string $key, mixed $default = null): mixed
+    {
+        $settings = $this->settings;
+
+        if (! is_array($settings)) {
+            return $default;
+        }
+
+        return $settings[$key] ?? $default;
+    }
+
+    /**
+     * Set a specific setting value in the tenant's settings JSON.
+     */
+    public function setSetting(string $key, mixed $value): static
+    {
+        $settings = $this->settings ?? [];
+        $settings[$key] = $value;
+        $this->settings = $settings;
+
+        return $this;
+    }
+
+    /**
+     * Get the tenant's selected theme preset name.
+     */
+    public function getThemePreset(): ?string
+    {
+        $preset = $this->getSetting('theme');
+
+        return is_string($preset) ? $preset : null;
+    }
+
+    /**
+     * Get the tenant's selected font name.
+     */
+    public function getThemeFont(): ?string
+    {
+        $font = $this->getSetting('font');
+
+        return is_string($font) ? $font : null;
+    }
+
+    /**
+     * Get the tenant's selected border radius name.
+     */
+    public function getThemeBorderRadius(): ?string
+    {
+        $radius = $this->getSetting('border_radius');
+
+        return is_string($radius) ? $radius : null;
+    }
 }

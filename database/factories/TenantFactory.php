@@ -81,4 +81,58 @@ class TenantFactory extends Factory
             'name' => $name ?? Str::headline($slug),
         ]);
     }
+
+    /**
+     * Set the tenant's theme preset.
+     */
+    public function withThemePreset(string $preset): static
+    {
+        return $this->state(function (array $attributes) use ($preset) {
+            $settings = $attributes['settings'] ?? [];
+            $settings['theme'] = $preset;
+
+            return ['settings' => $settings];
+        });
+    }
+
+    /**
+     * Set the tenant's font.
+     */
+    public function withFont(string $font): static
+    {
+        return $this->state(function (array $attributes) use ($font) {
+            $settings = $attributes['settings'] ?? [];
+            $settings['font'] = $font;
+
+            return ['settings' => $settings];
+        });
+    }
+
+    /**
+     * Set the tenant's border radius.
+     */
+    public function withBorderRadius(string $radius): static
+    {
+        return $this->state(function (array $attributes) use ($radius) {
+            $settings = $attributes['settings'] ?? [];
+            $settings['border_radius'] = $radius;
+
+            return ['settings' => $settings];
+        });
+    }
+
+    /**
+     * Set a complete theme customization (preset, font, and radius).
+     */
+    public function withTheme(string $preset, string $font = 'inter', string $radius = 'medium'): static
+    {
+        return $this->state(function (array $attributes) use ($preset, $font, $radius) {
+            $settings = $attributes['settings'] ?? [];
+            $settings['theme'] = $preset;
+            $settings['font'] = $font;
+            $settings['border_radius'] = $radius;
+
+            return ['settings' => $settings];
+        });
+    }
 }
