@@ -94,5 +94,11 @@
 
     "You're offline": "Vous \u00eates hors ligne",
     "You appear to be offline. Check your internet connection and try again.": "Vous semblez \u00eatre hors ligne. V\u00e9rifiez votre connexion Internet et r\u00e9essayez.",
-    "Try Again": "R\u00e9essayer"
+    "Try Again": "R\u00e9essayer",
+
+    "Install DancyMeals": "Installer DancyMeals",
+    "Add DancyMeals to your home screen for quick access.": "Ajoutez DancyMeals \u00e0 votre \u00e9cran d'accueil pour un acc\u00e8s rapide.",
+    "Tap the share button and select \"Add to Home Screen\".": "Appuyez sur le bouton de partage et s\u00e9lectionnez \u00ab Ajouter \u00e0 l'\u00e9cran d'accueil \u00bb.",
+    "Install": "Installer",
+    "Not now": "Pas maintenant"
 }

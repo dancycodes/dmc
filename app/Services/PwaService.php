@@ -174,4 +174,108 @@ JS;
 
         return true;
     }
+
+    /**
+     * The localStorage key for tracking PWA install prompt dismissal.
+     */
+    public const DISMISS_STORAGE_KEY = 'dmc-pwa-dismissed';
+
+    /**
+     * The localStorage key for tracking whether the PWA is installed.
+     */
+    public const INSTALLED_STORAGE_KEY = 'dmc-pwa-installed';
+
+    /**
+     * Delay in milliseconds before showing the install prompt.
+     */
+    public const PROMPT_DELAY_MS = 3000;
+
+    /**
+     * Get the Alpine.js data object for the PWA install prompt component.
+     * Handles beforeinstallprompt capture, iOS detection, dismissal tracking,
+     * and standalone mode detection.
+     */
+    public function getInstallPromptAlpineData(): string
+    {
+        $dismissKey = self::DISMISS_STORAGE_KEY;
+        $installedKey = self::INSTALLED_STORAGE_KEY;
+        $delayMs = self::PROMPT_DELAY_MS;
+
+        return <<<JS
+{
+    showBanner: false,
+    deferredPrompt: null,
+    isIos: false,
+    isStandalone: false,
+    wasDismissed: false,
+
+    init() {
+        this.isStandalone = window.matchMedia('(display-mode: standalone)').matches
+            || window.navigator.standalone === true;
+
+        if (this.isStandalone) {
+            try { localStorage.setItem('{$installedKey}', 'true'); } catch(e) {}
+            return;
+        }
+
+        try {
+            if (localStorage.getItem('{$installedKey}') === 'true') {
+                return;
+            }
+            if (sessionStorage.getItem('{$dismissKey}') === 'true') {
+                this.wasDismissed = true;
+                return;
+            }
+        } catch(e) {}
+
+        var ua = navigator.userAgent || '';
+        this.isIos = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+
+        if (this.isIos) {
+            var isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|Chrome/.test(ua);
+            if (isSafari) {
+                setTimeout(() => { this.showBanner = true; }, {$delayMs});
+            }
+            return;
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            this.deferredPrompt = e;
+            if (!this.wasDismissed) {
+                setTimeout(() => { this.showBanner = true; }, {$delayMs});
+            }
+        });
+
+        window.addEventListener('appinstalled', () => {
+            this.showBanner = false;
+            this.deferredPrompt = null;
+            try { localStorage.setItem('{$installedKey}', 'true'); } catch(e) {}
+        });
+    },
+
+    async installApp() {
+        if (this.isIos) {
+            return;
+        }
+        if (!this.deferredPrompt) {
+            return;
+        }
+        this.deferredPrompt.prompt();
+        var result = await this.deferredPrompt.userChoice;
+        if (result.outcome === 'accepted') {
+            try { localStorage.setItem('{$installedKey}', 'true'); } catch(e) {}
+        }
+        this.deferredPrompt = null;
+        this.showBanner = false;
+    },
+
+    dismissPrompt() {
+        this.showBanner = false;
+        this.wasDismissed = true;
+        try { sessionStorage.setItem('{$dismissKey}', 'true'); } catch(e) {}
+    }
+}
+JS;
+    }
 }
