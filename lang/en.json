@@ -225,5 +225,20 @@
     "Too many login attempts. Please try again in :seconds seconds.": "Too many login attempts. Please try again in :seconds seconds.",
 
     "User logged out": "User logged out",
-    "Log Out": "Log Out"
+    "Log Out": "Log Out",
+
+    "Reset your password": "Reset your password",
+    "Enter your email address and we will send you a link to reset your password.": "Enter your email address and we will send you a link to reset your password.",
+    "Send Reset Link": "Send Reset Link",
+    "Back to sign in": "Back to sign in",
+    "If an account with that email exists, we've sent a password reset link.": "If an account with that email exists, we've sent a password reset link.",
+    "Email address must not exceed 255 characters.": "Email address must not exceed 255 characters.",
+    "Reset your DancyMeals account password.": "Reset your DancyMeals account password.",
+    "Didn't receive the email? Check your spam folder or": "Didn't receive the email? Check your spam folder or",
+    "try again": "try again",
+    "Reset your DancyMeals password": "Reset your DancyMeals password",
+    "We received a request to reset your password for your DancyMeals account. Click the button below to set a new password.": "We received a request to reset your password for your DancyMeals account. Click the button below to set a new password.",
+    "This password reset link will expire in :minutes minutes.": "This password reset link will expire in :minutes minutes.",
+    "If you did not request a password reset, no action is required. Your password will remain unchanged.": "If you did not request a password reset, no action is required. Your password will remain unchanged.",
+    "Reset your DancyMeals password. This link expires in :minutes minutes.": "Reset your DancyMeals password. This link expires in :minutes minutes."
 }

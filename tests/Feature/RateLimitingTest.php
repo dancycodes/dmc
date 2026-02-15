@@ -119,20 +119,21 @@ describe('Strict Rate Limiting on Auth Endpoints (BR-151)', function () {
         expect($response->status())->toBe(429);
     });
 
-    it('applies strict rate limit to forgot-password endpoint (BR-159)', function () {
-        $honeypotFields = rateLimitHoneypotFields();
+    it('applies password-reset rate limit to forgot-password endpoint (BR-065)', function () {
+        // BR-065: 3 per 15 minutes per email (no honeypot on this route per BR-069)
+        $email = 'ratelimit@example.com';
 
-        // Exhaust rate limit
-        for ($i = 1; $i <= 5; $i++) {
-            $this->post('/forgot-password', array_merge([
-                'email' => "user{$i}@example.com",
-            ], $honeypotFields));
+        // Exhaust rate limit (3 requests per email)
+        for ($i = 1; $i <= 3; $i++) {
+            $this->post('/forgot-password', [
+                'email' => $email,
+            ]);
         }
 
-        // 6th request should be rate limited
-        $response = $this->post('/forgot-password', array_merge([
-            'email' => 'user6@example.com',
-        ], $honeypotFields));
+        // 4th request should be rate limited
+        $response = $this->post('/forgot-password', [
+            'email' => $email,
+        ]);
 
         expect($response->status())->toBe(429);
     });
@@ -344,13 +345,13 @@ describe('Route Middleware Verification (Runtime)', function () {
         expect($registerRoute->gatherMiddleware())->toContain('throttle:strict');
     });
 
-    it('forgot-password POST route has strict throttle middleware', function () {
+    it('forgot-password POST route has password-reset throttle middleware (BR-065)', function () {
         $routes = app('router')->getRoutes();
         $resetRoute = $routes->match(
             \Illuminate\Http\Request::create('/forgot-password', 'POST')
         );
 
-        expect($resetRoute->gatherMiddleware())->toContain('throttle:strict');
+        expect($resetRoute->gatherMiddleware())->toContain('throttle:password-reset');
     });
 
     it('theme update route has moderate throttle middleware', function () {
