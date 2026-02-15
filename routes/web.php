@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ThemeController;
@@ -23,16 +24,11 @@ use Illuminate\Support\Facades\Route;
 // Root route dispatches based on domain context
 Route::get('/', function () {
     if (app(TenantService::class)->isTenantDomain()) {
-        $tenant = tenant();
-
-        return response()->json([
-            'tenant' => $tenant?->name,
-            'slug' => $tenant?->slug,
-        ]);
+        return app(DashboardController::class)->tenantHome(request());
     }
 
-    return view('welcome');
-});
+    return app(DashboardController::class)->home(request());
+})->name('home');
 
 /*
 |--------------------------------------------------------------------------
@@ -107,8 +103,10 @@ Route::middleware('auth')->group(function () {
 |
 */
 Route::middleware('main.domain')->group(function () {
-    // Admin routes will be registered here by F-043
-    // Route::prefix('vault-entry')->group(function () { ... });
+    // Admin panel routes (BR-129: only on main domain at /vault-entry)
+    Route::prefix('vault-entry')->middleware('auth')->group(function () {
+        Route::get('/', [DashboardController::class, 'adminDashboard'])->name('admin.dashboard');
+    });
 });
 
 /*
@@ -121,5 +119,10 @@ Route::middleware('main.domain')->group(function () {
 |
 */
 Route::middleware('tenant.domain')->group(function () {
+    // Cook/Manager dashboard (BR-130: authenticated cooks/managers on tenant domains)
+    Route::prefix('dashboard')->middleware('auth')->group(function () {
+        Route::get('/', [DashboardController::class, 'cookDashboard'])->name('cook.dashboard');
+    });
+
     // Tenant-specific routes will be added by later features (F-126, etc.)
 });
