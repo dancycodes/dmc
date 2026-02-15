@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    {{-- PWA: manifest link and meta tags --}}
+    {!! app(\App\Services\PwaService::class)->getMetaTags() !!}
+
     {{-- FOIT prevention: apply theme from localStorage before any CSS renders --}}
     <script>{!! app(\App\Services\ThemeService::class)->getInlineScript() !!}</script>
 
@@ -64,5 +67,8 @@
             @yield('footer')
         </div>
     </div>
+
+    {{-- PWA: Service worker registration --}}
+    <script>{!! app(\App\Services\PwaService::class)->getRegistrationScript() !!}</script>
 </body>
 </html>
