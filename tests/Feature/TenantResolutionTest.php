@@ -4,7 +4,7 @@ use App\Models\Tenant;
 use App\Services\TenantService;
 
 test('main domain resolves without tenant', function () {
-    $response = $this->get('http://dm.test/');
+    $response = $this->get('http://dmc.test/');
 
     $response->assertStatus(200);
 
@@ -17,7 +17,7 @@ test('main domain resolves without tenant', function () {
 test('active tenant subdomain resolves correctly', function () {
     $tenant = Tenant::factory()->withSlug('latifa', 'Latifa Kitchen')->create();
 
-    $response = $this->get('http://latifa.dm.test/');
+    $response = $this->get('http://latifa.dmc.test/');
 
     $response->assertStatus(200);
 
@@ -29,7 +29,7 @@ test('active tenant subdomain resolves correctly', function () {
 test('inactive tenant subdomain returns 503', function () {
     Tenant::factory()->withSlug('closed', 'Closed Cook')->inactive()->create();
 
-    $response = $this->get('http://closed.dm.test/');
+    $response = $this->get('http://closed.dmc.test/');
 
     $response->assertStatus(503)
         ->assertSee(__('Site Unavailable'))
@@ -37,7 +37,7 @@ test('inactive tenant subdomain returns 503', function () {
 });
 
 test('unknown subdomain returns 404', function () {
-    $response = $this->get('http://unknown.dm.test/');
+    $response = $this->get('http://unknown.dmc.test/');
 
     $response->assertStatus(404)
         ->assertSee(__('Cook Not Found'));
@@ -72,7 +72,7 @@ test('inactive custom domain tenant returns 503', function () {
 });
 
 test('reserved subdomain www is treated as main domain', function () {
-    $response = $this->get('http://www.dm.test/');
+    $response = $this->get('http://www.dmc.test/');
 
     $response->assertStatus(200);
 
@@ -81,7 +81,7 @@ test('reserved subdomain www is treated as main domain', function () {
 });
 
 test('reserved subdomain api is treated as main domain', function () {
-    $response = $this->get('http://api.dm.test/');
+    $response = $this->get('http://api.dmc.test/');
 
     $response->assertStatus(200);
 
@@ -99,7 +99,7 @@ test('IP address is treated as main domain', function () {
 });
 
 test('main domain routes are accessible on main domain', function () {
-    $response = $this->get('http://dm.test/');
+    $response = $this->get('http://dmc.test/');
 
     $response->assertStatus(200);
 });
@@ -110,7 +110,7 @@ test('main domain routes return 404 on tenant domain', function () {
     // The main domain route '/' is wrapped in main.domain middleware
     // On a tenant domain, main.domain middleware aborts 404
     // But the tenant domain also has a '/' route, so the tenant route should match
-    $response = $this->get('http://some-cook.dm.test/');
+    $response = $this->get('http://some-cook.dmc.test/');
 
     $response->assertStatus(200);
 });
@@ -119,7 +119,7 @@ test('tenant domain routes return 404 on main domain', function () {
     // The tenant '/' route requires tenant.domain middleware
     // Since main domain has its own '/' route via main.domain middleware,
     // main domain should get the welcome page (200) not a 404
-    $response = $this->get('http://dm.test/');
+    $response = $this->get('http://dmc.test/');
 
     $response->assertStatus(200);
 });
@@ -127,14 +127,14 @@ test('tenant domain routes return 404 on main domain', function () {
 test('tenant helper function returns current tenant', function () {
     $created = Tenant::factory()->withSlug('helper-test', 'Helper Test Cook')->create();
 
-    $this->get('http://helper-test.dm.test/');
+    $this->get('http://helper-test.dmc.test/');
 
     expect(tenant())->not->toBeNull()
         ->and(tenant()->slug)->toBe('helper-test');
 });
 
 test('tenant helper function returns null on main domain', function () {
-    $this->get('http://dm.test/');
+    $this->get('http://dmc.test/');
 
     expect(tenant())->toBeNull();
 });
@@ -152,15 +152,16 @@ test('custom domain uniqueness is enforced at database level', function () {
         ->withCustomDomain('unique.cm')
         ->create();
 
-    expect(fn () => Tenant::factory()
-        ->withSlug('domain-test-2', 'Domain Test 2')
-        ->withCustomDomain('unique.cm')
-        ->create()
+    expect(
+        fn () => Tenant::factory()
+            ->withSlug('domain-test-2', 'Domain Test 2')
+            ->withCustomDomain('unique.cm')
+            ->create()
     )->toThrow(\Illuminate\Database\QueryException::class);
 });
 
 test('tenant not found page links back to main site', function () {
-    $response = $this->get('http://nonexistent.dm.test/');
+    $response = $this->get('http://nonexistent.dmc.test/');
 
     $response->assertStatus(404)
         ->assertSee(config('app.url'));
@@ -169,7 +170,7 @@ test('tenant not found page links back to main site', function () {
 test('tenant unavailable page shows tenant name and links to main site', function () {
     Tenant::factory()->withSlug('unavailable', 'Unavailable Cook')->inactive()->create();
 
-    $response = $this->get('http://unavailable.dm.test/');
+    $response = $this->get('http://unavailable.dmc.test/');
 
     $response->assertStatus(503)
         ->assertSee('Unavailable Cook')

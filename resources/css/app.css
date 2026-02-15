@@ -159,3 +159,37 @@
     --shadow-card: 0 2px 8px 0 rgb(0 0 0 / 0.25);
     --shadow-dropdown: 0 4px 16px 0 rgb(0 0 0 / 0.35);
 }
+
+/* Smooth theme transitions (applied after initial load to prevent FOIT) */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+    transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease, box-shadow 200ms ease !important;
+}
+
+/* Print: always use light theme for readability */
+@media print {
+    [data-theme="dark"] {
+        --color-surface: #FFFFFF;
+        --color-surface-alt: #F4F4F5;
+        --color-on-surface: #3F3F46;
+        --color-on-surface-strong: #18181B;
+        --color-primary: #0D9488;
+        --color-primary-hover: #0F766E;
+        --color-primary-subtle: #F0FDFA;
+        --color-on-primary: #FFFFFF;
+        --color-secondary: #F59E0B;
+        --color-secondary-hover: #D97706;
+        --color-secondary-subtle: #FFFBEB;
+        --color-on-secondary: #18181B;
+        --color-outline: #D4D4D8;
+        --color-outline-strong: #27272A;
+        --color-danger-subtle: #FEF2F2;
+        --color-success-subtle: #ECFDF5;
+        --color-warning-subtle: #FFFBEB;
+        --color-info-subtle: #EFF6FF;
+        --shadow-card: 0 2px 8px 0 rgb(0 0 0 / 0.08);
+        --shadow-dropdown: 0 4px 16px 0 rgb(0 0 0 / 0.12);
+    }
+}

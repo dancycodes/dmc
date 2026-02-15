@@ -96,9 +96,9 @@ test('tenant route key name is slug', function () {
 });
 
 test('tenant service extracts subdomain correctly', function () {
-    // For dm.test main domain
-    expect(TenantService::extractSubdomain('latifa.dm.test'))->toBe('latifa')
-        ->and(TenantService::extractSubdomain('dm.test'))->toBeNull()
+    // For dmc.test main domain
+    expect(TenantService::extractSubdomain('latifa.dmc.test'))->toBe('latifa')
+        ->and(TenantService::extractSubdomain('dmc.test'))->toBeNull()
         ->and(TenantService::extractSubdomain('other.com'))->toBeNull();
 });
 
@@ -106,8 +106,8 @@ test('tenant service detects IP addresses', function () {
     expect(TenantService::isIpAddress('127.0.0.1'))->toBeTrue()
         ->and(TenantService::isIpAddress('192.168.1.1'))->toBeTrue()
         ->and(TenantService::isIpAddress('::1'))->toBeTrue()
-        ->and(TenantService::isIpAddress('dm.test'))->toBeFalse()
-        ->and(TenantService::isIpAddress('latifa.dm.test'))->toBeFalse();
+        ->and(TenantService::isIpAddress('dmc.test'))->toBeFalse()
+        ->and(TenantService::isIpAddress('latifa.dmc.test'))->toBeFalse();
 });
 
 test('tenant service tracks resolution state', function () {

@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    {{-- FOIT prevention: apply theme from localStorage before any CSS renders --}}
+    <script>{!! app(\App\Services\ThemeService::class)->getInlineScript() !!}</script>
+
     <title>@yield('title', __('Authentication')) - {{ config('app.name', 'DancyMeals') }}</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,7 +17,11 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @gale
 </head>
-<body class="bg-surface text-on-surface font-sans min-h-screen flex flex-col items-center justify-center px-4 py-8 sm:px-6">
+<body
+    x-data="{!! app(\App\Services\ThemeService::class)->getAlpineInitScript() !!}"
+    x-init="$nextTick(() => document.documentElement.classList.add('theme-transition'))"
+    class="bg-surface text-on-surface font-sans min-h-screen flex flex-col items-center justify-center px-4 py-8 sm:px-6"
+>
     {{-- Language Switcher (top-right) --}}
     <div class="fixed top-4 right-4 z-50">
         <x-language-switcher />

@@ -64,6 +64,7 @@ class UserFactory extends Factory
             'is_active' => true,
             'profile_photo_path' => null,
             'preferred_language' => 'en',
+            'theme_preference' => null,
             'remember_token' => Str::random(10),
         ];
     }
@@ -105,6 +106,16 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'phone' => $phone,
+        ]);
+    }
+
+    /**
+     * Set the user's theme preference.
+     */
+    public function withTheme(?string $theme): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'theme_preference' => $theme,
         ]);
     }
 }
