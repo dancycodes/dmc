@@ -85,15 +85,36 @@ class LoginController extends Controller
 
     /**
      * Handle a logout request.
+     *
+     * BR-058: Destroys entire server-side session and invalidates cookie.
+     * BR-059: Redirects to home page of current domain.
+     * BR-060: POST request (CSRF-protected).
+     * BR-061: Logs "logged_out" event via Spatie Activitylog.
+     * BR-062: After logout, protected pages require re-authentication.
+     * BR-063: Works on any domain (main or tenant).
      */
     public function logout(Request $request): mixed
     {
+        $user = Auth::user();
+
+        // BR-061: Log logout activity before session is destroyed
+        if ($user) {
+            activity('users')
+                ->performedOn($user)
+                ->causedBy($user)
+                ->event('logged_out')
+                ->withProperties(['ip' => $request->ip()])
+                ->log(__('User logged out'));
+        }
+
         Auth::logout();
 
+        // BR-058: Destroy session and invalidate cookie
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return gale()->redirect('/');
+        // BR-059: Redirect to home page of current domain (full page reload for auth state change)
+        return redirect('/');
     }
 
     /**

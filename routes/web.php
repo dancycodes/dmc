@@ -52,7 +52,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->name('password.email')->middleware(['honeypot', 'throttle:strict']);
 });
 
-Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 /*
 |--------------------------------------------------------------------------

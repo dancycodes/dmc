@@ -339,8 +339,9 @@ it('logs out an authenticated user', function () {
     $this->assertGuest();
 });
 
-it('prevents unauthenticated users from logging out', function () {
+it('redirects unauthenticated users to home on logout', function () {
     $response = $this->post(route('logout'));
 
-    $response->assertRedirect(route('login'));
+    $response->assertRedirect('/');
+    $this->assertGuest();
 });

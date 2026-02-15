@@ -222,5 +222,8 @@
     "Welcome back!": "Welcome back!",
     "User logged in": "User logged in",
     "Log in with your DancyMeals account.": "Log in with your DancyMeals account.",
-    "Too many login attempts. Please try again in :seconds seconds.": "Too many login attempts. Please try again in :seconds seconds."
+    "Too many login attempts. Please try again in :seconds seconds.": "Too many login attempts. Please try again in :seconds seconds.",
+
+    "User logged out": "User logged out",
+    "Log Out": "Log Out"
 }
