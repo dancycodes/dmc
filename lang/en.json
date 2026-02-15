@@ -78,6 +78,17 @@
     "Available": "Available",
     "Unavailable": "Unavailable",
 
+    "Theme": "Theme",
+    "Light": "Light",
+    "Dark": "Dark",
+    "System": "System",
+    "Light mode": "Light mode",
+    "Dark mode": "Dark mode",
+    "System default": "System default",
+    "Theme preference updated.": "Theme preference updated.",
+    "A theme preference is required.": "A theme preference is required.",
+    "The selected theme is not valid. Choose light, dark, or system.": "The selected theme is not valid. Choose light, dark, or system.",
+
     "Page :current of :total": "Page :current of :total",
     "Showing :first to :last of :total results": "Showing :first to :last of :total results"
 }
