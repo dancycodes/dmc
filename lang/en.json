@@ -90,5 +90,9 @@
     "The selected theme is not valid. Choose light, dark, or system.": "The selected theme is not valid. Choose light, dark, or system.",
 
     "Page :current of :total": "Page :current of :total",
-    "Showing :first to :last of :total results": "Showing :first to :last of :total results"
+    "Showing :first to :last of :total results": "Showing :first to :last of :total results",
+
+    "You're offline": "You're offline",
+    "You appear to be offline. Check your internet connection and try again.": "You appear to be offline. Check your internet connection and try again.",
+    "Try Again": "Try Again"
 }
