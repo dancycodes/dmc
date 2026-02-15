@@ -21,6 +21,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', SetLocale::class);
         $middleware->appendToGroup('web', InjectTenantTheme::class);
 
+        // Apply generous rate limiting (120/min) to all web requests (BR-153).
+        // Specific routes override with stricter tiers (strict, moderate).
+        $middleware->appendToGroup('web', \Illuminate\Routing\Middleware\ThrottleRequests::class.':generous');
+
         $middleware->alias([
             'main.domain' => EnsureMainDomain::class,
             'tenant.domain' => EnsureTenantDomain::class,

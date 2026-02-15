@@ -150,5 +150,11 @@
     "Welcome to the admin panel. Features will be added in upcoming modules.": "Welcome to the admin panel. Features will be added in upcoming modules.",
     "Welcome to your cook dashboard. Features will be added in upcoming modules.": "Welcome to your cook dashboard. Features will be added in upcoming modules.",
     "Admin Dashboard": "Admin Dashboard",
-    "Cook Dashboard": "Cook Dashboard"
+    "Cook Dashboard": "Cook Dashboard",
+
+    "Too Many Requests": "Too Many Requests",
+    "You're making requests a bit too quickly. Please wait a moment and try again.": "You're making requests a bit too quickly. Please wait a moment and try again.",
+    "You can try again in": "You can try again in",
+    "seconds": "seconds",
+    "Go Home": "Go Home"
 }
