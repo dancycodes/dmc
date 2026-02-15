@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\CrossDomainAuthController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
@@ -57,6 +58,28 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+/*
+|--------------------------------------------------------------------------
+| Cross-Domain Session Sharing Routes (F-028)
+|--------------------------------------------------------------------------
+|
+| Handles session sharing between subdomains (via shared cookie domain)
+| and custom domains (via one-time token exchange). BR-081 through BR-088.
+|
+| - generate-token: Authenticated user gets a one-time token to carry
+|   their session to a custom domain (BR-083).
+| - cross-domain-auth: Custom domain consumes the token and establishes
+|   a session for the user (BR-083, BR-087).
+|
+*/
+Route::middleware('auth')->group(function () {
+    Route::get('/cross-domain/generate-token', [CrossDomainAuthController::class, 'generateToken'])
+        ->name('cross-domain.generate-token');
+});
+
+Route::get('/cross-domain-auth', [CrossDomainAuthController::class, 'consumeToken'])
+    ->name('cross-domain.consume-token');
 
 /*
 |--------------------------------------------------------------------------
