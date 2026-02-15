@@ -137,13 +137,13 @@
                 <h1 class="text-lg font-semibold text-on-surface-strong">@yield('page-title', __('Dashboard'))</h1>
             </div>
 
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-1 sm:gap-3">
                 <x-nav.notification-bell />
-                <x-theme-switcher />
-                <x-language-switcher />
+                <div class="hidden sm:block"><x-theme-switcher /></div>
+                <div class="hidden sm:block"><x-language-switcher /></div>
 
                 @auth
-                    <form method="POST" action="{{ route('logout') }}">
+                    <form method="POST" action="{{ route('logout') }}" x-navigate-skip>
                         @csrf
                         <button type="submit" class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-alt hover:text-danger transition-colors duration-200" title="{{ __('Logout') }}">
                             <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" x2="9" y1="12" y2="12"></line></svg>
