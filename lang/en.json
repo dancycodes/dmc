@@ -679,5 +679,18 @@
     "system": "system",
     "custom": "custom",
     "System role names cannot be changed, but you can update the description.": "System role names cannot be changed, but you can update the description.",
-    "Role \":name\" updated successfully.": "Role \":name\" updated successfully."
+    "Role \":name\" updated successfully.": "Role \":name\" updated successfully.",
+    "Delete this role?": "Delete this role?",
+    "This action cannot be undone. The role and all its permission assignments will be permanently removed.": "This action cannot be undone. The role and all its permission assignments will be permanently removed.",
+    "Role:": "Role:",
+    "Permissions to remove:": "Permissions to remove:",
+    "Type the role name to confirm:": "Type the role name to confirm:",
+    "Delete Role": "Delete Role",
+    "Role \":name\" has been deleted.": "Role \":name\" has been deleted.",
+    "System roles cannot be deleted.": "System roles cannot be deleted.",
+    "Cannot delete this role. :count users are currently assigned to it. Reassign them first.": "Cannot delete this role. :count users are currently assigned to it. Reassign them first.",
+    "The role name does not match. Please type the exact role name to confirm deletion.": "The role name does not match. Please type the exact role name to confirm deletion.",
+    "Cannot delete: :count users assigned": "Cannot delete: :count users assigned",
+    "An error occurred while deleting the role. Please try again.": "An error occurred while deleting the role. Please try again.",
+    "Unable to delete role. Please contact support.": "Unable to delete role. Please contact support."
 }

@@ -679,5 +679,18 @@
     "system": "syst\u00e8me",
     "custom": "personnalis\u00e9",
     "System role names cannot be changed, but you can update the description.": "Les noms des r\u00f4les syst\u00e8me ne peuvent pas \u00eatre modifi\u00e9s, mais vous pouvez mettre \u00e0 jour la description.",
-    "Role \":name\" updated successfully.": "R\u00f4le \":name\" mis \u00e0 jour avec succ\u00e8s."
+    "Role \":name\" updated successfully.": "R\u00f4le \":name\" mis \u00e0 jour avec succ\u00e8s.",
+    "Delete this role?": "Supprimer ce r\u00f4le ?",
+    "This action cannot be undone. The role and all its permission assignments will be permanently removed.": "Cette action est irr\u00e9versible. Le r\u00f4le et toutes ses permissions seront d\u00e9finitivement supprim\u00e9s.",
+    "Role:": "R\u00f4le :",
+    "Permissions to remove:": "Permissions \u00e0 supprimer :",
+    "Type the role name to confirm:": "Tapez le nom du r\u00f4le pour confirmer :",
+    "Delete Role": "Supprimer le r\u00f4le",
+    "Role \":name\" has been deleted.": "Le r\u00f4le \":name\" a \u00e9t\u00e9 supprim\u00e9.",
+    "System roles cannot be deleted.": "Les r\u00f4les syst\u00e8me ne peuvent pas \u00eatre supprim\u00e9s.",
+    "Cannot delete this role. :count users are currently assigned to it. Reassign them first.": "Impossible de supprimer ce r\u00f4le. :count utilisateurs y sont actuellement assign\u00e9s. R\u00e9assignez-les d'abord.",
+    "The role name does not match. Please type the exact role name to confirm deletion.": "Le nom du r\u00f4le ne correspond pas. Veuillez taper le nom exact du r\u00f4le pour confirmer la suppression.",
+    "Cannot delete: :count users assigned": "Suppression impossible : :count utilisateurs assign\u00e9s",
+    "An error occurred while deleting the role. Please try again.": "Une erreur s'est produite lors de la suppression du r\u00f4le. Veuillez r\u00e9essayer.",
+    "Unable to delete role. Please contact support.": "Impossible de supprimer le r\u00f4le. Veuillez contacter le support."
 }
