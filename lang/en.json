@@ -284,5 +284,17 @@
     "Manage your delivery locations": "Manage your delivery locations",
     "Manage your payment options": "Manage your payment options",
     "Choose how you receive alerts": "Choose how you receive alerts",
-    "Set your preferred language": "Set your preferred language"
+    "Set your preferred language": "Set your preferred language",
+
+    "Back to Profile": "Back to Profile",
+    "Update your personal information.": "Update your personal information.",
+    "Contact support to change your email.": "Contact support to change your email.",
+    "Preferred Language": "Preferred Language",
+    "Save Changes": "Save Changes",
+    "Saving...": "Saving...",
+    "Profile updated successfully.": "Profile updated successfully.",
+    "Profile was updated": "Profile was updated",
+    "Name must be at least 2 characters.": "Name must be at least 2 characters.",
+    "Please enter a valid Cameroon phone number (+237 followed by 9 digits).": "Please enter a valid Cameroon phone number (+237 followed by 9 digits).",
+    "Please select a preferred language.": "Please select a preferred language."
 }
