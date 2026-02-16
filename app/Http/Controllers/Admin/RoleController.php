@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreRoleRequest;
+use App\Http\Requests\Admin\UpdateRoleRequest;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 
@@ -262,5 +263,238 @@ class RoleController extends Controller
         }
 
         return redirect('/vault-entry/roles');
+    }
+
+    /**
+     * Show the role edit form.
+     *
+     * F-054: Edit Role
+     * BR-116: System role names are read-only
+     * BR-117: System role descriptions can be updated
+     * BR-121: Permission modifications redirected to F-056
+     */
+    public function edit(Request $request, Role $role): mixed
+    {
+        // Load current permissions grouped by module for read-only display
+        $permissions = $role->permissions()
+            ->orderBy('name')
+            ->get();
+
+        $groupedPermissions = $this->groupPermissionsByModule($permissions);
+
+        return gale()->view('admin.roles.edit', [
+            'role' => $role,
+            'groupedPermissions' => $groupedPermissions,
+        ], web: true);
+    }
+
+    /**
+     * Update a role's name and description.
+     *
+     * F-054: Edit Role
+     * BR-116: System role names cannot be changed
+     * BR-117: System role descriptions can be updated
+     * BR-118: Custom role names can be changed but must remain unique
+     * BR-119: Role name uniqueness excludes current role
+     * BR-120: All edits logged in activity log
+     */
+    public function update(Request $request, Role $role): mixed
+    {
+        if (! $request->user()?->can('can-manage-roles')) {
+            abort(403);
+        }
+
+        if ($request->isGale()) {
+            $validated = $request->validateState($this->updateValidationRules($role));
+
+            return $this->updateRole($validated, $role, $request);
+        }
+
+        $formRequest = app(UpdateRoleRequest::class);
+
+        return $this->updateRole($formRequest->validated(), $role, $request);
+    }
+
+    /**
+     * Get the validation rules for role update.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    private function updateValidationRules(Role $role): array
+    {
+        $rules = [
+            'description' => ['nullable', 'string', 'max:500'],
+        ];
+
+        // BR-116: System roles cannot have their names changed
+        if (! $role->is_system) {
+            $rules['name_en'] = [
+                'required',
+                'string',
+                'min:2',
+                'max:100',
+                'regex:/^[a-zA-Z0-9\s-]+$/',
+                function (string $attribute, mixed $value, \Closure $fail) use ($role) {
+                    $normalized = strtolower(trim($value));
+                    $machineName = str_replace(' ', '-', $normalized);
+
+                    // BR-110: System role names cannot be used
+                    if (in_array($machineName, self::SYSTEM_ROLE_NAMES, true)) {
+                        $fail(__('This role name is reserved and cannot be used.'));
+                    }
+
+                    // BR-119: Check uniqueness excluding current role
+                    $exists = Role::query()
+                        ->where('name_en', trim($value))
+                        ->where('id', '!=', $role->id)
+                        ->exists();
+                    if ($exists) {
+                        $fail(__('A role with this name already exists.'));
+                    }
+
+                    // Also check against Spatie's name column (excluding current)
+                    if (Role::query()->where('name', $machineName)->where('id', '!=', $role->id)->exists()) {
+                        $fail(__('A role with this name already exists.'));
+                    }
+                },
+            ];
+            $rules['name_fr'] = [
+                'required',
+                'string',
+                'min:2',
+                'max:100',
+                'regex:/^[a-zA-Z0-9\s\x{00C0}-\x{024F}-]+$/u',
+                function (string $attribute, mixed $value, \Closure $fail) use ($role) {
+                    // BR-119: Check uniqueness excluding current role
+                    $exists = Role::query()
+                        ->where('name_fr', trim($value))
+                        ->where('id', '!=', $role->id)
+                        ->exists();
+                    if ($exists) {
+                        $fail(__('A role with this French name already exists.'));
+                    }
+                },
+            ];
+        }
+
+        return $rules;
+    }
+
+    /**
+     * Update the role from validated data.
+     *
+     * BR-116: System role names are not changed
+     * BR-120: Activity logging with old/new comparison
+     */
+    private function updateRole(array $validated, Role $role, Request $request): mixed
+    {
+        $description = isset($validated['description']) ? trim($validated['description']) : null;
+        $description = $description !== '' ? $description : null;
+
+        $oldValues = [
+            'name_en' => $role->name_en,
+            'name_fr' => $role->name_fr,
+            'name' => $role->name,
+            'description' => $role->description,
+        ];
+
+        $hasChanges = false;
+
+        // BR-116: Only update names for custom roles
+        if (! $role->is_system) {
+            $nameEn = trim($validated['name_en']);
+            $nameFr = trim($validated['name_fr']);
+            $machineName = strtolower(str_replace(' ', '-', $nameEn));
+
+            if ($role->name_en !== $nameEn || $role->name_fr !== $nameFr || $role->name !== $machineName) {
+                $hasChanges = true;
+            }
+
+            $role->name_en = $nameEn;
+            $role->name_fr = $nameFr;
+            $role->name = $machineName;
+        }
+
+        if ($role->description !== $description) {
+            $hasChanges = true;
+        }
+        $role->description = $description;
+
+        $role->save();
+
+        // BR-120: Activity logging only when changes were made
+        if ($hasChanges) {
+            $newValues = [
+                'name_en' => $role->name_en,
+                'name_fr' => $role->name_fr,
+                'name' => $role->name,
+                'description' => $role->description,
+            ];
+
+            activity('roles')
+                ->performedOn($role)
+                ->causedBy($request->user())
+                ->withProperties([
+                    'old' => $oldValues,
+                    'new' => $newValues,
+                    'ip' => $request->ip(),
+                ])
+                ->log('updated');
+        }
+
+        // Redirect to roles list with success toast
+        session()->flash('toast', [
+            'type' => 'success',
+            'message' => __('Role ":name" updated successfully.', ['name' => $role->name_en]),
+        ]);
+
+        if ($request->isGale()) {
+            return gale()->redirect(url('/vault-entry/roles'))->back('/vault-entry/roles');
+        }
+
+        return redirect('/vault-entry/roles');
+    }
+
+    /**
+     * Group permissions by module for display.
+     *
+     * Extracts the module from permission names like "can-manage-meals" -> "Meals".
+     *
+     * @return array<string, list<string>>
+     */
+    private function groupPermissionsByModule(\Illuminate\Support\Collection $permissions): array
+    {
+        $grouped = [];
+
+        foreach ($permissions as $permission) {
+            // Parse "can-verb-noun" format
+            $name = $permission->name;
+            $parts = explode('-', $name);
+
+            // Remove 'can' prefix
+            if ($parts[0] === 'can') {
+                array_shift($parts);
+            }
+
+            // Extract verb and noun
+            if (count($parts) >= 2) {
+                $verb = $parts[0];
+                $noun = implode(' ', array_slice($parts, 1));
+                $module = ucfirst($noun);
+            } else {
+                $verb = $parts[0] ?? $name;
+                $module = __('General');
+            }
+
+            if (! isset($grouped[$module])) {
+                $grouped[$module] = [];
+            }
+            $grouped[$module][] = $verb;
+        }
+
+        // Sort modules alphabetically
+        ksort($grouped);
+
+        return $grouped;
     }
 }
