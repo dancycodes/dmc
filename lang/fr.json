@@ -657,5 +657,12 @@
     "Guard": "Garde",
     "System": "Syst\u00e8me",
     "Custom": "Personnalis\u00e9",
-    "No roles found.": "Aucun r\u00f4le trouv\u00e9."
+    "No roles found.": "Aucun r\u00f4le trouv\u00e9.",
+    "Manage platform roles and their permissions.": "G\u00e9rer les r\u00f4les de la plateforme et leurs permissions.",
+    "No custom roles created yet": "Aucun r\u00f4le personnalis\u00e9 cr\u00e9\u00e9 pour le moment",
+    "Create a custom role to define specialized access for your team.": "Cr\u00e9ez un r\u00f4le personnalis\u00e9 pour d\u00e9finir un acc\u00e8s sp\u00e9cialis\u00e9 pour votre \u00e9quipe.",
+    "Run the permission seeder to create system roles.": "Ex\u00e9cutez le seeder de permissions pour cr\u00e9er les r\u00f4les syst\u00e8me.",
+    "System roles cannot be deleted": "Les r\u00f4les syst\u00e8me ne peuvent pas \u00eatre supprim\u00e9s",
+    "permissions": "permissions",
+    "users": "utilisateurs"
 }

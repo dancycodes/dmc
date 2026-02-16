@@ -25,21 +25,92 @@ class RoleController extends Controller
     ];
 
     /**
-     * List all roles.
+     * Hierarchy order for system roles.
      *
-     * F-052: Stub role list (full implementation in F-053).
-     * Shows all roles ordered by is_system desc, name asc.
+     * BR-115: System roles sorted in hierarchy order.
+     *
+     * @var array<string, int>
+     */
+    private const SYSTEM_ROLE_ORDER = [
+        'super-admin' => 1,
+        'admin' => 2,
+        'cook' => 3,
+        'manager' => 4,
+        'client' => 5,
+    ];
+
+    /**
+     * List all roles with permission counts, user counts, and type filtering.
+     *
+     * F-053: Role List View
+     * BR-111: System roles are: super-admin, admin, cook, manager, client
+     * BR-112: System roles display a "System" badge
+     * BR-113: Permission count reflects total permissions assigned
+     * BR-114: User count reflects total users holding this role
+     * BR-115: System roles first (hierarchy order), then custom alphabetically
      */
     public function index(Request $request): mixed
     {
-        $roles = Role::query()
-            ->orderByDesc('is_system')
-            ->orderBy('name')
-            ->get();
+        $type = $request->input('type', '');
 
-        return gale()->view('admin.roles.index', [
+        // Validate type filter
+        if (! in_array($type, ['', 'system', 'custom'], true)) {
+            $type = '';
+        }
+
+        $query = Role::query()
+            ->where('guard_name', 'web')
+            ->withCount(['permissions', 'users']);
+
+        // Apply type filter
+        if ($type === 'system') {
+            $query->where('is_system', true);
+        } elseif ($type === 'custom') {
+            $query->where('is_system', false);
+        }
+
+        $roles = $query->get();
+
+        // BR-115: Sort system roles by hierarchy, custom roles alphabetically
+        $roles = $roles->sort(function ($a, $b) {
+            // System roles come first
+            if ($a->is_system && ! $b->is_system) {
+                return -1;
+            }
+            if (! $a->is_system && $b->is_system) {
+                return 1;
+            }
+            // Both system: sort by hierarchy
+            if ($a->is_system && $b->is_system) {
+                $orderA = self::SYSTEM_ROLE_ORDER[$a->name] ?? 99;
+                $orderB = self::SYSTEM_ROLE_ORDER[$b->name] ?? 99;
+
+                return $orderA <=> $orderB;
+            }
+
+            // Both custom: sort alphabetically by name_en
+            return strcasecmp($a->name_en ?? $a->name, $b->name_en ?? $b->name);
+        })->values();
+
+        // Summary counts
+        $totalCount = Role::query()->where('guard_name', 'web')->count();
+        $systemCount = Role::query()->where('guard_name', 'web')->where('is_system', true)->count();
+        $customCount = Role::query()->where('guard_name', 'web')->where('is_system', false)->count();
+
+        $data = [
             'roles' => $roles,
-        ], web: true);
+            'type' => $type,
+            'totalCount' => $totalCount,
+            'systemCount' => $systemCount,
+            'customCount' => $customCount,
+        ];
+
+        // Gale navigate pattern for filter tab updates
+        if ($request->isGaleNavigate('role-list')) {
+            return gale()->fragment('admin.roles.index', 'role-list-content', $data);
+        }
+
+        return gale()->view('admin.roles.index', $data, web: true);
     }
 
     /**
