@@ -193,6 +193,7 @@
                             id="addr-quarter"
                             x-name="quarter_id"
                             x-model="quarter_id"
+                            x-effect="if (quarters.length > 0 && quarter_id) { $nextTick(() => { $el.value = quarter_id; }) }"
                             required
                             :disabled="!town_id || quarters.length === 0"
                             class="w-full h-11 pl-10 pr-8 border border-outline rounded-lg text-sm text-on-surface-strong bg-surface dark:bg-surface-alt transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
@@ -201,7 +202,7 @@
                                 <span x-text="town_id ? (quarters.length > 0 ? '{{ __('Select a quarter') }}' : '{{ __('Loading quarters...') }}') : '{{ __('Select a town first') }}'"></span>
                             </option>
                             <template x-for="q in quarters" :key="q.id">
-                                <option :value="q.id" x-text="q.name"></option>
+                                <option :value="String(q.id)" x-text="q.name"></option>
                             </template>
                         </select>
                         <span class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface/50 pointer-events-none">
