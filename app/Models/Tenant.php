@@ -7,6 +7,7 @@ use App\Traits\LogsActivityTrait;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Tenant extends Model
 {
@@ -38,6 +39,7 @@ class Tenant extends Model
         'description_en',
         'description_fr',
         'is_active',
+        'cook_id',
         'settings',
     ];
 
@@ -114,6 +116,16 @@ class Tenant extends Model
             'inactive' => $query->where('is_active', false),
             default => $query,
         };
+    }
+
+    /**
+     * Get the cook (user) assigned to this tenant.
+     *
+     * BR-082: Each tenant has exactly one cook at a time.
+     */
+    public function cook(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cook_id');
     }
 
     /**

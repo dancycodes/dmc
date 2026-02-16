@@ -17,6 +17,7 @@ test('tenant has correct fillable attributes', function () {
         'description_en',
         'description_fr',
         'is_active',
+        'cook_id',
         'settings',
     ]);
 });

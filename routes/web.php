@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AddressController;
+use App\Http\Controllers\Admin\CookAssignmentController;
 use App\Http\Controllers\Admin\TenantController;
 use App\Http\Controllers\Auth\CrossDomainAuthController;
 use App\Http\Controllers\Auth\EmailVerificationController;
@@ -226,6 +227,11 @@ Route::middleware('main.domain')->group(function () {
         Route::get('/tenants/{tenant}/edit', [TenantController::class, 'edit'])->name('admin.tenants.edit');
         Route::post('/tenants/{tenant}', [TenantController::class, 'update'])->name('admin.tenants.update');
         Route::post('/tenants/{tenant}/toggle-status', [TenantController::class, 'toggleStatus'])->name('admin.tenants.toggle-status');
+
+        // Cook assignment (F-049)
+        Route::get('/tenants/{tenant}/assign-cook', [CookAssignmentController::class, 'show'])->name('admin.tenants.assign-cook');
+        Route::post('/tenants/{tenant}/assign-cook/search', [CookAssignmentController::class, 'search'])->name('admin.tenants.assign-cook.search');
+        Route::post('/tenants/{tenant}/assign-cook', [CookAssignmentController::class, 'assign'])->name('admin.tenants.assign-cook.store');
     });
 });
 

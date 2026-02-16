@@ -549,5 +549,27 @@
     "activated": "activ\u00e9",
     "deactivated": "d\u00e9sactiv\u00e9",
     "This domain is already assigned to another tenant.": "Ce domaine est d\u00e9j\u00e0 attribu\u00e9 \u00e0 un autre locataire.",
-    "DNS setup information": "Informations de configuration DNS"
+    "DNS setup information": "Informations de configuration DNS",
+
+    "Reassign Cook": "R\u00e9assigner le cuisinier",
+    "Search for an existing user to assign as the cook for \":tenant\".": "Recherchez un utilisateur existant \u00e0 assigner comme cuisinier pour \u00ab :tenant \u00bb.",
+    "Current Cook": "Cuisinier actuel",
+    "Search Users": "Rechercher des utilisateurs",
+    "Type at least 2 characters to search by name or email.": "Tapez au moins 2 caract\u00e8res pour rechercher par nom ou email.",
+    "Search by name or email...": "Rechercher par nom ou email...",
+    "user(s) found": "utilisateur(s) trouv\u00e9(s)",
+    "No users found.": "Aucun utilisateur trouv\u00e9.",
+    "The user must have an account before being assigned as a cook.": "L'utilisateur doit avoir un compte avant d'\u00eatre assign\u00e9 comme cuisinier.",
+    "This user is already a cook for:": "Cet utilisateur est d\u00e9j\u00e0 cuisinier pour :",
+    "This user is currently deactivated. They will not be able to manage the tenant until their account is reactivated.": "Cet utilisateur est actuellement d\u00e9sactiv\u00e9. Il ne pourra pas g\u00e9rer le locataire tant que son compte ne sera pas r\u00e9activ\u00e9.",
+    "Confirm Cook Reassignment": "Confirmer la r\u00e9assignation du cuisinier",
+    "This will remove": "Cela supprimera",
+    "as cook for this tenant and assign": "en tant que cuisinier pour ce locataire et assignera",
+    "Continue?": "Continuer ?",
+    "Confirm Assignment": "Confirmer l'assignation",
+    "Assigning...": "Assignation en cours...",
+    "Back to Tenant Detail": "Retour aux d\u00e9tails du locataire",
+    "Please select a user to assign as cook.": "Veuillez s\u00e9lectionner un utilisateur \u00e0 assigner comme cuisinier.",
+    "Cook \":name\" assigned to tenant \":tenant\".": "Cuisinier \u00ab :name \u00bb assign\u00e9 au locataire \u00ab :tenant \u00bb.",
+    "Cook reassigned from :old to :new for tenant \":tenant\".": "Cuisinier r\u00e9assign\u00e9 de :old \u00e0 :new pour le locataire \u00ab :tenant \u00bb."
 }
