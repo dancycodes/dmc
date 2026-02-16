@@ -373,6 +373,61 @@ class PaymentMethodController extends Controller
     }
 
     /**
+     * Delete a payment method (F-040).
+     *
+     * BR-170: Confirmation dialog handled client-side (Alpine.js modal).
+     * BR-171: Payment methods can always be deleted (no order dependency).
+     * BR-172: If deleted method was default, first remaining becomes default.
+     * BR-173: Users can only delete their own payment methods.
+     * BR-174: Hard delete (permanent).
+     */
+    public function destroy(Request $request, PaymentMethod $paymentMethod): mixed
+    {
+        $user = Auth::user();
+
+        // BR-173: Ensure payment method belongs to authenticated user
+        if ($paymentMethod->user_id !== $user->id) {
+            abort(403);
+        }
+
+        $wasDefault = $paymentMethod->is_default;
+        $methodLabel = $paymentMethod->label;
+        $methodProvider = $paymentMethod->provider;
+
+        // BR-174: Hard delete
+        $paymentMethod->delete();
+
+        // BR-172: Reassign default if the deleted method was default
+        if ($wasDefault) {
+            $newDefault = $user->paymentMethods()
+                ->orderBy('label')
+                ->first();
+
+            if ($newDefault) {
+                $newDefault->update(['is_default' => true]);
+            }
+        }
+
+        // Log the deletion
+        activity('payment_methods')
+            ->causedBy($user)
+            ->event('deleted')
+            ->withProperties([
+                'label' => $methodLabel,
+                'provider' => $methodProvider,
+                'was_default' => $wasDefault,
+                'ip' => $request->ip(),
+            ])
+            ->log(__('Payment method deleted'));
+
+        return gale()->redirect('/profile/payment-methods')->back()
+            ->with('toast', [
+                'type' => 'success',
+                'message' => __('Payment method deleted.'),
+            ]);
+    }
+
+    /**
      * Validate Gale state for payment method creation.
      *
      * Applies the same rules as StorePaymentMethodRequest but for Gale SSE requests.

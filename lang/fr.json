@@ -400,5 +400,8 @@
     "To change provider, please delete this method and add a new one.": "Pour changer de fournisseur, veuillez supprimer ce moyen et en ajouter un nouveau.",
     "This phone number does not match :provider.": "Ce num\u00e9ro de t\u00e9l\u00e9phone ne correspond pas \u00e0 :provider.",
     "Payment method updated.": "Moyen de paiement mis \u00e0 jour.",
-    "Payment method updated": "Moyen de paiement mis \u00e0 jour"
+    "Payment method updated": "Moyen de paiement mis \u00e0 jour",
+    "Delete this payment method?": "Supprimer ce moyen de paiement ?",
+    "Payment method deleted.": "Moyen de paiement supprim\u00e9.",
+    "Payment method deleted": "Moyen de paiement supprim\u00e9"
 }

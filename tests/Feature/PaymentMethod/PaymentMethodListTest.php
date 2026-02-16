@@ -137,7 +137,8 @@ it('shows edit and delete links for each method (BR-162)', function () {
 
     $response->assertOk();
     $response->assertSee('/profile/payment-methods/'.$method->id.'/edit');
-    $response->assertSee('/profile/payment-methods/'.$method->id.'/delete');
+    // Delete is now a button that opens a confirmation modal (F-040)
+    $response->assertSee('confirmDelete('.$method->id);
 });
 
 it('does not show other users payment methods (BR-153)', function () {
