@@ -75,4 +75,21 @@ class Address extends Model
     {
         return $this->belongsTo(Quarter::class);
     }
+
+    /**
+     * Check if this address has pending orders that reference it.
+     *
+     * Orders store address data at creation time (BR-146), so this only
+     * matters when the user has a single address. Returns false until
+     * the orders system is implemented (F-150+).
+     */
+    public function hasPendingOrders(): bool
+    {
+        // Orders table does not exist yet — will be implemented in F-150+.
+        // When orders are added, this method should query:
+        //   Order::where('address_id', $this->id)
+        //       ->whereIn('status', ['pending_payment', 'paid', 'confirmed', 'preparing', 'ready', 'out_for_delivery'])
+        //       ->exists();
+        return false;
+    }
 }

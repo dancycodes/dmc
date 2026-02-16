@@ -349,5 +349,11 @@
     "Update Address": "Mettre \u00e0 jour l'adresse",
     "Updating...": "Mise \u00e0 jour...",
     "Address updated successfully.": "Adresse mise \u00e0 jour avec succ\u00e8s.",
-    "Delivery address updated": "Adresse de livraison mise \u00e0 jour"
+    "Delivery address updated": "Adresse de livraison mise \u00e0 jour",
+    "Delete this address?": "Supprimer cette adresse ?",
+    "This cannot be undone.": "Cette action est irr\u00e9versible.",
+    "Deleting...": "Suppression...",
+    "Address deleted.": "Adresse supprim\u00e9e.",
+    "Delivery address deleted": "Adresse de livraison supprim\u00e9e",
+    "This address is used by pending orders and cannot be deleted. You can edit it instead.": "Cette adresse est utilis\u00e9e par des commandes en cours et ne peut pas \u00eatre supprim\u00e9e. Vous pouvez la modifier \u00e0 la place."
 }
