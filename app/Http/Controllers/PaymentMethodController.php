@@ -11,6 +11,83 @@ use Illuminate\Validation\Rule;
 class PaymentMethodController extends Controller
 {
     /**
+     * Display the list of user's saved payment methods (F-038).
+     *
+     * BR-156: All methods displayed, default first.
+     * BR-157: Phone numbers masked.
+     * BR-158: Provider icons/logos.
+     * BR-161: "Add" button only if < 3 methods.
+     * BR-162: Each method has edit/delete links.
+     */
+    public function index(Request $request): mixed
+    {
+        $user = Auth::user();
+        $paymentMethods = $user->paymentMethods()
+            ->orderByDesc('is_default')
+            ->orderBy('label')
+            ->get();
+
+        $canAddMore = $paymentMethods->count() < PaymentMethod::MAX_PAYMENT_METHODS_PER_USER;
+
+        return gale()->view('profile.payment-methods.index', [
+            'user' => $user,
+            'tenant' => tenant(),
+            'paymentMethods' => $paymentMethods,
+            'canAddMore' => $canAddMore,
+            'maxMethods' => PaymentMethod::MAX_PAYMENT_METHODS_PER_USER,
+        ], web: true);
+    }
+
+    /**
+     * Set a payment method as the user's default (F-038).
+     *
+     * BR-159: Only one payment method can be default at a time.
+     * BR-160: Setting a new default removes previous default.
+     */
+    public function setDefault(Request $request, PaymentMethod $paymentMethod): mixed
+    {
+        $user = Auth::user();
+
+        // Ensure payment method belongs to authenticated user
+        if ($paymentMethod->user_id !== $user->id) {
+            abort(403);
+        }
+
+        // Already default — no change needed
+        if ($paymentMethod->is_default) {
+            return gale()->redirect('/profile/payment-methods')->back()
+                ->with('toast', [
+                    'type' => 'info',
+                    'message' => __('This payment method is already your default.'),
+                ]);
+        }
+
+        // BR-160: Remove default from all user payment methods
+        $user->paymentMethods()->where('is_default', true)->update(['is_default' => false]);
+
+        // Set the new default
+        $paymentMethod->update(['is_default' => true]);
+
+        // Log the change
+        activity('payment_methods')
+            ->performedOn($paymentMethod)
+            ->causedBy($user)
+            ->event('updated')
+            ->withProperties([
+                'label' => $paymentMethod->label,
+                'action' => 'set_as_default',
+                'ip' => $request->ip(),
+            ])
+            ->log(__('Default payment method updated'));
+
+        return gale()->redirect('/profile/payment-methods')->back()
+            ->with('toast', [
+                'type' => 'success',
+                'message' => __('Default payment method updated.'),
+            ]);
+    }
+
+    /**
      * Display the add payment method form (F-037).
      *
      * BR-147: Maximum 3 saved payment methods per user.

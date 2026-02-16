@@ -382,5 +382,14 @@
     "Please select a payment provider.": "Please select a payment provider.",
     "Please select a valid payment provider.": "Please select a valid payment provider.",
     "This phone number does not match the selected provider.": "This phone number does not match the selected provider.",
-    "This phone number is already saved under a different provider.": "This phone number is already saved under a different provider."
+    "This phone number is already saved under a different provider.": "This phone number is already saved under a different provider.",
+
+    "Manage your saved mobile money numbers.": "Manage your saved mobile money numbers.",
+    ":count of :max methods": ":count of :max methods",
+    "You have no saved payment methods.": "You have no saved payment methods.",
+    "Save a mobile money number for faster checkout when ordering meals.": "Save a mobile money number for faster checkout when ordering meals.",
+    "Add Your First Payment Method": "Add Your First Payment Method",
+    "Default payment method updated.": "Default payment method updated.",
+    "Default payment method updated": "Default payment method updated",
+    "This payment method is already your default.": "This payment method is already your default."
 }

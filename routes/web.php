@@ -146,8 +146,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile/addresses/{address}', [AddressController::class, 'destroy'])->name('addresses.destroy');
 
     // Payment Methods (F-037, F-038, F-039, F-040)
+    Route::get('/profile/payment-methods', [PaymentMethodController::class, 'index'])->name('payment-methods.index');
     Route::get('/profile/payment-methods/create', [PaymentMethodController::class, 'create'])->name('payment-methods.create');
     Route::post('/profile/payment-methods', [PaymentMethodController::class, 'store'])->name('payment-methods.store');
+    Route::post('/profile/payment-methods/{paymentMethod}/set-default', [PaymentMethodController::class, 'setDefault'])->name('payment-methods.set-default');
 });
 
 /*
