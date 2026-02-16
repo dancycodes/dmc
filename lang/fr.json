@@ -393,5 +393,12 @@
     "Add Your First Payment Method": "Ajouter votre premier moyen de paiement",
     "Default payment method updated.": "Moyen de paiement par d\u00e9faut mis \u00e0 jour.",
     "Default payment method updated": "Moyen de paiement par d\u00e9faut mis \u00e0 jour",
-    "This payment method is already your default.": "Ce moyen de paiement est d\u00e9j\u00e0 votre moyen par d\u00e9faut."
+    "This payment method is already your default.": "Ce moyen de paiement est d\u00e9j\u00e0 votre moyen par d\u00e9faut.",
+    "Edit Payment Method": "Modifier le moyen de paiement",
+    "Back to Payment Methods": "Retour aux moyens de paiement",
+    "Update your payment method details.": "Mettez \u00e0 jour les d\u00e9tails de votre moyen de paiement.",
+    "To change provider, please delete this method and add a new one.": "Pour changer de fournisseur, veuillez supprimer ce moyen et en ajouter un nouveau.",
+    "This phone number does not match :provider.": "Ce num\u00e9ro de t\u00e9l\u00e9phone ne correspond pas \u00e0 :provider.",
+    "Payment method updated.": "Moyen de paiement mis \u00e0 jour.",
+    "Payment method updated": "Moyen de paiement mis \u00e0 jour"
 }

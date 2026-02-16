@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\PaymentMethod\StorePaymentMethodRequest;
+use App\Http\Requests\PaymentMethod\UpdatePaymentMethodRequest;
 use App\Models\PaymentMethod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -234,6 +235,144 @@ class PaymentMethodController extends Controller
     }
 
     /**
+     * Display the edit payment method form (F-039).
+     *
+     * BR-163: Only label and phone are editable. Provider is read-only.
+     * BR-167: Phone number shown unmasked for editing.
+     * BR-168: Users can only edit their own payment methods.
+     */
+    public function edit(Request $request, PaymentMethod $paymentMethod): mixed
+    {
+        $user = Auth::user();
+
+        // BR-168: Ensure payment method belongs to authenticated user
+        if ($paymentMethod->user_id !== $user->id) {
+            abort(403);
+        }
+
+        return gale()->view('profile.payment-methods.edit', [
+            'user' => $user,
+            'tenant' => tenant(),
+            'paymentMethod' => $paymentMethod,
+            'providerLabels' => PaymentMethod::PROVIDER_LABELS,
+        ], web: true);
+    }
+
+    /**
+     * Update a payment method (F-039).
+     *
+     * Handles both Gale SSE requests (from Alpine $action) and traditional
+     * HTTP form submissions. Validates phone format against existing provider.
+     *
+     * BR-163: Only label and phone are editable.
+     * BR-165: Phone validation must match existing provider.
+     * BR-166: Label uniqueness excludes current method.
+     * BR-168: Users can only edit their own payment methods.
+     * BR-169: Save via Gale without page reload.
+     */
+    public function update(Request $request, PaymentMethod $paymentMethod): mixed
+    {
+        $user = Auth::user();
+
+        // BR-168: Ensure payment method belongs to authenticated user
+        if ($paymentMethod->user_id !== $user->id) {
+            abort(403);
+        }
+
+        if ($request->isGale()) {
+            $validated = $this->validateGaleUpdateState($request, $paymentMethod);
+        } else {
+            $formRequest = UpdatePaymentMethodRequest::createFrom($request);
+            $formRequest->setContainer(app())->setRedirector(app('redirect'))->validateResolved();
+            $validated = $formRequest->validated();
+        }
+
+        // BR-154: Normalize phone number
+        $normalizedPhone = PaymentMethod::normalizePhone($validated['phone']);
+
+        // BR-150: Validate Cameroon phone format
+        if (! PaymentMethod::isValidCameroonPhone($normalizedPhone)) {
+            if ($request->isGale()) {
+                return gale()->messages([
+                    'phone' => __('Please enter a valid Cameroon phone number.'),
+                ]);
+            }
+
+            return redirect()->back()->withErrors([
+                'phone' => __('Please enter a valid Cameroon phone number.'),
+            ])->withInput();
+        }
+
+        // BR-165: Validate phone prefix matches existing provider
+        if (! PaymentMethod::phoneMatchesProvider($normalizedPhone, $paymentMethod->provider)) {
+            $providerLabel = PaymentMethod::PROVIDER_LABELS[$paymentMethod->provider] ?? $paymentMethod->provider;
+
+            if ($request->isGale()) {
+                return gale()->messages([
+                    'phone' => __('This phone number does not match :provider.', ['provider' => $providerLabel]),
+                ]);
+            }
+
+            return redirect()->back()->withErrors([
+                'phone' => __('This phone number does not match :provider.', ['provider' => $providerLabel]),
+            ])->withInput();
+        }
+
+        // Edge case: Reject same phone under different provider
+        $existingWithPhone = $user->paymentMethods()
+            ->where('phone', $normalizedPhone)
+            ->where('id', '!=', $paymentMethod->id)
+            ->where('provider', '!=', $paymentMethod->provider)
+            ->exists();
+
+        if ($existingWithPhone) {
+            if ($request->isGale()) {
+                return gale()->messages([
+                    'phone' => __('This phone number is already saved under a different provider.'),
+                ]);
+            }
+
+            return redirect()->back()->withErrors([
+                'phone' => __('This phone number is already saved under a different provider.'),
+            ])->withInput();
+        }
+
+        // Track old values for activity logging
+        $oldLabel = $paymentMethod->label;
+        $oldPhone = $paymentMethod->phone;
+
+        // Update the payment method
+        $paymentMethod->update([
+            'label' => trim($validated['label']),
+            'phone' => $normalizedPhone,
+        ]);
+
+        // Log the update with old/new values
+        activity('payment_methods')
+            ->performedOn($paymentMethod)
+            ->causedBy($user)
+            ->event('updated')
+            ->withProperties([
+                'old' => [
+                    'label' => $oldLabel,
+                    'phone' => $oldPhone,
+                ],
+                'new' => [
+                    'label' => $paymentMethod->label,
+                    'phone' => $paymentMethod->phone,
+                ],
+                'ip' => $request->ip(),
+            ])
+            ->log(__('Payment method updated'));
+
+        return gale()->redirect('/profile/payment-methods')->back()
+            ->with('toast', [
+                'type' => 'success',
+                'message' => __('Payment method updated.'),
+            ]);
+    }
+
+    /**
      * Validate Gale state for payment method creation.
      *
      * Applies the same rules as StorePaymentMethodRequest but for Gale SSE requests.
@@ -266,6 +405,39 @@ class PaymentMethodController extends Controller
             'label.unique' => __('You already have a payment method with this label.'),
             'provider.required' => __('Please select a payment provider.'),
             'provider.in' => __('Please select a valid payment provider.'),
+            'phone.required' => __('Phone number is required.'),
+        ]);
+    }
+
+    /**
+     * Validate Gale state for payment method update (F-039).
+     *
+     * Applies the same rules as UpdatePaymentMethodRequest but for Gale SSE requests.
+     * BR-166: Label uniqueness excludes the current payment method.
+     *
+     * @return array<string, mixed>
+     */
+    private function validateGaleUpdateState(Request $request, PaymentMethod $paymentMethod): array
+    {
+        $userId = Auth::id();
+
+        return $request->validateState([
+            'label' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('payment_methods', 'label')
+                    ->where('user_id', $userId)
+                    ->ignore($paymentMethod->id),
+            ],
+            'phone' => [
+                'required',
+                'string',
+            ],
+        ], [
+            'label.required' => __('Payment method label is required.'),
+            'label.max' => __('Label must not exceed 50 characters.'),
+            'label.unique' => __('You already have a payment method with this label.'),
             'phone.required' => __('Phone number is required.'),
         ]);
     }

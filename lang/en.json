@@ -391,5 +391,12 @@
     "Add Your First Payment Method": "Add Your First Payment Method",
     "Default payment method updated.": "Default payment method updated.",
     "Default payment method updated": "Default payment method updated",
-    "This payment method is already your default.": "This payment method is already your default."
+    "This payment method is already your default.": "This payment method is already your default.",
+    "Edit Payment Method": "Edit Payment Method",
+    "Back to Payment Methods": "Back to Payment Methods",
+    "Update your payment method details.": "Update your payment method details.",
+    "To change provider, please delete this method and add a new one.": "To change provider, please delete this method and add a new one.",
+    "This phone number does not match :provider.": "This phone number does not match :provider.",
+    "Payment method updated.": "Payment method updated.",
+    "Payment method updated": "Payment method updated"
 }
