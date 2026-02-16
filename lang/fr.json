@@ -256,5 +256,13 @@
     "The password reset token is required.": "Le jeton de r\u00e9initialisation est requis.",
     "We could not find a user with that email address.": "Nous n'avons pas trouv\u00e9 d'utilisateur avec cette adresse e-mail.",
     "Please wait before trying again.": "Veuillez patienter avant de r\u00e9essayer.",
-    "An error occurred while resetting your password. Please try again.": "Une erreur est survenue lors de la r\u00e9initialisation de votre mot de passe. Veuillez r\u00e9essayer."
+    "An error occurred while resetting your password. Please try again.": "Une erreur est survenue lors de la r\u00e9initialisation de votre mot de passe. Veuillez r\u00e9essayer.",
+
+    "Account Deactivated": "Compte d\u00e9sactiv\u00e9",
+    "Your account has been deactivated. Please contact support.": "Votre compte a \u00e9t\u00e9 d\u00e9sactiv\u00e9. Veuillez contacter le support.",
+    "If you believe this is an error, please reach out to our support team and we will assist you.": "Si vous pensez qu'il s'agit d'une erreur, veuillez contacter notre \u00e9quipe de support et nous vous aiderons.",
+    "Contact Support": "Contacter le support",
+    "User forced logout due to deactivated account": "D\u00e9connexion forc\u00e9e de l'utilisateur en raison d'un compte d\u00e9sactiv\u00e9",
+    "User deactivated by admin": "Utilisateur d\u00e9sactiv\u00e9 par l'administrateur",
+    "User reactivated by admin": "Utilisateur r\u00e9activ\u00e9 par l'administrateur"
 }

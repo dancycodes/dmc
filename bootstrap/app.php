@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureMainDomain;
 use App\Http\Middleware\EnsureTenantDomain;
+use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\InjectTenantTheme;
 use App\Http\Middleware\ResolveTenant;
 use App\Http\Middleware\SetLocale;
@@ -24,6 +25,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // Apply generous rate limiting (120/min) to all web requests (BR-153).
         // Specific routes override with stricter tiers (strict, moderate).
         $middleware->appendToGroup('web', \Illuminate\Routing\Middleware\ThrottleRequests::class.':generous');
+
+        // BR-089: Check active status on every authenticated request.
+        // Appended to web group so it runs on every request. The middleware
+        // only acts when a user is authenticated and is_active is false —
+        // it passes through for guests and active users.
+        $middleware->appendToGroup('web', EnsureUserIsActive::class);
 
         $middleware->alias([
             'main.domain' => EnsureMainDomain::class,
