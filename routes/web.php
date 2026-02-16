@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AddressController;
 use App\Http\Controllers\Auth\CrossDomainAuthController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
@@ -132,6 +133,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::post('/profile/edit', [ProfileController::class, 'update'])->name('profile.update');
+
+    // Delivery Addresses (F-033, F-034, F-035, F-036)
+    Route::get('/profile/addresses/create', [AddressController::class, 'create'])->name('addresses.create');
+    Route::post('/profile/addresses', [AddressController::class, 'store'])->name('addresses.store');
+    Route::post('/profile/addresses/quarters', [AddressController::class, 'quarters'])->name('addresses.quarters');
 });
 
 /*
