@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Address\StoreAddressRequest;
+use App\Http\Requests\Address\UpdateAddressRequest;
 use App\Models\Address;
 use App\Models\Quarter;
 use App\Models\Town;
@@ -193,6 +194,125 @@ class AddressController extends Controller
     }
 
     /**
+     * Display the edit form for an existing delivery address (F-035).
+     *
+     * BR-136: Form must be pre-populated with current address values.
+     * BR-138: Quarter dropdown populated for the address's current town.
+     * BR-139: Users can only edit their own addresses.
+     */
+    public function edit(Request $request, Address $address): mixed
+    {
+        $user = Auth::user();
+
+        // BR-139: Ensure address belongs to authenticated user
+        if ($address->user_id !== $user->id) {
+            abort(403);
+        }
+
+        $towns = Town::query()->active()->orderBy(localized('name'))->get();
+
+        // BR-138: Pre-load quarters for the address's current town
+        $quarters = Quarter::query()
+            ->active()
+            ->forTown($address->town_id)
+            ->orderBy(localized('name'))
+            ->get()
+            ->map(fn (Quarter $quarter) => [
+                'id' => $quarter->id,
+                'name' => $quarter->{localized('name')},
+            ])
+            ->values()
+            ->toArray();
+
+        return gale()->view('profile.addresses.edit', [
+            'user' => $user,
+            'tenant' => tenant(),
+            'address' => $address,
+            'towns' => $towns,
+            'quarters' => $quarters,
+        ], web: true);
+    }
+
+    /**
+     * Update an existing delivery address (F-035).
+     *
+     * Handles both Gale SSE requests and traditional HTTP form submissions.
+     * BR-135: Same validation as add (F-033).
+     * BR-137: Label uniqueness excludes the current address.
+     * BR-139: Users can only edit their own addresses.
+     * BR-140: Save via Gale without page reload.
+     */
+    public function update(Request $request, Address $address): mixed
+    {
+        $user = Auth::user();
+
+        // BR-139: Ensure address belongs to authenticated user
+        if ($address->user_id !== $user->id) {
+            abort(403);
+        }
+
+        if ($request->isGale()) {
+            $validated = $this->validateGaleUpdateState($request, $address);
+        } else {
+            $formRequest = UpdateAddressRequest::createFrom($request);
+            $formRequest->setRouteResolver(fn () => $request->route());
+            $formRequest->setContainer(app())->setRedirector(app('redirect'))->validateResolved();
+            $validated = $formRequest->validated();
+        }
+
+        // Track old values for activity logging
+        $oldValues = [
+            'label' => $address->label,
+            'town_id' => $address->town_id,
+            'quarter_id' => $address->quarter_id,
+            'neighbourhood' => $address->neighbourhood,
+            'additional_directions' => $address->additional_directions,
+        ];
+
+        $address->update([
+            'label' => trim($validated['label']),
+            'town_id' => $validated['town_id'],
+            'quarter_id' => $validated['quarter_id'],
+            'neighbourhood' => $validated['neighbourhood'] ?? null,
+            'additional_directions' => $validated['additional_directions'] ?? null,
+            'latitude' => $validated['latitude'] ?? null,
+            'longitude' => $validated['longitude'] ?? null,
+        ]);
+
+        // Build changed fields for activity log
+        $newValues = [
+            'label' => $address->label,
+            'town_id' => $address->town_id,
+            'quarter_id' => $address->quarter_id,
+            'neighbourhood' => $address->neighbourhood,
+            'additional_directions' => $address->additional_directions,
+        ];
+
+        $changes = array_filter(
+            $newValues,
+            fn ($value, $key) => $value !== ($oldValues[$key] ?? null),
+            ARRAY_FILTER_USE_BOTH
+        );
+
+        activity('addresses')
+            ->performedOn($address)
+            ->causedBy($user)
+            ->event('updated')
+            ->withProperties([
+                'label' => $address->label,
+                'changes' => $changes,
+                'ip' => $request->ip(),
+            ])
+            ->log(__('Delivery address updated'));
+
+        return gale()->redirect('/profile/addresses')->back()
+            ->with('toast', [
+                'type' => 'success',
+                'message' => __('Address updated successfully.'),
+            ]);
+    }
+
+    /**
      * Get quarters for a given town (AJAX endpoint for dynamic dropdown).
      *
      * Returns quarters filtered by town_id for the quarter dropdown.
@@ -240,6 +360,70 @@ class AddressController extends Controller
                 'string',
                 'max:50',
                 Rule::unique('addresses', 'label')->where('user_id', $userId),
+            ],
+            'town_id' => [
+                'required',
+                'integer',
+                'exists:towns,id',
+            ],
+            'quarter_id' => [
+                'required',
+                'integer',
+                Rule::exists('quarters', 'id')->where('town_id', $request->state('town_id')),
+            ],
+            'neighbourhood' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+            'additional_directions' => [
+                'nullable',
+                'string',
+                'max:500',
+            ],
+            'latitude' => [
+                'nullable',
+                'numeric',
+                'between:-90,90',
+            ],
+            'longitude' => [
+                'nullable',
+                'numeric',
+                'between:-180,180',
+            ],
+        ], [
+            'label.required' => __('Address label is required.'),
+            'label.max' => __('Address label must not exceed 50 characters.'),
+            'label.unique' => __('You already have an address with this label.'),
+            'town_id.required' => __('Town is required.'),
+            'town_id.exists' => __('The selected town is not available.'),
+            'quarter_id.required' => __('Quarter is required.'),
+            'quarter_id.exists' => __('The selected quarter does not belong to the chosen town.'),
+            'neighbourhood.max' => __('Neighbourhood must not exceed 255 characters.'),
+            'additional_directions.max' => __('Directions must not exceed 500 characters.'),
+        ]);
+    }
+
+    /**
+     * Validate Gale state for address update (F-035).
+     *
+     * Same rules as validateGaleState but with label uniqueness excluding the current address.
+     * BR-137: Label uniqueness is validated among the user's other addresses.
+     *
+     * @return array<string, mixed>
+     */
+    private function validateGaleUpdateState(Request $request, Address $address): array
+    {
+        $userId = Auth::id();
+
+        return $request->validateState([
+            'label' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('addresses', 'label')
+                    ->where('user_id', $userId)
+                    ->ignore($address->id),
             ],
             'town_id' => [
                 'required',
