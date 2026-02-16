@@ -401,5 +401,16 @@
     "Payment method updated": "Payment method updated",
     "Delete this payment method?": "Delete this payment method?",
     "Payment method deleted.": "Payment method deleted.",
-    "Payment method deleted": "Payment method deleted"
+    "Payment method deleted": "Payment method deleted",
+    "Language Preference": "Language Preference",
+    "Set your preferred language": "Set your preferred language",
+    "Choose the language for the entire application interface.": "Choose the language for the entire application interface.",
+    "Your current language is :language. Changes will apply on the next page load.": "Your current language is :language. Changes will apply on the next page load.",
+    "Select your preferred language": "Select your preferred language",
+    "Display the application in English": "Display the application in English",
+    "Display the application in French": "Display the application in French",
+    "This setting stays in sync with the language switcher in the navigation bar. Changing one will update the other.": "This setting stays in sync with the language switcher in the navigation bar. Changing one will update the other.",
+    "Save Language": "Save Language",
+    "Language preference updated. The change will apply on the next page.": "Language preference updated. The change will apply on the next page.",
+    "Language preference was updated": "Language preference was updated"
 }
