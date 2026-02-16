@@ -75,6 +75,7 @@
         }
     }"
     x-sync
+    @open-delete-modal.window="confirmDelete($event.detail.id, $event.detail.name, $event.detail.permCount, $event.detail.userCount)"
 >
     {{-- Breadcrumb --}}
     <x-admin.breadcrumb :items="[
@@ -223,7 +224,7 @@
                                 <th class="text-right text-xs font-semibold uppercase tracking-wider text-on-surface/60 px-4 py-3">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-outline dark:divide-outline" x-data x-navigate>
+                        <tbody class="divide-y divide-outline dark:divide-outline" x-navigate>
                             @foreach($roles as $role)
                                 <tr class="hover:bg-surface dark:hover:bg-surface transition-colors group">
                                     {{-- Role Name --}}
@@ -312,7 +313,7 @@
                                                         {{-- BR-125: Opens confirmation modal --}}
                                                         <button
                                                             type="button"
-                                                            @click.stop="$root.confirmDelete({{ $role->id }}, '{{ addslashes($role->name_en ?? $role->name) }}', {{ $role->permissions_count }}, {{ $role->users_count }})"
+                                                            @click.stop="$dispatch('open-delete-modal', { id: {{ $role->id }}, name: '{{ addslashes($role->name_en ?? $role->name) }}', permCount: {{ $role->permissions_count }}, userCount: {{ $role->users_count }} })"
                                                             x-navigate-skip
                                                             class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-danger/30 text-danger hover:bg-danger-subtle transition-colors"
                                                             title="{{ __('Delete') }}"
@@ -342,7 +343,7 @@
             </div>
 
             {{-- Mobile Card View --}}
-            <div class="md:hidden space-y-3" x-data x-navigate>
+            <div class="md:hidden space-y-3" x-navigate>
                 @foreach($roles as $role)
                     <div class="bg-surface-alt dark:bg-surface-alt rounded-lg border border-outline dark:border-outline p-4 hover:border-primary/30 transition-colors">
                         <a href="{{ url('/vault-entry/roles/' . $role->id . '/edit') }}" class="block">
@@ -402,7 +403,7 @@
                                     @else
                                         <button
                                             type="button"
-                                            @click.stop.prevent="$root.confirmDelete({{ $role->id }}, '{{ addslashes($role->name_en ?? $role->name) }}', {{ $role->permissions_count }}, {{ $role->users_count }})"
+                                            @click.stop.prevent="$dispatch('open-delete-modal', { id: {{ $role->id }}, name: '{{ addslashes($role->name_en ?? $role->name) }}', permCount: {{ $role->permissions_count }}, userCount: {{ $role->users_count }} })"
                                             x-navigate-skip
                                             class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-danger/30 text-danger hover:bg-danger-subtle transition-colors"
                                         >
