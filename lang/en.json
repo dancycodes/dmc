@@ -664,5 +664,20 @@
     "Run the permission seeder to create system roles.": "Run the permission seeder to create system roles.",
     "System roles cannot be deleted": "System roles cannot be deleted",
     "permissions": "permissions",
-    "users": "users"
+    "users": "users",
+    "Edit Role": "Edit Role",
+    "System role names cannot be changed.": "System role names cannot be changed.",
+    "Update the role name in both English and French. Only letters, numbers, hyphens, and spaces are allowed.": "Update the role name in both English and French. Only letters, numbers, hyphens, and spaces are allowed.",
+    "Machine name:": "Machine name:",
+    "Describe what this role is used for.": "Describe what this role is used for.",
+    "Currently assigned permissions for this role.": "Currently assigned permissions for this role.",
+    "Manage Permissions": "Manage Permissions",
+    "Permission management will be available in a future update.": "Permission management will be available in a future update.",
+    "No permissions assigned to this role yet.": "No permissions assigned to this role yet.",
+    "Guard & Type": "Guard & Type",
+    "This role uses the \":guard\" guard and is a :type role.": "This role uses the \":guard\" guard and is a :type role.",
+    "system": "system",
+    "custom": "custom",
+    "System role names cannot be changed, but you can update the description.": "System role names cannot be changed, but you can update the description.",
+    "Role \":name\" updated successfully.": "Role \":name\" updated successfully."
 }

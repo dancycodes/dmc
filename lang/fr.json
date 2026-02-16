@@ -664,5 +664,20 @@
     "Run the permission seeder to create system roles.": "Ex\u00e9cutez le seeder de permissions pour cr\u00e9er les r\u00f4les syst\u00e8me.",
     "System roles cannot be deleted": "Les r\u00f4les syst\u00e8me ne peuvent pas \u00eatre supprim\u00e9s",
     "permissions": "permissions",
-    "users": "utilisateurs"
+    "users": "utilisateurs",
+    "Edit Role": "Modifier le r\u00f4le",
+    "System role names cannot be changed.": "Les noms des r\u00f4les syst\u00e8me ne peuvent pas \u00eatre modifi\u00e9s.",
+    "Update the role name in both English and French. Only letters, numbers, hyphens, and spaces are allowed.": "Mettez \u00e0 jour le nom du r\u00f4le en anglais et en fran\u00e7ais. Seuls les lettres, chiffres, tirets et espaces sont autoris\u00e9s.",
+    "Machine name:": "Nom machine :",
+    "Describe what this role is used for.": "D\u00e9crivez \u00e0 quoi sert ce r\u00f4le.",
+    "Currently assigned permissions for this role.": "Permissions actuellement attribu\u00e9es \u00e0 ce r\u00f4le.",
+    "Manage Permissions": "G\u00e9rer les permissions",
+    "Permission management will be available in a future update.": "La gestion des permissions sera disponible dans une future mise \u00e0 jour.",
+    "No permissions assigned to this role yet.": "Aucune permission attribu\u00e9e \u00e0 ce r\u00f4le pour le moment.",
+    "Guard & Type": "Guard et type",
+    "This role uses the \":guard\" guard and is a :type role.": "Ce r\u00f4le utilise le guard \":guard\" et est un r\u00f4le :type.",
+    "system": "syst\u00e8me",
+    "custom": "personnalis\u00e9",
+    "System role names cannot be changed, but you can update the description.": "Les noms des r\u00f4les syst\u00e8me ne peuvent pas \u00eatre modifi\u00e9s, mais vous pouvez mettre \u00e0 jour la description.",
+    "Role \":name\" updated successfully.": "R\u00f4le \":name\" mis \u00e0 jour avec succ\u00e8s."
 }

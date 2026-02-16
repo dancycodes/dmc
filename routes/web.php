@@ -244,6 +244,8 @@ Route::middleware('main.domain')->group(function () {
         Route::get('/roles', [RoleController::class, 'index'])->name('admin.roles.index');
         Route::get('/roles/create', [RoleController::class, 'create'])->name('admin.roles.create');
         Route::post('/roles', [RoleController::class, 'store'])->name('admin.roles.store');
+        Route::get('/roles/{role}/edit', [RoleController::class, 'edit'])->name('admin.roles.edit');
+        Route::post('/roles/{role}', [RoleController::class, 'update'])->name('admin.roles.update');
     });
 });
 
