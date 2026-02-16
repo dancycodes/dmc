@@ -264,5 +264,25 @@
     "Contact Support": "Contacter le support",
     "User forced logout due to deactivated account": "D\u00e9connexion forc\u00e9e de l'utilisateur en raison d'un compte d\u00e9sactiv\u00e9",
     "User deactivated by admin": "Utilisateur d\u00e9sactiv\u00e9 par l'administrateur",
-    "User reactivated by admin": "Utilisateur r\u00e9activ\u00e9 par l'administrateur"
+    "User reactivated by admin": "Utilisateur r\u00e9activ\u00e9 par l'administrateur",
+
+    "Member since :date": "Membre depuis :date",
+    "Member Since": "Membre depuis",
+    "Verified": "V\u00e9rifi\u00e9",
+    "Unverified": "Non v\u00e9rifi\u00e9",
+    "Verify now": "V\u00e9rifier maintenant",
+    "Not set": "Non d\u00e9fini",
+    "Edit Profile": "Modifier le profil",
+    "Change Photo": "Changer la photo",
+    "Delivery Addresses": "Adresses de livraison",
+    "Payment Methods": "Moyens de paiement",
+    "Notification Preferences": "Pr\u00e9f\u00e9rences de notification",
+    "Language Preference": "Pr\u00e9f\u00e9rence de langue",
+    "Account Settings": "Param\u00e8tres du compte",
+    "Update your name, phone, and more": "Mettez \u00e0 jour votre nom, t\u00e9l\u00e9phone et plus",
+    "Upload or update your profile photo": "T\u00e9l\u00e9chargez ou mettez \u00e0 jour votre photo de profil",
+    "Manage your delivery locations": "G\u00e9rez vos adresses de livraison",
+    "Manage your payment options": "G\u00e9rez vos options de paiement",
+    "Choose how you receive alerts": "Choisissez comment recevoir vos alertes",
+    "Set your preferred language": "D\u00e9finissez votre langue pr\u00e9f\u00e9r\u00e9e"
 }
