@@ -246,6 +246,7 @@ Route::middleware('main.domain')->group(function () {
         Route::post('/roles', [RoleController::class, 'store'])->name('admin.roles.store');
         Route::get('/roles/{role}/edit', [RoleController::class, 'edit'])->name('admin.roles.edit');
         Route::post('/roles/{role}', [RoleController::class, 'update'])->name('admin.roles.update');
+        Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('admin.roles.destroy');
     });
 });
 

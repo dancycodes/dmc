@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreRoleRequest;
 use App\Http\Requests\Admin\UpdateRoleRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
@@ -496,5 +497,112 @@ class RoleController extends Controller
         ksort($grouped);
 
         return $grouped;
+    }
+
+    /**
+     * Delete a custom role.
+     *
+     * F-055: Delete Role
+     * BR-122: System roles cannot be deleted
+     * BR-123: Custom roles with assigned users cannot be deleted
+     * BR-124: Deletion is permanent — role and permission assignments removed
+     * BR-125: Deletion requires explicit confirmation (role name typed)
+     * BR-126: Deletion is logged in the activity log
+     * BR-127: After deletion, redirect to role list
+     */
+    public function destroy(Request $request, Role $role): mixed
+    {
+        if (! $request->user()?->can('can-manage-roles')) {
+            abort(403);
+        }
+
+        // BR-122: System roles cannot be deleted
+        if ($role->is_system) {
+            if ($request->isGale()) {
+                return gale()->state('deleteError', __('System roles cannot be deleted.'));
+            }
+            abort(403, __('System roles cannot be deleted.'));
+        }
+
+        // BR-123: Roles with assigned users cannot be deleted
+        $userCount = $role->users()->count();
+        if ($userCount > 0) {
+            $message = __('Cannot delete this role. :count users are currently assigned to it. Reassign them first.', ['count' => $userCount]);
+            if ($request->isGale()) {
+                return gale()->state('deleteError', $message);
+            }
+            session()->flash('toast', [
+                'type' => 'error',
+                'message' => $message,
+            ]);
+
+            return redirect('/vault-entry/roles');
+        }
+
+        // BR-125: Validate confirmation name matches role name
+        if ($request->isGale()) {
+            $validated = $request->validateState([
+                'confirmRoleName' => [
+                    'required',
+                    'string',
+                    function (string $attribute, mixed $value, \Closure $fail) use ($role) {
+                        if (trim($value) !== ($role->name_en ?? $role->name)) {
+                            $fail(__('The role name does not match. Please type the exact role name to confirm deletion.'));
+                        }
+                    },
+                ],
+            ]);
+        } else {
+            $request->validate([
+                'confirmRoleName' => [
+                    'required',
+                    'string',
+                    function (string $attribute, mixed $value, \Closure $fail) use ($role) {
+                        if (trim($value) !== ($role->name_en ?? $role->name)) {
+                            $fail(__('The role name does not match. Please type the exact role name to confirm deletion.'));
+                        }
+                    },
+                ],
+            ]);
+        }
+
+        // Capture role info before deletion for logging
+        $roleData = [
+            'name' => $role->name,
+            'name_en' => $role->name_en,
+            'name_fr' => $role->name_fr,
+            'description' => $role->description,
+            'guard_name' => $role->guard_name,
+            'permissions_count' => $role->permissions()->count(),
+            'ip' => $request->ip(),
+        ];
+
+        $roleNameEn = $role->name_en ?? $role->name;
+
+        // BR-124: Permanent deletion within a transaction
+        DB::transaction(function () use ($role, $roleData, $request) {
+            // BR-126: Activity logging before deletion
+            activity('roles')
+                ->performedOn($role)
+                ->causedBy($request->user())
+                ->withProperties($roleData)
+                ->log('deleted');
+
+            // Remove all permission assignments and delete the role
+            $role->syncPermissions([]);
+            $role->delete();
+        });
+
+        // BR-127: Redirect to role list with success toast
+        session()->flash('toast', [
+            'type' => 'success',
+            'message' => __('Role ":name" has been deleted.', ['name' => $roleNameEn]),
+        ]);
+
+        if ($request->isGale()) {
+            return gale()->redirect(url('/vault-entry/roles'))->back('/vault-entry/roles');
+        }
+
+        return redirect('/vault-entry/roles');
     }
 }
