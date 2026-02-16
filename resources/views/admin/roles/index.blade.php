@@ -55,11 +55,8 @@
             this.deleteError = '';
             this.messages = {};
         },
-        get confirmMatches() {
-            return this.confirmRoleName.trim() === this.deleteRoleName;
-        },
         async executeDelete() {
-            if (this.deleting || !this.confirmMatches) return;
+            if (this.deleting || this.confirmRoleName.trim() !== this.deleteRoleName) return;
             this.deleting = true;
             this.deleteError = '';
             try {
@@ -75,7 +72,7 @@
         }
     }"
     x-sync
-    @open-delete-modal.window="confirmDelete($event.detail.id, $event.detail.name, $event.detail.permCount, $event.detail.userCount)"
+    x-on:open-delete-modal.window="confirmDelete($event.detail.id, $event.detail.name, $event.detail.permCount, $event.detail.userCount)"
 >
     {{-- Breadcrumb --}}
     <x-admin.breadcrumb :items="[
@@ -516,7 +513,7 @@
                         type="text"
                         x-model="confirmRoleName"
                         x-name="confirmRoleName"
-                        @keydown.enter="confirmMatches && executeDelete()"
+                        @keydown.enter="confirmRoleName.trim() === deleteRoleName && executeDelete()"
                         placeholder=""
                         autocomplete="off"
                         class="w-full h-10 px-3 text-sm rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface-strong dark:text-on-surface-strong
@@ -542,8 +539,8 @@
                     <button
                         type="button"
                         @click="executeDelete()"
-                        :disabled="deleting || !confirmMatches"
-                        :class="(!confirmMatches || deleting) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-danger/90 active:scale-[0.98]'"
+                        :disabled="deleting || confirmRoleName.trim() !== deleteRoleName"
+                        :class="(confirmRoleName.trim() !== deleteRoleName || deleting) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-danger/90 active:scale-[0.98]'"
                         class="flex-1 h-10 px-4 rounded-lg text-sm font-semibold bg-danger text-on-danger transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-danger focus:ring-offset-2"
                     >
                         <span x-show="!deleting">{{ __('Delete Role') }}</span>
