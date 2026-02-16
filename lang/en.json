@@ -342,5 +342,12 @@
     "Default address updated": "Default address updated",
     "This address is already your default.": "This address is already your default.",
     "Back to Profile": "Back to Profile",
-    ":count of :max addresses": ":count of :max addresses"
+    ":count of :max addresses": ":count of :max addresses",
+    "Edit Delivery Address": "Edit Delivery Address",
+    "Update the details of your saved address.": "Update the details of your saved address.",
+    "Back to Addresses": "Back to Addresses",
+    "Update Address": "Update Address",
+    "Updating...": "Updating...",
+    "Address updated successfully.": "Address updated successfully.",
+    "Delivery address updated": "Delivery address updated"
 }

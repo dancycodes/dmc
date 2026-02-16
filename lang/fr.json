@@ -342,5 +342,12 @@
     "Default address updated": "Adresse par d\u00e9faut mise \u00e0 jour",
     "This address is already your default.": "Cette adresse est d\u00e9j\u00e0 votre adresse par d\u00e9faut.",
     "Back to Profile": "Retour au profil",
-    ":count of :max addresses": ":count sur :max adresses"
+    ":count of :max addresses": ":count sur :max adresses",
+    "Edit Delivery Address": "Modifier l'adresse de livraison",
+    "Update the details of your saved address.": "Mettez \u00e0 jour les d\u00e9tails de votre adresse enregistr\u00e9e.",
+    "Back to Addresses": "Retour aux adresses",
+    "Update Address": "Mettre \u00e0 jour l'adresse",
+    "Updating...": "Mise \u00e0 jour...",
+    "Address updated successfully.": "Adresse mise \u00e0 jour avec succ\u00e8s.",
+    "Delivery address updated": "Adresse de livraison mise \u00e0 jour"
 }

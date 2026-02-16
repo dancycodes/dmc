@@ -140,6 +140,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/addresses', [AddressController::class, 'store'])->name('addresses.store');
     Route::post('/profile/addresses/quarters', [AddressController::class, 'quarters'])->name('addresses.quarters');
     Route::post('/profile/addresses/{address}/set-default', [AddressController::class, 'setDefault'])->name('addresses.set-default');
+    Route::get('/profile/addresses/{address}/edit', [AddressController::class, 'edit'])->name('addresses.edit');
+    Route::post('/profile/addresses/{address}', [AddressController::class, 'update'])->name('addresses.update');
 });
 
 /*
