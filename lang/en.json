@@ -657,5 +657,12 @@
     "Guard": "Guard",
     "System": "System",
     "Custom": "Custom",
-    "No roles found.": "No roles found."
+    "No roles found.": "No roles found.",
+    "Manage platform roles and their permissions.": "Manage platform roles and their permissions.",
+    "No custom roles created yet": "No custom roles created yet",
+    "Create a custom role to define specialized access for your team.": "Create a custom role to define specialized access for your team.",
+    "Run the permission seeder to create system roles.": "Run the permission seeder to create system roles.",
+    "System roles cannot be deleted": "System roles cannot be deleted",
+    "permissions": "permissions",
+    "users": "users"
 }
