@@ -29,7 +29,7 @@
         <div class="px-4 sm:px-8 pb-6 sm:pb-8">
             {{-- Avatar (overlapping banner) --}}
             <div class="-mt-12 sm:-mt-14 mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-                <div class="flex items-end gap-4">
+                <div class="flex flex-col sm:flex-row items-center sm:items-end gap-2 sm:gap-4">
                     <a href="{{ url('/profile/photo') }}" class="block relative group shrink-0" title="{{ __('Change Photo') }}">
                         @if($user->profile_photo_path)
                             <img
@@ -53,8 +53,8 @@
                             </svg>
                         </div>
                     </a>
-                    <div class="pb-1">
-                        <h1 class="text-xl sm:text-2xl font-bold text-on-surface-strong font-display truncate max-w-xs sm:max-w-md">
+                    <div class="pb-1 text-center sm:text-left">
+                        <h1 class="text-xl sm:text-2xl font-bold text-on-surface-strong font-display truncate max-w-[280px] sm:max-w-md">
                             {{ $user->name }}
                         </h1>
                         <p class="text-sm text-on-surface mt-0.5">
