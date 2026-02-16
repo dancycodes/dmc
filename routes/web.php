@@ -135,9 +135,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/edit', [ProfileController::class, 'update'])->name('profile.update');
 
     // Delivery Addresses (F-033, F-034, F-035, F-036)
+    Route::get('/profile/addresses', [AddressController::class, 'index'])->name('addresses.index');
     Route::get('/profile/addresses/create', [AddressController::class, 'create'])->name('addresses.create');
     Route::post('/profile/addresses', [AddressController::class, 'store'])->name('addresses.store');
     Route::post('/profile/addresses/quarters', [AddressController::class, 'quarters'])->name('addresses.quarters');
+    Route::post('/profile/addresses/{address}/set-default', [AddressController::class, 'setDefault'])->name('addresses.set-default');
 });
 
 /*

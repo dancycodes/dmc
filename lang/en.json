@@ -327,5 +327,20 @@
     "Quarter is required.": "Quarter is required.",
     "The selected quarter does not belong to the chosen town.": "The selected quarter does not belong to the chosen town.",
     "Neighbourhood must not exceed 255 characters.": "Neighbourhood must not exceed 255 characters.",
-    "Directions must not exceed 500 characters.": "Directions must not exceed 500 characters."
+    "Directions must not exceed 500 characters.": "Directions must not exceed 500 characters.",
+    "Delivery Addresses": "Delivery Addresses",
+    "Manage your saved delivery addresses.": "Manage your saved delivery addresses.",
+    "Default": "Default",
+    "Set as Default": "Set as Default",
+    "Edit": "Edit",
+    "Delete": "Delete",
+    "Add Address": "Add Address",
+    "Add Your First Address": "Add Your First Address",
+    "You have no saved addresses.": "You have no saved addresses.",
+    "Save addresses for faster checkout when ordering meals.": "Save addresses for faster checkout when ordering meals.",
+    "Default address updated.": "Default address updated.",
+    "Default address updated": "Default address updated",
+    "This address is already your default.": "This address is already your default.",
+    "Back to Profile": "Back to Profile",
+    ":count of :max addresses": ":count of :max addresses"
 }
