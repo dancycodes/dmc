@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\HasTranslatable;
 use App\Traits\LogsActivityTrait;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -10,12 +11,19 @@ use Illuminate\Database\Eloquent\Model;
 class Tenant extends Model
 {
     /** @use HasFactory<\Database\Factories\TenantFactory> */
-    use HasFactory, LogsActivityTrait;
+    use HasFactory, HasTranslatable, LogsActivityTrait;
 
     /**
      * The table associated with the model.
      */
     protected $table = 'tenants';
+
+    /**
+     * Translatable attributes resolved by HasTranslatable trait.
+     *
+     * @var array<string>
+     */
+    protected array $translatable = ['name', 'description'];
 
     /**
      * The attributes that are mass assignable.
@@ -24,8 +32,11 @@ class Tenant extends Model
      */
     protected $fillable = [
         'slug',
-        'name',
+        'name_en',
+        'name_fr',
         'custom_domain',
+        'description_en',
+        'description_fr',
         'is_active',
         'settings',
     ];

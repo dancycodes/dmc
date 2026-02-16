@@ -11,8 +11,11 @@ test('tenant has correct fillable attributes', function () {
 
     expect($tenant->getFillable())->toBe([
         'slug',
-        'name',
+        'name_en',
+        'name_fr',
         'custom_domain',
+        'description_en',
+        'description_fr',
         'is_active',
         'settings',
     ]);
@@ -27,7 +30,8 @@ test('tenant casts is_active to boolean', function () {
 test('tenant casts settings to array', function () {
     $tenant = Tenant::factory()->create([
         'slug' => 'settings-test',
-        'name' => 'Settings Test',
+        'name_en' => 'Settings Test',
+        'name_fr' => 'Test Paramètres',
         'settings' => ['theme' => 'ocean'],
     ]);
 
