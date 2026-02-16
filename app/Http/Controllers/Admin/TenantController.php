@@ -41,11 +41,16 @@ class TenantController extends Controller
      * Store a newly created tenant.
      *
      * F-045: Tenant Creation Form
-     * BR-056 through BR-063: Validation via StoreTenantRequest or validateState
+     * BR-056 through BR-063: Validation via validateState (Gale) or StoreTenantRequest (HTTP)
      * BR-062: Tenant creation logged in activity log (via LogsActivityTrait)
      */
-    public function store(StoreTenantRequest $request): mixed
+    public function store(Request $request): mixed
     {
+        // Authorization check (matches StoreTenantRequest authorize())
+        if (! $request->user()?->can('can-create-tenant')) {
+            abort(403);
+        }
+
         // Dual Gale/HTTP validation pattern
         if ($request->isGale()) {
             $validated = $request->validateState($this->validationRules());
@@ -53,8 +58,10 @@ class TenantController extends Controller
             return $this->createTenant($validated, $request);
         }
 
-        // Traditional HTTP: StoreTenantRequest already validated
-        return $this->createTenant($request->validated(), $request);
+        // Traditional HTTP: use StoreTenantRequest validation via manual resolution
+        $formRequest = app(StoreTenantRequest::class);
+
+        return $this->createTenant($formRequest->validated(), $request);
     }
 
     /**
