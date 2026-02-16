@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\StoreTenantRequest;
 use App\Models\Tenant;
 use App\Services\TenantService;
 use Illuminate\Http\Request;
+use Spatie\Activitylog\Models\Activity;
 
 class TenantController extends Controller
 {
@@ -72,6 +73,61 @@ class TenantController extends Controller
         }
 
         return gale()->view('admin.tenants.index', $data, web: true);
+    }
+
+    /**
+     * Show the tenant detail page.
+     *
+     * F-047: Tenant Detail View
+     * BR-070: Total revenue = sum of completed orders (stubbed until orders exist)
+     * BR-071: Active meals count = meals with status "available" (stubbed until meals exist)
+     * BR-072: Activity history scoped to this tenant
+     * BR-073: Commission rate from tenant settings, default 10%
+     * BR-074: Visit Site link opens tenant subdomain in new tab
+     */
+    public function show(Request $request, Tenant $tenant): mixed
+    {
+        $mainDomain = TenantService::mainDomain();
+
+        // BR-073: Commission rate from settings, default 10%
+        $commissionRate = $tenant->getSetting('commission_rate', 10);
+
+        // BR-070: Total revenue and order count (stubbed — orders table not yet created)
+        $totalOrders = 0;
+        $totalRevenue = 0;
+
+        // BR-071: Active meals count (stubbed — meals table not yet created)
+        $activeMeals = 0;
+
+        // Cook assignment (stubbed — F-049 not yet implemented, no cook_id on tenants)
+        $cook = null;
+
+        // BR-072: Activity history scoped to this tenant, paginated
+        $activityPage = $request->input('activity_page', 1);
+        $activities = Activity::query()
+            ->where('subject_type', Tenant::class)
+            ->where('subject_id', $tenant->id)
+            ->with('causer')
+            ->orderByDesc('created_at')
+            ->paginate(10, ['*'], 'activity_page', $activityPage);
+
+        $data = [
+            'tenant' => $tenant,
+            'mainDomain' => $mainDomain,
+            'commissionRate' => $commissionRate,
+            'totalOrders' => $totalOrders,
+            'totalRevenue' => $totalRevenue,
+            'activeMeals' => $activeMeals,
+            'cook' => $cook,
+            'activities' => $activities,
+        ];
+
+        // Handle Gale navigate for activity history pagination
+        if ($request->isGaleNavigate('activity-history')) {
+            return gale()->fragment('admin.tenants.show', 'activity-history-content', $data);
+        }
+
+        return gale()->view('admin.tenants.show', $data, web: true);
     }
 
     /**

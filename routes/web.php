@@ -222,6 +222,7 @@ Route::middleware('main.domain')->group(function () {
         Route::get('/tenants', [TenantController::class, 'index'])->name('admin.tenants.index');
         Route::get('/tenants/create', [TenantController::class, 'create'])->name('admin.tenants.create');
         Route::post('/tenants', [TenantController::class, 'store'])->name('admin.tenants.store');
+        Route::get('/tenants/{tenant}', [TenantController::class, 'show'])->name('admin.tenants.show');
     });
 });
 
