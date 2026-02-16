@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\Admin\CookAssignmentController;
+use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\TenantController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\CrossDomainAuthController;
@@ -238,6 +239,11 @@ Route::middleware('main.domain')->group(function () {
         Route::get('/users', [UserController::class, 'index'])->name('admin.users.index');
         Route::get('/users/{user}', [UserController::class, 'show'])->name('admin.users.show');
         Route::post('/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('admin.users.toggle-status');
+
+        // Role management (F-052, F-053, F-054, F-055)
+        Route::get('/roles', [RoleController::class, 'index'])->name('admin.roles.index');
+        Route::get('/roles/create', [RoleController::class, 'create'])->name('admin.roles.create');
+        Route::post('/roles', [RoleController::class, 'store'])->name('admin.roles.store');
     });
 });
 
