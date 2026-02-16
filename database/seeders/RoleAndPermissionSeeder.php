@@ -88,10 +88,26 @@ class RoleAndPermissionSeeder extends Seeder
     ];
 
     /**
+     * System role metadata: translatable names for the five built-in roles.
+     *
+     * F-052: Provides human-readable display names for system roles.
+     *
+     * @var array<string, array{name_en: string, name_fr: string}>
+     */
+    private const SYSTEM_ROLE_METADATA = [
+        'super-admin' => ['name_en' => 'Super Admin', 'name_fr' => 'Super Administrateur'],
+        'admin' => ['name_en' => 'Admin', 'name_fr' => 'Administrateur'],
+        'cook' => ['name_en' => 'Cook', 'name_fr' => 'Cuisinier'],
+        'manager' => ['name_en' => 'Manager', 'name_fr' => 'Gestionnaire'],
+        'client' => ['name_en' => 'Client', 'name_fr' => 'Client'],
+    ];
+
+    /**
      * Seed the roles and permissions.
      *
      * Uses firstOrCreate for idempotency — re-running does not create duplicates.
      * Uses syncPermissions to ensure role-permission assignments are always correct.
+     * F-052: Also sets translatable names and is_system flag on system roles.
      */
     public function run(): void
     {
@@ -120,12 +136,14 @@ class RoleAndPermissionSeeder extends Seeder
         $superAdmin = Role::firstOrCreate(
             ['name' => 'super-admin', 'guard_name' => self::GUARD],
         );
+        $this->applySystemMetadata($superAdmin, 'super-admin');
         $superAdmin->syncPermissions($allPermissionNames);
 
         // Admin: platform management + client permissions
         $admin = Role::firstOrCreate(
             ['name' => 'admin', 'guard_name' => self::GUARD],
         );
+        $this->applySystemMetadata($admin, 'admin');
         $admin->syncPermissions(array_merge(
             self::ADMIN_PERMISSIONS,
             self::CLIENT_PERMISSIONS,
@@ -135,21 +153,42 @@ class RoleAndPermissionSeeder extends Seeder
         $cook = Role::firstOrCreate(
             ['name' => 'cook', 'guard_name' => self::GUARD],
         );
+        $this->applySystemMetadata($cook, 'cook');
         $cook->syncPermissions(array_merge(
             self::COOK_PERMISSIONS,
             self::CLIENT_PERMISSIONS,
         ));
 
         // Manager: starts with NO permissions (configured per tenant by cook)
-        Role::firstOrCreate(
+        $manager = Role::firstOrCreate(
             ['name' => 'manager', 'guard_name' => self::GUARD],
         );
+        $this->applySystemMetadata($manager, 'manager');
 
         // Client: consumer permissions only
         $client = Role::firstOrCreate(
             ['name' => 'client', 'guard_name' => self::GUARD],
         );
+        $this->applySystemMetadata($client, 'client');
         $client->syncPermissions(self::CLIENT_PERMISSIONS);
+    }
+
+    /**
+     * Apply system role metadata (translatable names and is_system flag).
+     *
+     * F-052: Ensures system roles always have correct display names.
+     */
+    private function applySystemMetadata(Role $role, string $roleName): void
+    {
+        $metadata = self::SYSTEM_ROLE_METADATA[$roleName] ?? null;
+
+        if ($metadata) {
+            $role->forceFill([
+                'name_en' => $metadata['name_en'],
+                'name_fr' => $metadata['name_fr'],
+                'is_system' => true,
+            ])->save();
+        }
     }
 
     /**
