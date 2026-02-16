@@ -101,8 +101,9 @@ class TenantController extends Controller
         // BR-071: Active meals count (stubbed — meals table not yet created)
         $activeMeals = 0;
 
-        // Cook assignment (stubbed — F-049 not yet implemented, no cook_id on tenants)
-        $cook = null;
+        // F-049: Load the assigned cook
+        $tenant->load('cook');
+        $cook = $tenant->cook;
 
         // BR-072: Activity history scoped to this tenant, paginated
         $activityPage = $request->input('activity_page', 1);

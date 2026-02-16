@@ -254,15 +254,26 @@
                         <p class="text-sm text-on-surface mt-0.5">+237 {{ $cook->phone }}</p>
                     @endif
                 </div>
-                {{-- View Profile link (F-051) --}}
-                <a
-                    href="{{ url('/vault-entry/users/' . $cook->id) }}"
-                    class="h-9 px-4 text-sm rounded-lg font-semibold border border-outline text-on-surface hover:bg-surface transition-all duration-200 inline-flex items-center gap-2 shrink-0
-                           focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                >
-                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
-                    {{ __('View Profile') }}
-                </a>
+                <div class="flex items-center gap-2 shrink-0">
+                    {{-- Reassign Cook (F-049) --}}
+                    <a
+                        href="{{ url('/vault-entry/tenants/' . $tenant->slug . '/assign-cook') }}"
+                        class="h-9 px-4 text-sm rounded-lg font-semibold border border-outline text-on-surface hover:bg-surface transition-all duration-200 inline-flex items-center gap-2
+                               focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                    >
+                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"></path><path d="M8 3H3v5"></path><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"></path><path d="m15 9 6-6"></path></svg>
+                        {{ __('Reassign Cook') }}
+                    </a>
+                    {{-- View Profile link (F-051) --}}
+                    <a
+                        href="{{ url('/vault-entry/users/' . $cook->id) }}"
+                        class="h-9 px-4 text-sm rounded-lg font-semibold border border-outline text-on-surface hover:bg-surface transition-all duration-200 inline-flex items-center gap-2
+                               focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                    >
+                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+                        {{ __('View Profile') }}
+                    </a>
+                </div>
             </div>
             @if(!$cook->is_active)
                 <div class="mt-3 p-3 bg-warning-subtle rounded-lg border border-warning/20">

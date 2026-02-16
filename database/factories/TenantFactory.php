@@ -77,6 +77,16 @@ class TenantFactory extends Factory
     }
 
     /**
+     * Assign a cook (user) to the tenant.
+     */
+    public function withCook(int $cookId): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'cook_id' => $cookId,
+        ]);
+    }
+
+    /**
      * Indicate the tenant is inactive.
      */
     public function inactive(): static
