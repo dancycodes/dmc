@@ -284,5 +284,17 @@
     "Manage your delivery locations": "G\u00e9rez vos adresses de livraison",
     "Manage your payment options": "G\u00e9rez vos options de paiement",
     "Choose how you receive alerts": "Choisissez comment recevoir vos alertes",
-    "Set your preferred language": "D\u00e9finissez votre langue pr\u00e9f\u00e9r\u00e9e"
+    "Set your preferred language": "D\u00e9finissez votre langue pr\u00e9f\u00e9r\u00e9e",
+
+    "Back to Profile": "Retour au profil",
+    "Update your personal information.": "Mettez \u00e0 jour vos informations personnelles.",
+    "Contact support to change your email.": "Contactez le support pour modifier votre e-mail.",
+    "Preferred Language": "Langue pr\u00e9f\u00e9r\u00e9e",
+    "Save Changes": "Enregistrer les modifications",
+    "Saving...": "Enregistrement...",
+    "Profile updated successfully.": "Profil mis \u00e0 jour avec succ\u00e8s.",
+    "Profile was updated": "Le profil a \u00e9t\u00e9 mis \u00e0 jour",
+    "Name must be at least 2 characters.": "Le nom doit contenir au moins 2 caract\u00e8res.",
+    "Please enter a valid Cameroon phone number (+237 followed by 9 digits).": "Veuillez entrer un num\u00e9ro de t\u00e9l\u00e9phone camerounais valide (+237 suivi de 9 chiffres).",
+    "Please select a preferred language.": "Veuillez s\u00e9lectionner une langue pr\u00e9f\u00e9r\u00e9e."
 }
