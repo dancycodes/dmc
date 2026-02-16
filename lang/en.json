@@ -349,5 +349,11 @@
     "Update Address": "Update Address",
     "Updating...": "Updating...",
     "Address updated successfully.": "Address updated successfully.",
-    "Delivery address updated": "Delivery address updated"
+    "Delivery address updated": "Delivery address updated",
+    "Delete this address?": "Delete this address?",
+    "This cannot be undone.": "This cannot be undone.",
+    "Deleting...": "Deleting...",
+    "Address deleted.": "Address deleted.",
+    "Delivery address deleted": "Delivery address deleted",
+    "This address is used by pending orders and cannot be deleted. You can edit it instead.": "This address is used by pending orders and cannot be deleted. You can edit it instead."
 }

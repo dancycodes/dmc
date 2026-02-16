@@ -1,10 +1,13 @@
 {{--
-    Delivery Address List (F-034)
+    Delivery Address List (F-034 + F-036)
     ----------------------------
     Displays all of the user's saved delivery addresses in a list.
     Each address shows its label, town, quarter, and neighbourhood.
     The default address is visually marked. Users can set any address
     as default and access edit/delete actions.
+
+    F-036: Delete with confirmation modal, default reassignment,
+    pending order protection, Gale-powered removal.
 
     BR-128: All addresses displayed, default first.
     BR-129: Default address visually distinguished (badge).
@@ -13,13 +16,47 @@
     BR-132: "Add Address" button only if < 5 addresses.
     BR-133: Each address has edit and delete links.
     BR-134: Localized town and quarter names.
+    BR-141: Confirmation dialog before deletion.
+    BR-142: Block deletion if only address with pending orders.
+    BR-143: Default reassignment after deletion.
+    BR-144: Users can only delete their own addresses.
+    BR-145: Hard delete (permanent).
 --}}
 @extends(tenant() ? 'layouts.tenant-public' : 'layouts.main-public')
 
 @section('title', __('Delivery Addresses'))
 
 @section('content')
-<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12"
+    x-data="{
+        deleteModal: false,
+        deleteAddressId: null,
+        deleteAddressLabel: '',
+        deleting: false,
+        confirmDelete(id, label) {
+            this.deleteAddressId = id;
+            this.deleteAddressLabel = label;
+            this.deleteModal = true;
+        },
+        cancelDelete() {
+            this.deleteModal = false;
+            this.deleteAddressId = null;
+            this.deleteAddressLabel = '';
+        },
+        async executeDelete() {
+            if (this.deleting) return;
+            this.deleting = true;
+            try {
+                await $action('/profile/addresses/' + this.deleteAddressId, {
+                    method: 'DELETE'
+                });
+            } finally {
+                this.deleting = false;
+                this.deleteModal = false;
+            }
+        }
+    }"
+>
     {{-- Back Link --}}
     <div class="mb-6" x-data x-navigate>
         <a href="{{ url('/profile') }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-on-surface hover:text-primary transition-colors">
@@ -174,11 +211,12 @@
                                     </svg>
                                 </a>
 
-                                {{-- BR-133: Delete link (F-036) --}}
-                                <a href="{{ url('/profile/addresses/' . $address->id . '/delete') }}"
-                                   x-navigate
-                                   class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-on-surface/60 hover:bg-danger-subtle hover:text-danger transition-all duration-200"
-                                   title="{{ __('Delete') }}"
+                                {{-- BR-133 / BR-141: Delete button — opens confirmation modal (F-036) --}}
+                                <button
+                                    type="button"
+                                    @click="confirmDelete({{ $address->id }}, '{{ addslashes($address->label) }}')"
+                                    class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-on-surface/60 hover:bg-danger-subtle hover:text-danger transition-all duration-200"
+                                    title="{{ __('Delete') }}"
                                 >
                                     {{-- Trash icon (Lucide, sm=16px) --}}
                                     <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -188,7 +226,7 @@
                                         <line x1="10" x2="10" y1="11" y2="17"></line>
                                         <line x1="14" x2="14" y1="11" y2="17"></line>
                                     </svg>
-                                </a>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -196,5 +234,84 @@
             </div>
         @endif
     </div>
+
+    {{-- Delete Confirmation Modal (F-036 / BR-141) --}}
+    <template x-teleport="body">
+        <div
+            x-show="deleteModal"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4"
+            @keydown.escape.window="cancelDelete()"
+            x-cloak
+        >
+            {{-- Backdrop --}}
+            <div class="absolute inset-0 bg-black/50 dark:bg-black/70" @click="cancelDelete()"></div>
+
+            {{-- Modal Content --}}
+            <div
+                x-show="deleteModal"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0 scale-95"
+                x-transition:enter-end="opacity-100 scale-100"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100 scale-100"
+                x-transition:leave-end="opacity-0 scale-95"
+                class="relative bg-surface-alt dark:bg-surface-alt rounded-xl shadow-lg border border-outline w-full max-w-sm p-6"
+                @click.stop
+            >
+                {{-- Warning Icon --}}
+                <div class="w-12 h-12 rounded-full bg-danger-subtle mx-auto flex items-center justify-center mb-4">
+                    {{-- AlertTriangle icon (Lucide, lg=24px) --}}
+                    <svg class="w-6 h-6 text-danger" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path>
+                        <path d="M12 9v4"></path>
+                        <path d="M12 17h.01"></path>
+                    </svg>
+                </div>
+
+                {{-- Title --}}
+                <h3 class="text-base font-semibold text-on-surface-strong text-center mb-2">
+                    {{ __('Delete this address?') }}
+                </h3>
+
+                {{-- Description --}}
+                <p class="text-sm text-on-surface text-center mb-1">
+                    {{ __('This cannot be undone.') }}
+                </p>
+                <p class="text-sm font-medium text-on-surface-strong text-center mb-6" x-text="deleteAddressLabel"></p>
+
+                {{-- Action Buttons --}}
+                <div class="flex gap-3">
+                    <button
+                        type="button"
+                        @click="cancelDelete()"
+                        class="flex-1 h-10 px-4 rounded-lg text-sm font-medium border border-outline text-on-surface hover:bg-surface dark:hover:bg-surface transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-outline focus:ring-offset-2"
+                    >
+                        {{ __('Cancel') }}
+                    </button>
+                    <button
+                        type="button"
+                        @click="executeDelete()"
+                        :disabled="deleting"
+                        class="flex-1 h-10 px-4 rounded-lg text-sm font-semibold bg-danger hover:bg-danger/90 text-on-danger transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-danger focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <span x-show="!deleting">{{ __('Delete') }}</span>
+                        <span x-show="deleting" x-cloak class="inline-flex items-center gap-2">
+                            <svg class="w-4 h-4 animate-spin-slow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                            {{ __('Deleting...') }}
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
 </div>
 @endsection

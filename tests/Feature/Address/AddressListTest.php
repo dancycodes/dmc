@@ -160,7 +160,8 @@ it('shows edit and delete links for each address (BR-133)', function () {
 
     $response->assertOk();
     $response->assertSee('/profile/addresses/'.$address->id.'/edit');
-    $response->assertSee('/profile/addresses/'.$address->id.'/delete');
+    // F-036: Delete button triggers confirmation modal via Alpine.js
+    $response->assertSee('confirmDelete('.$address->id);
 });
 
 it('does not show other users addresses', function () {

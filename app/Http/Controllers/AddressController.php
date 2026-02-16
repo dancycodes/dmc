@@ -313,6 +313,83 @@ class AddressController extends Controller
     }
 
     /**
+     * Delete a delivery address (F-036).
+     *
+     * BR-141: Confirmation handled client-side via Alpine modal.
+     * BR-142: Cannot delete if only address AND pending orders reference it.
+     * BR-143: If deleted address was default, first remaining becomes default.
+     * BR-144: Users can only delete their own addresses.
+     * BR-145: Hard delete (permanent).
+     * BR-146: Multiple addresses — any can be deleted regardless of pending orders.
+     */
+    public function destroy(Request $request, Address $address): mixed
+    {
+        $user = Auth::user();
+
+        // BR-144: Ensure address belongs to authenticated user
+        if ($address->user_id !== $user->id) {
+            abort(403);
+        }
+
+        $userAddressCount = $user->addresses()->count();
+
+        // BR-142: Block deletion if only address and pending orders reference it
+        if ($userAddressCount === 1 && $address->hasPendingOrders()) {
+            if ($request->isGale()) {
+                return gale()->state('deleteError', __('This address is used by pending orders and cannot be deleted. You can edit it instead.'));
+            }
+
+            return gale()->redirect('/profile/addresses')->back()
+                ->with('toast', [
+                    'type' => 'error',
+                    'message' => __('This address is used by pending orders and cannot be deleted. You can edit it instead.'),
+                ]);
+        }
+
+        $wasDefault = $address->is_default;
+        $addressLabel = $address->label;
+
+        // BR-145: Hard delete
+        $address->delete();
+
+        // BR-143: Reassign default if needed
+        if ($wasDefault) {
+            $newDefault = $user->addresses()
+                ->orderBy('label')
+                ->first();
+
+            if ($newDefault) {
+                $newDefault->update(['is_default' => true]);
+            }
+        }
+
+        // Log the deletion
+        activity('addresses')
+            ->causedBy($user)
+            ->event('deleted')
+            ->withProperties([
+                'label' => $addressLabel,
+                'was_default' => $wasDefault,
+                'ip' => $request->ip(),
+            ])
+            ->log(__('Delivery address deleted'));
+
+        if ($request->isGale()) {
+            return gale()->redirect('/profile/addresses')->back()
+                ->with('toast', [
+                    'type' => 'success',
+                    'message' => __('Address deleted.'),
+                ]);
+        }
+
+        return gale()->redirect('/profile/addresses')->back()
+            ->with('toast', [
+                'type' => 'success',
+                'message' => __('Address deleted.'),
+            ]);
+    }
+
+    /**
      * Get quarters for a given town (AJAX endpoint for dynamic dropdown).
      *
      * Returns quarters filtered by town_id for the quarter dropdown.
