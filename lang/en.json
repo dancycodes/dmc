@@ -398,5 +398,8 @@
     "To change provider, please delete this method and add a new one.": "To change provider, please delete this method and add a new one.",
     "This phone number does not match :provider.": "This phone number does not match :provider.",
     "Payment method updated.": "Payment method updated.",
-    "Payment method updated": "Payment method updated"
+    "Payment method updated": "Payment method updated",
+    "Delete this payment method?": "Delete this payment method?",
+    "Payment method deleted.": "Payment method deleted.",
+    "Payment method deleted": "Payment method deleted"
 }
