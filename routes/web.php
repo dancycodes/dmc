@@ -234,8 +234,10 @@ Route::middleware('main.domain')->group(function () {
         Route::post('/tenants/{tenant}/assign-cook/search', [CookAssignmentController::class, 'search'])->name('admin.tenants.assign-cook.search');
         Route::post('/tenants/{tenant}/assign-cook', [CookAssignmentController::class, 'assign'])->name('admin.tenants.assign-cook.store');
 
-        // User management (F-050)
+        // User management (F-050, F-051)
         Route::get('/users', [UserController::class, 'index'])->name('admin.users.index');
+        Route::get('/users/{user}', [UserController::class, 'show'])->name('admin.users.show');
+        Route::post('/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('admin.users.toggle-status');
     });
 });
 

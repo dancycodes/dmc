@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
@@ -114,5 +117,219 @@ class UserController extends Controller
         }
 
         return gale()->view('admin.users.index', $data, web: true);
+    }
+
+    /**
+     * Display comprehensive detail page for a single user.
+     *
+     * F-051: User Detail View & Status Toggle
+     * BR-097: Deactivating a user invalidates all their active sessions immediately
+     * BR-099: Admins cannot deactivate super-admin accounts (only other super-admins can)
+     * BR-100: Admins cannot deactivate their own account from the admin panel
+     * BR-101: Reactivation allows the user to log in again; no data is lost
+     * BR-102: Status changes are recorded in the activity log with the admin as causer
+     * BR-103: Wallet balance is displayed but cannot be modified from this page
+     */
+    public function show(Request $request, User $user): mixed
+    {
+        $user->load('roles');
+
+        $admin = $request->user();
+
+        // Determine if current admin can toggle this user's status
+        $canToggleStatus = $this->canToggleUserStatus($admin, $user);
+        $toggleDisabledReason = $this->getToggleDisabledReason($admin, $user);
+
+        // Get user roles with associated tenants
+        $userRolesWithTenants = $this->getUserRolesWithTenants($user);
+
+        // Order summary (stubbed — no orders table yet)
+        $clientOrderCount = 0;
+        $clientTotalSpent = 0;
+        $isCook = $user->hasRole('cook');
+        $cookOrderCount = 0;
+        $cookRevenue = 0;
+
+        // Wallet balance (stubbed — no wallet table yet)
+        $walletBalance = null;
+
+        // Activity log: entries where this user is causer or subject
+        $activityPage = $request->input('activity_page', 1);
+        $activities = Activity::query()
+            ->where(function ($q) use ($user) {
+                $q->where(function ($q2) use ($user) {
+                    $q2->where('causer_type', User::class)
+                        ->where('causer_id', $user->id);
+                })->orWhere(function ($q2) use ($user) {
+                    $q2->where('subject_type', User::class)
+                        ->where('subject_id', $user->id);
+                });
+            })
+            ->with('causer')
+            ->orderByDesc('created_at')
+            ->paginate(10, ['*'], 'activity_page', $activityPage)
+            ->withQueryString();
+
+        $data = [
+            'user' => $user,
+            'canToggleStatus' => $canToggleStatus,
+            'toggleDisabledReason' => $toggleDisabledReason,
+            'userRolesWithTenants' => $userRolesWithTenants,
+            'clientOrderCount' => $clientOrderCount,
+            'clientTotalSpent' => $clientTotalSpent,
+            'isCook' => $isCook,
+            'cookOrderCount' => $cookOrderCount,
+            'cookRevenue' => $cookRevenue,
+            'walletBalance' => $walletBalance,
+            'activities' => $activities,
+        ];
+
+        // Handle Gale navigate requests for activity log pagination
+        if ($request->isGaleNavigate('activity-log')) {
+            return gale()->fragment('admin.users.show', 'user-activity-log', $data);
+        }
+
+        return gale()->view('admin.users.show', $data, web: true);
+    }
+
+    /**
+     * Toggle the user's active/inactive status.
+     *
+     * F-051: User Detail View & Status Toggle
+     * BR-097: Deactivating a user invalidates all their active sessions immediately
+     * BR-098: Deactivated users cannot log in
+     * BR-099: Admins cannot deactivate super-admin accounts (only other super-admins can)
+     * BR-100: Admins cannot deactivate their own account from the admin panel
+     * BR-101: Reactivation allows the user to log in again; no data is lost
+     * BR-102: Status changes are recorded in the activity log with the admin as causer
+     */
+    public function toggleStatus(Request $request, User $user): mixed
+    {
+        $admin = $request->user();
+
+        // BR-099, BR-100: Check permission to toggle
+        if (! $this->canToggleUserStatus($admin, $user)) {
+            abort(403);
+        }
+
+        $oldStatus = $user->is_active;
+        $newStatus = ! $oldStatus;
+
+        $user->update(['is_active' => $newStatus]);
+
+        // BR-097: If deactivating, invalidate all active sessions
+        if (! $newStatus) {
+            DB::table('sessions')
+                ->where('user_id', $user->id)
+                ->delete();
+        }
+
+        // BR-102: Log status change with admin as causer
+        activity('users')
+            ->performedOn($user)
+            ->causedBy($admin)
+            ->withProperties([
+                'old' => ['is_active' => $oldStatus],
+                'attributes' => ['is_active' => $newStatus],
+                'ip' => $request->ip(),
+            ])
+            ->log($newStatus ? 'activated' : 'deactivated');
+
+        $statusLabel = $newStatus ? __('activated') : __('deactivated');
+
+        session()->flash('toast', [
+            'type' => 'success',
+            'message' => __('User ":name" has been :status.', [
+                'name' => $user->name,
+                'status' => $statusLabel,
+            ]),
+        ]);
+
+        if ($request->isGale()) {
+            return gale()->redirect(url('/vault-entry/users/'.$user->id))->back('/vault-entry/users/'.$user->id);
+        }
+
+        return redirect('/vault-entry/users/'.$user->id);
+    }
+
+    /**
+     * Check if the current admin can toggle the target user's status.
+     *
+     * BR-099: Admins cannot deactivate super-admin accounts (only other super-admins can)
+     * BR-100: Admins cannot deactivate their own account
+     */
+    private function canToggleUserStatus(User $admin, User $targetUser): bool
+    {
+        // BR-100: Cannot toggle your own account
+        if ($admin->id === $targetUser->id) {
+            return false;
+        }
+
+        // BR-099: Only super-admins can toggle other super-admins
+        if ($targetUser->hasRole('super-admin') && ! $admin->hasRole('super-admin')) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Get the reason why the toggle is disabled.
+     */
+    private function getToggleDisabledReason(User $admin, User $targetUser): ?string
+    {
+        if ($admin->id === $targetUser->id) {
+            return __('You cannot deactivate your own account');
+        }
+
+        if ($targetUser->hasRole('super-admin') && ! $admin->hasRole('super-admin')) {
+            return __('Only super-admins can change the status of other super-admins');
+        }
+
+        return null;
+    }
+
+    /**
+     * Get user roles with their associated tenant information.
+     *
+     * For cook roles, find which tenants they are assigned to.
+     * For manager roles, find which tenants they manage.
+     *
+     * @return array<int, array{role: string, tenant: ?Tenant, role_class: string}>
+     */
+    private function getUserRolesWithTenants(User $user): array
+    {
+        $rolesWithTenants = [];
+
+        foreach ($user->roles as $role) {
+            $roleData = [
+                'role' => $role->name,
+                'tenant' => null,
+                'role_class' => match ($role->name) {
+                    'super-admin' => 'bg-danger-subtle text-danger',
+                    'admin' => 'bg-warning-subtle text-warning',
+                    'cook' => 'bg-info-subtle text-info',
+                    'manager' => 'bg-secondary-subtle text-secondary',
+                    'client' => 'bg-success-subtle text-success',
+                    default => 'bg-outline/20 text-on-surface/60',
+                },
+            ];
+
+            // For cook role, find associated tenants
+            if ($role->name === 'cook') {
+                $cookTenants = Tenant::where('cook_id', $user->id)->get();
+                if ($cookTenants->isNotEmpty()) {
+                    foreach ($cookTenants as $tenant) {
+                        $rolesWithTenants[] = array_merge($roleData, ['tenant' => $tenant]);
+                    }
+
+                    continue;
+                }
+            }
+
+            $rolesWithTenants[] = $roleData;
+        }
+
+        return $rolesWithTenants;
     }
 }
