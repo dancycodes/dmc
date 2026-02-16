@@ -11,18 +11,67 @@ use Illuminate\Http\Request;
 class TenantController extends Controller
 {
     /**
-     * List all tenants (stub for F-046, provides redirect target for F-045).
+     * List all tenants with search, filter, sort, and pagination.
+     *
+     * F-046: Tenant List & Search View
+     * BR-064: Paginated with 15 items per page
+     * BR-065: Search covers name_en, name_fr, subdomain, custom_domain
+     * BR-066: Status filter: All, Active, Inactive
+     * BR-067: Default sort: created_at descending
+     * BR-068: All columns are sortable
+     * BR-069: Order count aggregate (stubbed until orders table exists)
      */
     public function index(Request $request): mixed
     {
-        $tenants = Tenant::query()
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $search = $request->input('search', '');
+        $status = $request->input('status', '');
+        $sortBy = $request->input('sort', 'created_at');
+        $sortDir = $request->input('direction', 'desc');
 
-        return gale()->view('admin.tenants.index', [
+        // Validate sort column to prevent SQL injection
+        $allowedSorts = ['name', 'slug', 'custom_domain', 'status', 'created_at'];
+        if (! in_array($sortBy, $allowedSorts, true)) {
+            $sortBy = 'created_at';
+        }
+        $sortDir = in_array($sortDir, ['asc', 'desc'], true) ? $sortDir : 'desc';
+
+        // Map friendly sort names to actual columns
+        $sortColumn = match ($sortBy) {
+            'name' => 'name_'.app()->getLocale(),
+            'status' => 'is_active',
+            default => $sortBy,
+        };
+
+        $query = Tenant::query()
+            ->search($search)
+            ->status($status)
+            ->orderBy($sortColumn, $sortDir);
+
+        $tenants = $query->paginate(15)->withQueryString();
+
+        // Summary counts (BR-066)
+        $totalCount = Tenant::count();
+        $activeCount = Tenant::where('is_active', true)->count();
+        $inactiveCount = Tenant::where('is_active', false)->count();
+
+        $data = [
             'tenants' => $tenants,
             'mainDomain' => TenantService::mainDomain(),
-        ], web: true);
+            'search' => $search,
+            'status' => $status,
+            'sortBy' => $sortBy,
+            'sortDir' => $sortDir,
+            'totalCount' => $totalCount,
+            'activeCount' => $activeCount,
+            'inactiveCount' => $inactiveCount,
+        ];
+
+        // Handle Gale navigate requests (search/filter/sort triggers)
+        if ($request->isGaleNavigate('tenant-list')) {
+            return gale()->fragment('admin.tenants.index', 'tenant-list-content', $data);
+        }
+
+        return gale()->view('admin.tenants.index', $data, web: true);
     }
 
     /**
