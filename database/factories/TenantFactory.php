@@ -37,15 +37,40 @@ class TenantFactory extends Factory
      *
      * @return array<string, mixed>
      */
+    /**
+     * French translations for cook names.
+     */
+    private const COOK_NAMES_FR = [
+        'La Cuisine de Latifa',
+        'Les Plats de Mama Ngono',
+        'Chef Powel Cuisine',
+        'Cuisine de Tante Bih',
+        'Iya Bastos Repas',
+        'Reine du Ndoleh',
+        'Chef Tabi Cuisine',
+        'Mama Caro Repas',
+        'Langue de Feu',
+        'Chez Mariette Cuisine',
+        'Palais du Kondre',
+        'Maîtres du Eru',
+        'Maison du Beignet',
+        'République du Soya',
+        'Chop House Mbongo',
+    ];
+
     public function definition(): array
     {
-        $name = fake()->unique()->randomElement(self::COOK_NAMES);
+        $index = array_rand(self::COOK_NAMES);
+        $name = self::COOK_NAMES[$index];
         $slug = Str::slug($name);
 
         return [
-            'name' => $name,
+            'name_en' => $name,
+            'name_fr' => self::COOK_NAMES_FR[$index] ?? $name,
             'slug' => $slug,
             'custom_domain' => null,
+            'description_en' => null,
+            'description_fr' => null,
             'is_active' => true,
             'settings' => [],
         ];
@@ -78,7 +103,8 @@ class TenantFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'slug' => $slug,
-            'name' => $name ?? Str::headline($slug),
+            'name_en' => $name ?? Str::headline($slug),
+            'name_fr' => $name ?? Str::headline($slug),
         ]);
     }
 

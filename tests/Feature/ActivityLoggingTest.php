@@ -85,7 +85,7 @@ describe('Automatic Model Event Logging (BR-135)', function () {
 
         $this->actingAs($admin);
 
-        $tenant = Tenant::factory()->create(['name' => 'Chef Powel']);
+        $tenant = Tenant::factory()->create(['name_en' => 'Chef Powel', 'name_fr' => 'Chef Powel']);
 
         $activity = Activity::query()
             ->where('subject_type', Tenant::class)
@@ -103,11 +103,11 @@ describe('Automatic Model Event Logging (BR-135)', function () {
 
         $this->actingAs($admin);
 
-        $tenant = Tenant::factory()->create(['name' => 'Old Kitchen']);
+        $tenant = Tenant::factory()->create(['name_en' => 'Old Kitchen', 'name_fr' => 'Old Kitchen']);
 
         Activity::query()->delete();
 
-        $tenant->update(['name' => 'New Kitchen']);
+        $tenant->update(['name_en' => 'New Kitchen']);
 
         $activity = Activity::query()
             ->where('subject_type', Tenant::class)
@@ -116,8 +116,8 @@ describe('Automatic Model Event Logging (BR-135)', function () {
             ->first();
 
         expect($activity)->not->toBeNull();
-        expect($activity->properties['attributes']['name'])->toBe('New Kitchen');
-        expect($activity->properties['old']['name'])->toBe('Old Kitchen');
+        expect($activity->properties['attributes']['name_en'])->toBe('New Kitchen');
+        expect($activity->properties['old']['name_en'])->toBe('Old Kitchen');
     });
 });
 
@@ -340,11 +340,11 @@ describe('Activity Description Format', function () {
     });
 
     it('uses correct description for update events', function () {
-        $tenant = Tenant::factory()->create(['name' => 'Old Name']);
+        $tenant = Tenant::factory()->create(['name_en' => 'Old Name', 'name_fr' => 'Old Name']);
 
         Activity::query()->delete();
 
-        $tenant->update(['name' => 'New Name']);
+        $tenant->update(['name_en' => 'New Name']);
 
         $activity = Activity::query()
             ->where('subject_type', Tenant::class)

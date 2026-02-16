@@ -150,7 +150,8 @@ describe('BaseMailableNotification', function () {
 
     it('includes tenant branding when tenant is set (BR-116)', function () {
         $tenant = Tenant::factory()->make([
-            'name' => 'Latifa Kitchen',
+            'name_en' => 'Latifa Kitchen',
+            'name_fr' => 'Cuisine de Latifa',
             'slug' => 'latifa',
         ]);
 
@@ -193,7 +194,8 @@ describe('BaseMailableNotification', function () {
     it('supports chaining recipient and tenant methods', function () {
         $user = User::factory()->withLanguage('fr')->make();
         $tenant = Tenant::factory()->make([
-            'name' => 'Powel Dishes',
+            'name_en' => 'Powel Dishes',
+            'name_fr' => 'Plats de Powel',
             'slug' => 'powel',
         ]);
 
@@ -292,7 +294,7 @@ describe('Email sending via Mail facade', function () {
         Mail::fake();
 
         $user = User::factory()->make();
-        $tenant = Tenant::factory()->make(['name' => 'Grace Cuisine', 'slug' => 'grace']);
+        $tenant = Tenant::factory()->make(['name_en' => 'Grace Cuisine', 'name_fr' => 'Cuisine de Grace', 'slug' => 'grace']);
 
         $mailable = (new TestOrderConfirmationEmail('ORD-300', 10000))
             ->forTenant($tenant);
@@ -361,7 +363,8 @@ describe('EmailNotificationService integration', function () {
     it('returns tenant branding for a valid tenant', function () {
         $service = new EmailNotificationService;
         $tenant = Tenant::factory()->make([
-            'name' => 'Latifa Kitchen',
+            'name_en' => 'Latifa Kitchen',
+            'name_fr' => 'Cuisine de Latifa',
             'slug' => 'latifa',
         ]);
 
@@ -393,7 +396,8 @@ describe('EmailNotificationService integration', function () {
     it('includes tenant branding in common template data', function () {
         $service = new EmailNotificationService;
         $tenant = Tenant::factory()->make([
-            'name' => 'Powel Dishes',
+            'name_en' => 'Powel Dishes',
+            'name_fr' => 'Plats de Powel',
             'slug' => 'powel',
         ]);
 

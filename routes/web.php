@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AddressController;
+use App\Http\Controllers\Admin\TenantController;
 use App\Http\Controllers\Auth\CrossDomainAuthController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
@@ -216,6 +217,11 @@ Route::middleware('main.domain')->group(function () {
     // BR-045: Only users with can-access-admin-panel permission may access
     Route::prefix('vault-entry')->middleware(['auth', 'admin.access', 'throttle:moderate'])->group(function () {
         Route::get('/', [DashboardController::class, 'adminDashboard'])->name('admin.dashboard');
+
+        // Tenant management (F-045, F-046, F-047, F-048)
+        Route::get('/tenants', [TenantController::class, 'index'])->name('admin.tenants.index');
+        Route::get('/tenants/create', [TenantController::class, 'create'])->name('admin.tenants.create');
+        Route::post('/tenants', [TenantController::class, 'store'])->name('admin.tenants.store');
     });
 });
 
