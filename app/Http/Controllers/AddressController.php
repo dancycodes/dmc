@@ -13,6 +13,83 @@ use Illuminate\Validation\Rule;
 class AddressController extends Controller
 {
     /**
+     * Display the list of user's saved delivery addresses (F-034).
+     *
+     * BR-128: All addresses displayed, default first.
+     * BR-129: Default address visually distinguished.
+     * BR-132: "Add Address" button only if < 5 addresses.
+     * BR-134: Localized town/quarter names.
+     */
+    public function index(Request $request): mixed
+    {
+        $user = Auth::user();
+        $addresses = $user->addresses()
+            ->with(['town', 'quarter'])
+            ->orderByDesc('is_default')
+            ->orderBy('label')
+            ->get();
+
+        $canAddMore = $addresses->count() < Address::MAX_ADDRESSES_PER_USER;
+
+        return gale()->view('profile.addresses.index', [
+            'user' => $user,
+            'tenant' => tenant(),
+            'addresses' => $addresses,
+            'canAddMore' => $canAddMore,
+            'maxAddresses' => Address::MAX_ADDRESSES_PER_USER,
+        ], web: true);
+    }
+
+    /**
+     * Set an address as the user's default delivery address (F-034).
+     *
+     * BR-130: Only one address can be default at a time.
+     * BR-131: Setting a new default removes previous default.
+     */
+    public function setDefault(Request $request, Address $address): mixed
+    {
+        $user = Auth::user();
+
+        // Ensure address belongs to authenticated user
+        if ($address->user_id !== $user->id) {
+            abort(403);
+        }
+
+        // Already default — no change needed
+        if ($address->is_default) {
+            return gale()->redirect('/profile/addresses')->back()
+                ->with('toast', [
+                    'type' => 'info',
+                    'message' => __('This address is already your default.'),
+                ]);
+        }
+
+        // BR-131: Remove default from all user addresses
+        $user->addresses()->where('is_default', true)->update(['is_default' => false]);
+
+        // Set the new default
+        $address->update(['is_default' => true]);
+
+        // Log the change
+        activity('addresses')
+            ->performedOn($address)
+            ->causedBy($user)
+            ->event('updated')
+            ->withProperties([
+                'label' => $address->label,
+                'action' => 'set_as_default',
+                'ip' => $request->ip(),
+            ])
+            ->log(__('Default address updated'));
+
+        return gale()->redirect('/profile/addresses')->back()
+            ->with('toast', [
+                'type' => 'success',
+                'message' => __('Default address updated.'),
+            ]);
+    }
+
+    /**
      * Display the add address form.
      *
      * If the user already has the maximum number of addresses (BR-119),
@@ -108,7 +185,7 @@ class AddressController extends Controller
             ])
             ->log(__('Delivery address added'));
 
-        return gale()->redirect('/profile/addresses/create')->back()
+        return gale()->redirect('/profile/addresses')->back()
             ->with('toast', [
                 'type' => 'success',
                 'message' => __('Address saved successfully.'),
