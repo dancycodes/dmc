@@ -264,5 +264,25 @@
     "Contact Support": "Contact Support",
     "User forced logout due to deactivated account": "User forced logout due to deactivated account",
     "User deactivated by admin": "User deactivated by admin",
-    "User reactivated by admin": "User reactivated by admin"
+    "User reactivated by admin": "User reactivated by admin",
+
+    "Member since :date": "Member since :date",
+    "Member Since": "Member Since",
+    "Verified": "Verified",
+    "Unverified": "Unverified",
+    "Verify now": "Verify now",
+    "Not set": "Not set",
+    "Edit Profile": "Edit Profile",
+    "Change Photo": "Change Photo",
+    "Delivery Addresses": "Delivery Addresses",
+    "Payment Methods": "Payment Methods",
+    "Notification Preferences": "Notification Preferences",
+    "Language Preference": "Language Preference",
+    "Account Settings": "Account Settings",
+    "Update your name, phone, and more": "Update your name, phone, and more",
+    "Upload or update your profile photo": "Upload or update your profile photo",
+    "Manage your delivery locations": "Manage your delivery locations",
+    "Manage your payment options": "Manage your payment options",
+    "Choose how you receive alerts": "Choose how you receive alerts",
+    "Set your preferred language": "Set your preferred language"
 }

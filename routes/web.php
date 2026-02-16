@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ThemeController;
 use App\Services\TenantService;
@@ -115,6 +116,20 @@ Route::middleware('auth')->group(function () {
     Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])
         ->middleware('throttle:verification-resend')
         ->name('verification.send');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Profile Routes (accessible on ALL domains)
+|--------------------------------------------------------------------------
+|
+| User profile page (F-030). Accessible to authenticated users on any
+| domain (main or tenant). BR-097: requires authentication.
+| BR-100: works across all domains.
+|
+*/
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
 });
 
 /*
