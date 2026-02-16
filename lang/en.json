@@ -535,5 +535,18 @@
     "Next": "Next",
     "Back to Tenant List": "Back to Tenant List",
     "Read more": "Read more",
-    "Show less": "Show less"
+    "Show less": "Show less",
+
+    "Edit Tenant": "Edit Tenant",
+    "Tenant Status": "Tenant Status",
+    "Deactivating a tenant will show a \"temporarily unavailable\" page on their website.": "Deactivating a tenant will show a \"temporarily unavailable\" page on their website.",
+    "Deactivate Tenant?": "Deactivate Tenant?",
+    "Deactivating this tenant will show a \"temporarily unavailable\" page on their website. Visitors will not be able to access the tenant site. You can reactivate at any time.": "Deactivating this tenant will show a \"temporarily unavailable\" page on their website. Visitors will not be able to access the tenant site. You can reactivate at any time.",
+    "Deactivate": "Deactivate",
+    "Tenant \":name\" updated successfully.": "Tenant \":name\" updated successfully.",
+    "Tenant \":name\" has been :status.": "Tenant \":name\" has been :status.",
+    "activated": "activated",
+    "deactivated": "deactivated",
+    "This domain is already assigned to another tenant.": "This domain is already assigned to another tenant.",
+    "DNS setup information": "DNS setup information"
 }

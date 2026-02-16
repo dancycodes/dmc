@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreTenantRequest;
+use App\Http\Requests\Admin\UpdateTenantRequest;
 use App\Models\Tenant;
 use App\Services\TenantService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Spatie\Activitylog\Models\Activity;
 
 class TenantController extends Controller
@@ -158,7 +160,7 @@ class TenantController extends Controller
 
         // Dual Gale/HTTP validation pattern
         if ($request->isGale()) {
-            $validated = $request->validateState($this->validationRules());
+            $validated = $request->validateState($this->storeValidationRules());
 
             return $this->createTenant($validated, $request);
         }
@@ -170,11 +172,101 @@ class TenantController extends Controller
     }
 
     /**
-     * Get the shared validation rules for Gale and HTTP paths.
+     * Show the tenant edit form.
+     *
+     * F-048: Tenant Edit & Status Toggle
+     */
+    public function edit(Request $request, Tenant $tenant): mixed
+    {
+        if (! $request->user()?->can('can-edit-tenant')) {
+            abort(403);
+        }
+
+        return gale()->view('admin.tenants.edit', [
+            'tenant' => $tenant,
+            'mainDomain' => TenantService::mainDomain(),
+        ], web: true);
+    }
+
+    /**
+     * Update the tenant details.
+     *
+     * F-048: Tenant Edit & Status Toggle
+     * BR-078: Subdomain changes follow same validation rules as creation
+     * BR-079: Uniqueness checks exclude current tenant's own values
+     * BR-080: All edits recorded in activity log with admin as causer
+     */
+    public function update(Request $request, Tenant $tenant): mixed
+    {
+        if (! $request->user()?->can('can-edit-tenant')) {
+            abort(403);
+        }
+
+        if ($request->isGale()) {
+            $validated = $request->validateState($this->updateValidationRules($tenant));
+
+            return $this->updateTenant($validated, $tenant, $request);
+        }
+
+        $formRequest = app(UpdateTenantRequest::class);
+
+        return $this->updateTenant($formRequest->validated(), $tenant, $request);
+    }
+
+    /**
+     * Toggle the tenant's active status.
+     *
+     * F-048: Tenant Edit & Status Toggle
+     * BR-075: Deactivated tenant shows "temporarily unavailable" page
+     * BR-076: Deactivation does not delete any data
+     * BR-080: Status changes recorded in activity log
+     * BR-081: Deactivation requires explicit confirmation (handled client-side)
+     */
+    public function toggleStatus(Request $request, Tenant $tenant): mixed
+    {
+        if (! $request->user()?->can('can-edit-tenant')) {
+            abort(403);
+        }
+
+        $oldStatus = $tenant->is_active;
+        $newStatus = ! $oldStatus;
+
+        $tenant->update(['is_active' => $newStatus]);
+
+        // BR-080: Log status change with admin as causer
+        activity('tenants')
+            ->performedOn($tenant)
+            ->causedBy($request->user())
+            ->withProperties([
+                'old' => ['is_active' => $oldStatus],
+                'attributes' => ['is_active' => $newStatus],
+                'ip' => $request->ip(),
+            ])
+            ->log($newStatus ? 'activated' : 'deactivated');
+
+        $statusLabel = $newStatus ? __('activated') : __('deactivated');
+
+        session()->flash('toast', [
+            'type' => 'success',
+            'message' => __('Tenant ":name" has been :status.', [
+                'name' => $tenant->name,
+                'status' => $statusLabel,
+            ]),
+        ]);
+
+        if ($request->isGale()) {
+            return gale()->redirect(url('/vault-entry/tenants/'.$tenant->slug))->back('/vault-entry/tenants/'.$tenant->slug);
+        }
+
+        return redirect('/vault-entry/tenants/'.$tenant->slug);
+    }
+
+    /**
+     * Get the shared validation rules for store (Gale path).
      *
      * @return array<string, array<int, mixed>>
      */
-    private function validationRules(): array
+    private function storeValidationRules(): array
     {
         return [
             'name_en' => ['required', 'string', 'min:1', 'max:255'],
@@ -219,6 +311,60 @@ class TenantController extends Controller
             'description_en' => ['required', 'string', 'max:5000'],
             'description_fr' => ['required', 'string', 'max:5000'],
             'is_active' => ['sometimes', 'boolean'],
+        ];
+    }
+
+    /**
+     * Get validation rules for update that exclude current tenant from uniqueness checks.
+     *
+     * BR-079: Uniqueness checks exclude current tenant's own values
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    private function updateValidationRules(Tenant $tenant): array
+    {
+        return [
+            'name_en' => ['required', 'string', 'min:1', 'max:255'],
+            'name_fr' => ['required', 'string', 'min:1', 'max:255'],
+            'subdomain' => [
+                'required',
+                'string',
+                'min:3',
+                'max:63',
+                'regex:/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/',
+                'not_regex:/--/',
+                Rule::unique('tenants', 'slug')->ignore($tenant->id),
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    if (Tenant::isReservedSubdomain($value)) {
+                        $fail(__('This subdomain is reserved and cannot be used.'));
+                    }
+                },
+            ],
+            'custom_domain' => [
+                'nullable',
+                'string',
+                'max:255',
+                'regex:/^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$/i',
+                Rule::unique('tenants', 'custom_domain')->ignore($tenant->id),
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    if ($value === null || $value === '') {
+                        return;
+                    }
+
+                    $mainDomain = TenantService::mainDomain();
+                    $normalizedValue = strtolower(trim($value));
+
+                    if ($normalizedValue === strtolower($mainDomain)) {
+                        $fail(__('This domain conflicts with the platform domain.'));
+                    }
+
+                    if (str_ends_with($normalizedValue, '.'.strtolower($mainDomain))) {
+                        $fail(__('Use the subdomain field for subdomains of the platform domain.'));
+                    }
+                },
+            ],
+            'description_en' => ['required', 'string', 'max:5000'],
+            'description_fr' => ['required', 'string', 'max:5000'],
         ];
     }
 
@@ -269,5 +415,65 @@ class TenantController extends Controller
         }
 
         return redirect('/vault-entry/tenants');
+    }
+
+    /**
+     * Update the tenant from validated data.
+     *
+     * BR-080: All edits recorded in activity log with admin as causer
+     * Edge case: If no actual changes made, skip activity log but still show success toast
+     */
+    private function updateTenant(array $validated, Tenant $tenant, Request $request): mixed
+    {
+        $descriptionEn = strip_tags(trim($validated['description_en'] ?? ''));
+        $descriptionFr = strip_tags(trim($validated['description_fr'] ?? ''));
+
+        $newData = [
+            'slug' => strtolower(trim($validated['subdomain'])),
+            'name_en' => trim($validated['name_en']),
+            'name_fr' => trim($validated['name_fr']),
+            'custom_domain' => ! empty($validated['custom_domain'])
+                ? strtolower(trim($validated['custom_domain']))
+                : null,
+            'description_en' => $descriptionEn !== '' ? $descriptionEn : null,
+            'description_fr' => $descriptionFr !== '' ? $descriptionFr : null,
+        ];
+
+        // Detect actual changes for activity logging
+        $changes = [];
+        $oldValues = [];
+        foreach ($newData as $key => $newValue) {
+            $oldValue = $tenant->getAttribute($key);
+            if ($oldValue !== $newValue) {
+                $changes[$key] = $newValue;
+                $oldValues[$key] = $oldValue;
+            }
+        }
+
+        $tenant->update($newData);
+
+        // BR-080: Only log if actual changes were made
+        if (! empty($changes)) {
+            activity('tenants')
+                ->performedOn($tenant)
+                ->causedBy($request->user())
+                ->withProperties([
+                    'old' => $oldValues,
+                    'attributes' => $changes,
+                    'ip' => $request->ip(),
+                ])
+                ->log('updated');
+        }
+
+        session()->flash('toast', [
+            'type' => 'success',
+            'message' => __('Tenant ":name" updated successfully.', ['name' => $tenant->name]),
+        ]);
+
+        if ($request->isGale()) {
+            return gale()->redirect(url('/vault-entry/tenants/'.$tenant->slug))->back('/vault-entry/tenants/'.$tenant->slug);
+        }
+
+        return redirect('/vault-entry/tenants/'.$tenant->slug);
     }
 }

@@ -223,6 +223,9 @@ Route::middleware('main.domain')->group(function () {
         Route::get('/tenants/create', [TenantController::class, 'create'])->name('admin.tenants.create');
         Route::post('/tenants', [TenantController::class, 'store'])->name('admin.tenants.store');
         Route::get('/tenants/{tenant}', [TenantController::class, 'show'])->name('admin.tenants.show');
+        Route::get('/tenants/{tenant}/edit', [TenantController::class, 'edit'])->name('admin.tenants.edit');
+        Route::post('/tenants/{tenant}', [TenantController::class, 'update'])->name('admin.tenants.update');
+        Route::post('/tenants/{tenant}/toggle-status', [TenantController::class, 'toggleStatus'])->name('admin.tenants.toggle-status');
     });
 });
 
