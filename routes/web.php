@@ -3,6 +3,7 @@
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\Admin\CookAssignmentController;
 use App\Http\Controllers\Admin\TenantController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\CrossDomainAuthController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
@@ -232,6 +233,9 @@ Route::middleware('main.domain')->group(function () {
         Route::get('/tenants/{tenant}/assign-cook', [CookAssignmentController::class, 'show'])->name('admin.tenants.assign-cook');
         Route::post('/tenants/{tenant}/assign-cook/search', [CookAssignmentController::class, 'search'])->name('admin.tenants.assign-cook.search');
         Route::post('/tenants/{tenant}/assign-cook', [CookAssignmentController::class, 'assign'])->name('admin.tenants.assign-cook.store');
+
+        // User management (F-050)
+        Route::get('/users', [UserController::class, 'index'])->name('admin.users.index');
     });
 });
 

@@ -66,8 +66,11 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
-        // BR-057: Log successful login activity
+        // F-050: Record last login timestamp
         $authenticatedUser = Auth::user();
+        $authenticatedUser->forceFill(['last_login_at' => now()])->saveQuietly();
+
+        // BR-057: Log successful login activity
         activity('users')
             ->performedOn($authenticatedUser)
             ->causedBy($authenticatedUser)
