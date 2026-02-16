@@ -493,5 +493,14 @@
     "Use the subdomain field for subdomains of the platform domain.": "Use the subdomain field for subdomains of the platform domain.",
     "English description is required.": "English description is required.",
     "French description is required.": "French description is required.",
-    "Description must not exceed 5000 characters.": "Description must not exceed 5000 characters."
+    "Description must not exceed 5000 characters.": "Description must not exceed 5000 characters.",
+    "Search by name, subdomain, or domain...": "Search by name, subdomain, or domain...",
+    "All Statuses": "All Statuses",
+    "Showing :from-:to of :total tenants": "Showing :from-:to of :total tenants",
+    "No tenants match your search.": "No tenants match your search.",
+    "Try adjusting your search or filter criteria.": "Try adjusting your search or filter criteria.",
+    "Clear Filters": "Clear Filters",
+    "No tenants yet. Create your first tenant.": "No tenants yet. Create your first tenant.",
+    "None": "None",
+    "Unassigned": "Unassigned"
 }

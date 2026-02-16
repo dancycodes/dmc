@@ -495,5 +495,14 @@
     "Use the subdomain field for subdomains of the platform domain.": "Utilisez le champ sous-domaine pour les sous-domaines du domaine de la plateforme.",
     "English description is required.": "La description en anglais est requise.",
     "French description is required.": "La description en fran\u00e7ais est requise.",
-    "Description must not exceed 5000 characters.": "La description ne doit pas d\u00e9passer 5000 caract\u00e8res."
+    "Description must not exceed 5000 characters.": "La description ne doit pas d\u00e9passer 5000 caract\u00e8res.",
+    "Search by name, subdomain, or domain...": "Rechercher par nom, sous-domaine ou domaine...",
+    "All Statuses": "Tous les statuts",
+    "Showing :from-:to of :total tenants": "Affichage :from-:to sur :total locataires",
+    "No tenants match your search.": "Aucun locataire ne correspond \u00e0 votre recherche.",
+    "Try adjusting your search or filter criteria.": "Essayez d'ajuster vos crit\u00e8res de recherche ou de filtrage.",
+    "Clear Filters": "Effacer les filtres",
+    "No tenants yet. Create your first tenant.": "Aucun locataire pour le moment. Cr\u00e9ez votre premier locataire.",
+    "None": "Aucun",
+    "Unassigned": "Non assign\u00e9"
 }

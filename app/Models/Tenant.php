@@ -82,6 +82,41 @@ class Tenant extends Model
     }
 
     /**
+     * Scope: search tenants by name (en/fr), subdomain, or custom domain.
+     *
+     * BR-065: Search covers name_en, name_fr, subdomain, custom_domain
+     */
+    public function scopeSearch(Builder $query, ?string $term): Builder
+    {
+        if (empty($term)) {
+            return $query;
+        }
+
+        $term = '%'.mb_strtolower(trim($term)).'%';
+
+        return $query->where(function (Builder $q) use ($term) {
+            $q->whereRaw('LOWER(name_en) LIKE ?', [$term])
+                ->orWhereRaw('LOWER(name_fr) LIKE ?', [$term])
+                ->orWhereRaw('LOWER(slug) LIKE ?', [$term])
+                ->orWhereRaw('LOWER(COALESCE(custom_domain, \'\')) LIKE ?', [$term]);
+        });
+    }
+
+    /**
+     * Scope: filter tenants by status.
+     *
+     * BR-066: Status filter options: All, Active, Inactive
+     */
+    public function scopeStatus(Builder $query, ?string $status): Builder
+    {
+        return match ($status) {
+            'active' => $query->where('is_active', true),
+            'inactive' => $query->where('is_active', false),
+            default => $query,
+        };
+    }
+
+    /**
      * Find a tenant by its slug (subdomain).
      */
     public static function findBySlug(string $slug): ?self
