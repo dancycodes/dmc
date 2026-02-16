@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ThemeController;
@@ -143,6 +144,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile/addresses/{address}/edit', [AddressController::class, 'edit'])->name('addresses.edit');
     Route::post('/profile/addresses/{address}', [AddressController::class, 'update'])->name('addresses.update');
     Route::delete('/profile/addresses/{address}', [AddressController::class, 'destroy'])->name('addresses.destroy');
+
+    // Payment Methods (F-037, F-038, F-039, F-040)
+    Route::get('/profile/payment-methods/create', [PaymentMethodController::class, 'create'])->name('payment-methods.create');
+    Route::post('/profile/payment-methods', [PaymentMethodController::class, 'store'])->name('payment-methods.store');
 });
 
 /*

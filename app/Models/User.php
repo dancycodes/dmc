@@ -92,6 +92,14 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Get the user's saved payment methods.
+     */
+    public function paymentMethods(): HasMany
+    {
+        return $this->hasMany(PaymentMethod::class);
+    }
+
+    /**
      * Check if the user account is active.
      */
     public function isActive(): bool
