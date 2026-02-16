@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureAdminAccess;
 use App\Http\Middleware\EnsureMainDomain;
 use App\Http\Middleware\EnsureTenantDomain;
 use App\Http\Middleware\EnsureUserIsActive;
@@ -35,6 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'main.domain' => EnsureMainDomain::class,
             'tenant.domain' => EnsureTenantDomain::class,
+            'admin.access' => EnsureAdminAccess::class,
             'honeypot' => ProtectAgainstSpam::class,
         ]);
     })

@@ -412,5 +412,24 @@
     "This setting stays in sync with the language switcher in the navigation bar. Changing one will update the other.": "This setting stays in sync with the language switcher in the navigation bar. Changing one will update the other.",
     "Save Language": "Save Language",
     "Language preference updated. The change will apply on the next page.": "Language preference updated. The change will apply on the next page.",
-    "Language preference was updated": "Language preference was updated"
+    "Language preference was updated": "Language preference was updated",
+
+    "Overview": "Overview",
+    "Management": "Management",
+    "Insights": "Insights",
+    "Operations": "Operations",
+    "Analytics": "Analytics",
+    "Finance": "Finance",
+    "Payouts": "Payouts",
+    "Breadcrumb": "Breadcrumb",
+    "Welcome back, :name": "Welcome back, :name",
+    "Manage your platform from here. Use the sidebar to navigate between sections.": "Manage your platform from here. Use the sidebar to navigate between sections.",
+    "Total Tenants": "Total Tenants",
+    "Total Users": "Total Users",
+    "Active Orders": "Active Orders",
+    "Open Complaints": "Open Complaints",
+    "Detailed analytics and management features will be available in upcoming modules.": "Detailed analytics and management features will be available in upcoming modules.",
+    "Forbidden": "Forbidden",
+    "You do not have permission to access this page.": "You do not have permission to access this page.",
+    "Return to Homepage": "Return to Homepage"
 }
