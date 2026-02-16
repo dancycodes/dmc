@@ -571,5 +571,22 @@
     "Back to Tenant Detail": "Retour aux d\u00e9tails du locataire",
     "Please select a user to assign as cook.": "Veuillez s\u00e9lectionner un utilisateur \u00e0 assigner comme cuisinier.",
     "Cook \":name\" assigned to tenant \":tenant\".": "Cuisinier \u00ab :name \u00bb assign\u00e9 au locataire \u00ab :tenant \u00bb.",
-    "Cook reassigned from :old to :new for tenant \":tenant\".": "Cuisinier r\u00e9assign\u00e9 de :old \u00e0 :new pour le locataire \u00ab :tenant \u00bb."
+    "Cook reassigned from :old to :new for tenant \":tenant\".": "Cuisinier r\u00e9assign\u00e9 de :old \u00e0 :new pour le locataire \u00ab :tenant \u00bb.",
+
+    "All Users": "Tous les utilisateurs",
+    "View and manage all platform user accounts.": "Voir et g\u00e9rer tous les comptes utilisateurs de la plateforme.",
+    "New This Month": "Nouveaux ce mois",
+    "Search by name, email, or phone...": "Rechercher par nom, email ou t\u00e9l\u00e9phone...",
+    "All Roles": "Tous les r\u00f4les",
+    "Registered": "Inscrit",
+    "Last Login": "Derni\u00e8re connexion",
+    "Never": "Jamais",
+    "No role": "Aucun r\u00f4le",
+    "Joined": "Inscrit",
+    "Last login": "Derni\u00e8re connexion",
+    "No users match your criteria.": "Aucun utilisateur ne correspond \u00e0 vos crit\u00e8res.",
+    "Try adjusting your search or filter criteria.": "Essayez de modifier vos crit\u00e8res de recherche ou de filtre.",
+    "No users yet.": "Aucun utilisateur pour le moment.",
+    "Users will appear here once they register on the platform.": "Les utilisateurs appara\u00eetront ici une fois inscrits sur la plateforme.",
+    "Showing :from-:to of :total users": "Affichage de :from-:to sur :total utilisateurs"
 }

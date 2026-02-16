@@ -65,6 +65,7 @@ class UserFactory extends Factory
             'profile_photo_path' => null,
             'preferred_language' => 'en',
             'theme_preference' => null,
+            'last_login_at' => null,
             'remember_token' => Str::random(10),
         ];
     }

@@ -571,5 +571,22 @@
     "Back to Tenant Detail": "Back to Tenant Detail",
     "Please select a user to assign as cook.": "Please select a user to assign as cook.",
     "Cook \":name\" assigned to tenant \":tenant\".": "Cook \":name\" assigned to tenant \":tenant\".",
-    "Cook reassigned from :old to :new for tenant \":tenant\".": "Cook reassigned from :old to :new for tenant \":tenant\"."
+    "Cook reassigned from :old to :new for tenant \":tenant\".": "Cook reassigned from :old to :new for tenant \":tenant\".",
+
+    "All Users": "All Users",
+    "View and manage all platform user accounts.": "View and manage all platform user accounts.",
+    "New This Month": "New This Month",
+    "Search by name, email, or phone...": "Search by name, email, or phone...",
+    "All Roles": "All Roles",
+    "Registered": "Registered",
+    "Last Login": "Last Login",
+    "Never": "Never",
+    "No role": "No role",
+    "Joined": "Joined",
+    "Last login": "Last login",
+    "No users match your criteria.": "No users match your criteria.",
+    "Try adjusting your search or filter criteria.": "Try adjusting your search or filter criteria.",
+    "No users yet.": "No users yet.",
+    "Users will appear here once they register on the platform.": "Users will appear here once they register on the platform.",
+    "Showing :from-:to of :total users": "Showing :from-:to of :total users"
 }
