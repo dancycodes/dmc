@@ -433,5 +433,20 @@
     "Detailed analytics and management features will be available in upcoming modules.": "Les fonctionnalit\u00e9s d\u00e9taill\u00e9es d'analyse et de gestion seront disponibles dans les prochains modules.",
     "Forbidden": "Interdit",
     "You do not have permission to access this page.": "Vous n'avez pas la permission d'acc\u00e9der \u00e0 cette page.",
-    "Return to Homepage": "Retour \u00e0 la page d'accueil"
+    "Return to Homepage": "Retour \u00e0 la page d'accueil",
+    "super-admin role not found. Run seeders first.": "R\u00f4le super-admin introuvable. Ex\u00e9cutez d'abord les seeders.",
+    "A super-admin already exists. Use --force to create another.": "Un super-admin existe d\u00e9j\u00e0. Utilisez --force pour en cr\u00e9er un autre.",
+    "Name is required.": "Le nom est requis.",
+    "Name must be at least 2 characters.": "Le nom doit contenir au moins 2 caract\u00e8res.",
+    "Email is required.": "L'email est requis.",
+    "Please enter a valid email address.": "Veuillez entrer une adresse email valide.",
+    "A user with this email already exists.": "Un utilisateur avec cet email existe d\u00e9j\u00e0.",
+    "Phone Number (+237XXXXXXXXX)": "Num\u00e9ro de t\u00e9l\u00e9phone (+237XXXXXXXXX)",
+    "Phone number is required.": "Le num\u00e9ro de t\u00e9l\u00e9phone est requis.",
+    "Please enter a valid Cameroon phone number (+237 followed by 9 digits).": "Veuillez entrer un num\u00e9ro de t\u00e9l\u00e9phone camerounais valide (+237 suivi de 9 chiffres).",
+    "Password is required.": "Le mot de passe est requis.",
+    "Password must be at least 8 characters.": "Le mot de passe doit contenir au moins 8 caract\u00e8res.",
+    "Password confirmation is required.": "La confirmation du mot de passe est requise.",
+    "Passwords do not match. Please try again.": "Les mots de passe ne correspondent pas. Veuillez r\u00e9essayer.",
+    "Super-admin created successfully: :email": "Super-admin cr\u00e9\u00e9 avec succ\u00e8s : :email"
 }

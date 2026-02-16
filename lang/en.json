@@ -431,5 +431,20 @@
     "Detailed analytics and management features will be available in upcoming modules.": "Detailed analytics and management features will be available in upcoming modules.",
     "Forbidden": "Forbidden",
     "You do not have permission to access this page.": "You do not have permission to access this page.",
-    "Return to Homepage": "Return to Homepage"
+    "Return to Homepage": "Return to Homepage",
+    "super-admin role not found. Run seeders first.": "super-admin role not found. Run seeders first.",
+    "A super-admin already exists. Use --force to create another.": "A super-admin already exists. Use --force to create another.",
+    "Name is required.": "Name is required.",
+    "Name must be at least 2 characters.": "Name must be at least 2 characters.",
+    "Email is required.": "Email is required.",
+    "Please enter a valid email address.": "Please enter a valid email address.",
+    "A user with this email already exists.": "A user with this email already exists.",
+    "Phone Number (+237XXXXXXXXX)": "Phone Number (+237XXXXXXXXX)",
+    "Phone number is required.": "Phone number is required.",
+    "Please enter a valid Cameroon phone number (+237 followed by 9 digits).": "Please enter a valid Cameroon phone number (+237 followed by 9 digits).",
+    "Password is required.": "Password is required.",
+    "Password must be at least 8 characters.": "Password must be at least 8 characters.",
+    "Password confirmation is required.": "Password confirmation is required.",
+    "Passwords do not match. Please try again.": "Passwords do not match. Please try again.",
+    "Super-admin created successfully: :email": "Super-admin created successfully: :email"
 }
