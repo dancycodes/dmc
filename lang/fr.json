@@ -414,5 +414,24 @@
     "This setting stays in sync with the language switcher in the navigation bar. Changing one will update the other.": "Ce param\u00e8tre reste synchronis\u00e9 avec le s\u00e9lecteur de langue dans la barre de navigation. Modifier l'un mettra \u00e0 jour l'autre.",
     "Save Language": "Enregistrer la langue",
     "Language preference updated. The change will apply on the next page.": "Pr\u00e9f\u00e9rence de langue mise \u00e0 jour. Le changement sera appliqu\u00e9 \u00e0 la page suivante.",
-    "Language preference was updated": "La pr\u00e9f\u00e9rence de langue a \u00e9t\u00e9 mise \u00e0 jour"
+    "Language preference was updated": "La pr\u00e9f\u00e9rence de langue a \u00e9t\u00e9 mise \u00e0 jour",
+
+    "Overview": "Aper\u00e7u",
+    "Management": "Gestion",
+    "Insights": "Analyses",
+    "Operations": "Op\u00e9rations",
+    "Analytics": "Statistiques",
+    "Finance": "Finances",
+    "Payouts": "Versements",
+    "Breadcrumb": "Fil d'Ariane",
+    "Welcome back, :name": "Bon retour, :name",
+    "Manage your platform from here. Use the sidebar to navigate between sections.": "G\u00e9rez votre plateforme d'ici. Utilisez la barre lat\u00e9rale pour naviguer entre les sections.",
+    "Total Tenants": "Total des locataires",
+    "Total Users": "Total des utilisateurs",
+    "Active Orders": "Commandes actives",
+    "Open Complaints": "R\u00e9clamations ouvertes",
+    "Detailed analytics and management features will be available in upcoming modules.": "Les fonctionnalit\u00e9s d\u00e9taill\u00e9es d'analyse et de gestion seront disponibles dans les prochains modules.",
+    "Forbidden": "Interdit",
+    "You do not have permission to access this page.": "Vous n'avez pas la permission d'acc\u00e9der \u00e0 cette page.",
+    "Return to Homepage": "Retour \u00e0 la page d'accueil"
 }

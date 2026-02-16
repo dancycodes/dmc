@@ -210,8 +210,11 @@ Route::middleware(['auth', 'throttle:moderate'])->group(function () {
 |
 */
 Route::middleware('main.domain')->group(function () {
-    // Admin panel routes (BR-129: only on main domain at /vault-entry)
-    Route::prefix('vault-entry')->middleware(['auth', 'throttle:moderate'])->group(function () {
+    // Admin panel routes (F-043: only on main domain at /vault-entry)
+    // BR-043: Admin panel routes are ONLY accessible on the main domain
+    // BR-044: Requests to /vault-entry/* on tenant domains return 404 (via main.domain middleware)
+    // BR-045: Only users with can-access-admin-panel permission may access
+    Route::prefix('vault-entry')->middleware(['auth', 'admin.access', 'throttle:moderate'])->group(function () {
         Route::get('/', [DashboardController::class, 'adminDashboard'])->name('admin.dashboard');
     });
 });
