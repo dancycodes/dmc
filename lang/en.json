@@ -256,5 +256,13 @@
     "The password reset token is required.": "The password reset token is required.",
     "We could not find a user with that email address.": "We could not find a user with that email address.",
     "Please wait before trying again.": "Please wait before trying again.",
-    "An error occurred while resetting your password. Please try again.": "An error occurred while resetting your password. Please try again."
+    "An error occurred while resetting your password. Please try again.": "An error occurred while resetting your password. Please try again.",
+
+    "Account Deactivated": "Account Deactivated",
+    "Your account has been deactivated. Please contact support.": "Your account has been deactivated. Please contact support.",
+    "If you believe this is an error, please reach out to our support team and we will assist you.": "If you believe this is an error, please reach out to our support team and we will assist you.",
+    "Contact Support": "Contact Support",
+    "User forced logout due to deactivated account": "User forced logout due to deactivated account",
+    "User deactivated by admin": "User deactivated by admin",
+    "User reactivated by admin": "User reactivated by admin"
 }

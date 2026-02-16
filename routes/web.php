@@ -61,6 +61,19 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 /*
 |--------------------------------------------------------------------------
+| Account Deactivation Page (F-029)
+|--------------------------------------------------------------------------
+|
+| BR-096: Accessible without authentication (user is logged out by middleware).
+| Shows a branded message informing the user their account has been deactivated.
+|
+*/
+Route::get('/account-deactivated', function () {
+    return gale()->view('auth.account-deactivated', web: true);
+})->name('account.deactivated');
+
+/*
+|--------------------------------------------------------------------------
 | Cross-Domain Session Sharing Routes (F-028)
 |--------------------------------------------------------------------------
 |
