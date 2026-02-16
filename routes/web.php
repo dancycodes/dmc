@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LanguagePreferenceController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\ProfileController;
@@ -153,6 +154,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile/payment-methods/{paymentMethod}/edit', [PaymentMethodController::class, 'edit'])->name('payment-methods.edit');
     Route::post('/profile/payment-methods/{paymentMethod}', [PaymentMethodController::class, 'update'])->name('payment-methods.update');
     Route::delete('/profile/payment-methods/{paymentMethod}', [PaymentMethodController::class, 'destroy'])->name('payment-methods.destroy');
+
+    // Language Preference (F-042)
+    Route::get('/profile/language', [LanguagePreferenceController::class, 'show'])->name('language.show');
+    Route::post('/profile/language', [LanguagePreferenceController::class, 'update'])->name('language.update');
 });
 
 /*

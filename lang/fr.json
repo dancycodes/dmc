@@ -403,5 +403,16 @@
     "Payment method updated": "Moyen de paiement mis \u00e0 jour",
     "Delete this payment method?": "Supprimer ce moyen de paiement ?",
     "Payment method deleted.": "Moyen de paiement supprim\u00e9.",
-    "Payment method deleted": "Moyen de paiement supprim\u00e9"
+    "Payment method deleted": "Moyen de paiement supprim\u00e9",
+    "Language Preference": "Pr\u00e9f\u00e9rence de langue",
+    "Set your preferred language": "D\u00e9finir votre langue pr\u00e9f\u00e9r\u00e9e",
+    "Choose the language for the entire application interface.": "Choisissez la langue pour l'ensemble de l'interface de l'application.",
+    "Your current language is :language. Changes will apply on the next page load.": "Votre langue actuelle est :language. Les modifications seront appliqu\u00e9es au prochain chargement de page.",
+    "Select your preferred language": "S\u00e9lectionnez votre langue pr\u00e9f\u00e9r\u00e9e",
+    "Display the application in English": "Afficher l'application en anglais",
+    "Display the application in French": "Afficher l'application en fran\u00e7ais",
+    "This setting stays in sync with the language switcher in the navigation bar. Changing one will update the other.": "Ce param\u00e8tre reste synchronis\u00e9 avec le s\u00e9lecteur de langue dans la barre de navigation. Modifier l'un mettra \u00e0 jour l'autre.",
+    "Save Language": "Enregistrer la langue",
+    "Language preference updated. The change will apply on the next page.": "Pr\u00e9f\u00e9rence de langue mise \u00e0 jour. Le changement sera appliqu\u00e9 \u00e0 la page suivante.",
+    "Language preference was updated": "La pr\u00e9f\u00e9rence de langue a \u00e9t\u00e9 mise \u00e0 jour"
 }
