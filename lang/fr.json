@@ -384,5 +384,14 @@
     "Phone number is required.": "Le num\u00e9ro de t\u00e9l\u00e9phone est requis.",
     "Please enter a valid Cameroon phone number.": "Veuillez entrer un num\u00e9ro de t\u00e9l\u00e9phone camerounais valide.",
     "This phone number does not match the selected provider.": "Ce num\u00e9ro de t\u00e9l\u00e9phone ne correspond pas au fournisseur s\u00e9lectionn\u00e9.",
-    "This phone number is already saved under a different provider.": "Ce num\u00e9ro de t\u00e9l\u00e9phone est d\u00e9j\u00e0 enregistr\u00e9 sous un autre fournisseur."
+    "This phone number is already saved under a different provider.": "Ce num\u00e9ro de t\u00e9l\u00e9phone est d\u00e9j\u00e0 enregistr\u00e9 sous un autre fournisseur.",
+
+    "Manage your saved mobile money numbers.": "G\u00e9rez vos num\u00e9ros mobile money enregistr\u00e9s.",
+    ":count of :max methods": ":count sur :max m\u00e9thodes",
+    "You have no saved payment methods.": "Vous n'avez aucun moyen de paiement enregistr\u00e9.",
+    "Save a mobile money number for faster checkout when ordering meals.": "Enregistrez un num\u00e9ro mobile money pour un paiement plus rapide lors de la commande de repas.",
+    "Add Your First Payment Method": "Ajouter votre premier moyen de paiement",
+    "Default payment method updated.": "Moyen de paiement par d\u00e9faut mis \u00e0 jour.",
+    "Default payment method updated": "Moyen de paiement par d\u00e9faut mis \u00e0 jour",
+    "This payment method is already your default.": "Ce moyen de paiement est d\u00e9j\u00e0 votre moyen par d\u00e9faut."
 }

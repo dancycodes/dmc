@@ -103,6 +103,30 @@ class PaymentMethod extends Model
     }
 
     /**
+     * Get the masked phone number for display (BR-157).
+     *
+     * Only the last 2 digits are visible: +237 6** *** *XX
+     */
+    public function maskedPhone(): string
+    {
+        $phone = $this->phone;
+
+        // Expect format: +237XXXXXXXXX (13 chars total)
+        if (strlen($phone) < 6) {
+            return $phone;
+        }
+
+        // Get the last 2 digits
+        $lastTwo = substr($phone, -2);
+
+        // Get the prefix (+237) and first digit of local number
+        $prefix = substr($phone, 0, 4); // +237
+        $firstDigit = substr($phone, 4, 1); // 6
+
+        return $prefix.' '.$firstDigit.'** *** *'.$lastTwo;
+    }
+
+    /**
      * Normalize a phone number to +237XXXXXXXXX format (BR-154).
      *
      * Strips spaces, dashes, parentheses and ensures +237 prefix.
