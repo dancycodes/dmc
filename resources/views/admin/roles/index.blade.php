@@ -284,6 +284,16 @@
                                     {{-- Actions --}}
                                     <td class="px-4 py-3 text-right">
                                         <div class="flex items-center justify-end gap-2">
+                                            {{-- Permissions (F-056) --}}
+                                            <a
+                                                href="{{ url('/vault-entry/roles/' . $role->id . '/permissions') }}"
+                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-outline text-on-surface hover:bg-surface hover:border-primary/30 hover:text-primary transition-colors"
+                                                title="{{ __('Permissions') }}"
+                                            >
+                                                <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="m9 12 2 2 4-4"></path></svg>
+                                                {{ __('Permissions') }}
+                                            </a>
+
                                             {{-- Edit --}}
                                             <a
                                                 href="{{ url('/vault-entry/roles/' . $role->id . '/edit') }}"
