@@ -182,6 +182,24 @@ class Tenant extends Model
     }
 
     /**
+     * Get the full URL for this tenant's site.
+     *
+     * BR-076: Uses custom_domain if configured, otherwise subdomain.
+     * F-067: Cook Card Component uses this for card click navigation.
+     */
+    public function getUrl(): string
+    {
+        if (! empty($this->custom_domain)) {
+            return 'https://'.$this->custom_domain;
+        }
+
+        $mainHost = parse_url(config('app.url'), PHP_URL_HOST);
+        $scheme = parse_url(config('app.url'), PHP_URL_SCHEME) ?? 'https';
+
+        return $scheme.'://'.$this->slug.'.'.$mainHost;
+    }
+
+    /**
      * Get the route key name for route model binding.
      */
     public function getRouteKeyName(): string
