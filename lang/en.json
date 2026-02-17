@@ -1409,5 +1409,17 @@
     "Add Your First Town": "Add Your First Town",
     "Town added to delivery areas": "Town added to delivery areas",
     "quarter": "quarter",
-    "quarters": "quarters"
+    "quarters": "quarters",
+    "town": "town",
+    "towns": "towns",
+    "Edit town": "Edit town",
+    "Delete town": "Delete town",
+    "Delete this town?": "Delete this town?",
+    "This will remove the town and all its quarters from your delivery areas. This action cannot be undone.": "This will remove the town and all its quarters from your delivery areas. This action cannot be undone.",
+    "Manage quarters": "Manage quarters",
+    "Quarters": "Quarters",
+    "No quarters added yet.": "No quarters added yet.",
+    "Quarter management coming soon": "Quarter management coming soon",
+    "XAF": "XAF",
+    "Delete town confirmation": "Delete town confirmation"
 }
