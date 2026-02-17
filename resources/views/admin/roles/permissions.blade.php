@@ -48,13 +48,16 @@
         totalPermissions: {{ $totalPermissions }},
         lastToggled: null,
         lastAction: null,
-        error: null,
+        error: '',
         messages: {},
         saving: {},
         permissions: {{ json_encode($permissionsState) }},
         modules: {{ json_encode($modulesData) }},
         expanded: {},
         flashTimeout: null,
+        permission: null,
+        togglePermissions: [],
+        grant: false,
         init() {
             Object.keys(this.modules).forEach(m => { this.expanded[m] = true; });
         },
@@ -84,16 +87,13 @@
         async togglePermission(permName) {
             if (this.saving[permName]) return;
             this.saving[permName] = true;
-            this.error = null;
+            this.error = '';
             const prev = this.permissions[permName];
             this.permissions[permName] = !prev;
+            this.permission = permName;
             try {
                 await $action('{{ url('/vault-entry/roles/' . $role->id . '/permissions/toggle') }}', {
-                    include: ['permission'],
-                    beforeSend(state) {
-                        state.permission = permName;
-                        return state;
-                    }
+                    include: ['permission']
                 });
                 this.flashToggled(permName);
             } catch (e) {
@@ -107,20 +107,17 @@
             const shouldGrant = !this.allAssignableChecked(module);
             const perms = this.modules[module].assignable;
             if (perms.length === 0) return;
-            this.error = null;
+            this.error = '';
             const prevStates = {};
             perms.forEach(p => {
                 prevStates[p] = this.permissions[p];
                 this.permissions[p] = shouldGrant;
             });
+            this.togglePermissions = [...perms];
+            this.grant = shouldGrant;
             try {
                 await $action('{{ url('/vault-entry/roles/' . $role->id . '/permissions/toggle-module') }}', {
-                    include: ['permissions', 'grant'],
-                    beforeSend(state) {
-                        state.permissions = perms;
-                        state.grant = shouldGrant;
-                        return state;
-                    }
+                    include: ['togglePermissions', 'grant']
                 });
             } catch (e) {
                 Object.entries(prevStates).forEach(([p, v]) => { this.permissions[p] = v; });
@@ -133,7 +130,6 @@
             this.flashTimeout = setTimeout(() => { this.lastToggled = null; }, 1200);
         }
     }"
-    x-sync
 >
     {{-- Breadcrumb --}}
     <x-admin.breadcrumb :items="[

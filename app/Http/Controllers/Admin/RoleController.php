@@ -583,7 +583,7 @@ class RoleController extends Controller
                 'assignedCount' => $assignedCount,
                 'lastToggled' => $permissionName,
                 'lastAction' => $action,
-                'error' => null,
+                'error' => '',
             ]);
         }
 
@@ -624,8 +624,8 @@ class RoleController extends Controller
 
         if ($request->isGale()) {
             $validated = $request->validateState([
-                'permissions' => ['required', 'array'],
-                'permissions.*' => ['required', 'string', 'exists:permissions,name'],
+                'togglePermissions' => ['required', 'array'],
+                'togglePermissions.*' => ['required', 'string', 'exists:permissions,name'],
                 'grant' => ['required', 'boolean'],
             ]);
         } else {
@@ -636,7 +636,7 @@ class RoleController extends Controller
             ]);
         }
 
-        $permissionNames = $validated['permissions'];
+        $permissionNames = $validated['togglePermissions'] ?? $validated['permissions'];
         $shouldGrant = $validated['grant'];
 
         // BR-129: Filter out permissions the admin doesn't have (non-super-admins)
@@ -680,7 +680,7 @@ class RoleController extends Controller
         if ($request->isGale()) {
             return gale()->state([
                 'assignedCount' => $assignedCount,
-                'error' => null,
+                'error' => '',
             ]);
         }
 
