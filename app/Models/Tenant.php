@@ -9,11 +9,15 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\Image\Enums\Fit;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-class Tenant extends Model
+class Tenant extends Model implements HasMedia
 {
     /** @use HasFactory<\Database\Factories\TenantFactory> */
-    use HasFactory, HasTranslatable, LogsActivityTrait;
+    use HasFactory, HasTranslatable, InteractsWithMedia, LogsActivityTrait;
 
     /**
      * The table associated with the model.
@@ -369,5 +373,36 @@ class Tenant extends Model
         $radius = $this->getSetting('border_radius');
 
         return is_string($radius) ? $radius : null;
+    }
+
+    /**
+     * Register media collections for cover images.
+     *
+     * F-073: Cover Images Step
+     * BR-127: Maximum 5 cover images per cook.
+     * BR-128: Accepted formats: JPEG, PNG, WebP.
+     * BR-129: Maximum file size: 2MB per image.
+     */
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('cover-images')
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp'])
+            ->useDisk('public');
+    }
+
+    /**
+     * Register media conversions for cover images.
+     *
+     * BR-130: Images are resized to a consistent 16:9 aspect ratio.
+     */
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $this->addMediaConversion('thumbnail')
+            ->fit(Fit::Crop, 400, 225)
+            ->nonQueued();
+
+        $this->addMediaConversion('carousel')
+            ->fit(Fit::Crop, 1200, 675)
+            ->nonQueued();
     }
 }
