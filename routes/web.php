@@ -16,6 +16,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DiscoveryController;
 use App\Http\Controllers\LanguagePreferenceController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\PaymentMethodController;
@@ -37,12 +38,16 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Root route dispatches based on domain context
+// BR-066: Discovery page on main domain, tenant landing on tenant domains
 Route::get('/', function () {
     if (app(TenantService::class)->isTenantDomain()) {
         return app(DashboardController::class)->tenantHome(request());
     }
 
-    return app(DashboardController::class)->home(request());
+    return app(DiscoveryController::class)->index(
+        app(App\Http\Requests\DiscoveryRequest::class),
+        app(App\Services\DiscoveryService::class),
+    );
 })->name('home');
 
 /*

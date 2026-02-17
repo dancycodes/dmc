@@ -7,14 +7,6 @@ use Illuminate\Http\Request;
 class DashboardController extends Controller
 {
     /**
-     * Display the main domain homepage.
-     */
-    public function home(Request $request): mixed
-    {
-        return gale()->view('home', [], web: true);
-    }
-
-    /**
      * Display the admin dashboard at /vault-entry.
      */
     public function adminDashboard(Request $request): mixed
