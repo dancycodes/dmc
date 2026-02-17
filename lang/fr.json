@@ -1114,5 +1114,11 @@
     "Show results": "Afficher les r\u00e9sultats",
     "No cooks match your filters": "Aucun cuisinier ne correspond \u00e0 vos filtres",
     "No cooks match your filters. Try adjusting your criteria.": "Aucun cuisinier ne correspond \u00e0 vos filtres. Essayez d'ajuster vos crit\u00e8res.",
-    "Close filters": "Fermer les filtres"
+    "Close filters": "Fermer les filtres",
+    "Business": "Activit\u00e9",
+    "Coverage": "Couverture",
+    "Engagement": "Engagement",
+    "Complete your setup to go live": "Compl\u00e9tez votre configuration pour \u00eatre en ligne",
+    "Your store is not yet visible to customers. Complete the setup wizard to start receiving orders.": "Votre boutique n'est pas encore visible pour les clients. Compl\u00e9tez l'assistant de configuration pour commencer \u00e0 recevoir des commandes.",
+    "Start Setup": "D\u00e9marrer la configuration"
 }

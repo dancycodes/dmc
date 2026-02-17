@@ -1114,5 +1114,11 @@
     "Show results": "Show results",
     "No cooks match your filters": "No cooks match your filters",
     "No cooks match your filters. Try adjusting your criteria.": "No cooks match your filters. Try adjusting your criteria.",
-    "Close filters": "Close filters"
+    "Close filters": "Close filters",
+    "Business": "Business",
+    "Coverage": "Coverage",
+    "Engagement": "Engagement",
+    "Complete your setup to go live": "Complete your setup to go live",
+    "Your store is not yet visible to customers. Complete the setup wizard to start receiving orders.": "Your store is not yet visible to customers. Complete the setup wizard to start receiving orders.",
+    "Start Setup": "Start Setup"
 }

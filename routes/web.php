@@ -297,8 +297,10 @@ Route::middleware('main.domain')->group(function () {
 |
 */
 Route::middleware('tenant.domain')->group(function () {
-    // Cook/Manager dashboard (BR-130: authenticated cooks/managers on tenant domains)
-    Route::prefix('dashboard')->middleware(['auth', 'throttle:moderate'])->group(function () {
+    // Cook/Manager dashboard (F-076: Cook Dashboard Layout & Navigation)
+    // BR-156: Dashboard routes are only accessible on tenant domains
+    // BR-157: Only users with cook or manager role for the current tenant
+    Route::prefix('dashboard')->middleware(['auth', 'cook.access', 'throttle:moderate'])->group(function () {
         Route::get('/', [DashboardController::class, 'cookDashboard'])->name('cook.dashboard');
     });
 

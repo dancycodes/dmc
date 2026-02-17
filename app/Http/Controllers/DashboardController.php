@@ -16,10 +16,18 @@ class DashboardController extends Controller
 
     /**
      * Display the cook/manager dashboard on tenant domains.
+     *
+     * F-076: Cook Dashboard Layout & Navigation
+     * BR-157: Only accessible to cook/manager role (enforced by cook.access middleware)
      */
     public function cookDashboard(Request $request): mixed
     {
-        return gale()->view('cook.dashboard', [], web: true);
+        $tenant = tenant();
+
+        return gale()->view('cook.dashboard', [
+            'tenant' => $tenant,
+            'setupComplete' => $tenant?->isSetupComplete() ?? false,
+        ], web: true);
     }
 
     /**

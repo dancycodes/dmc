@@ -37,6 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'main.domain' => EnsureMainDomain::class,
             'tenant.domain' => EnsureTenantDomain::class,
             'admin.access' => EnsureAdminAccess::class,
+            'cook.access' => \App\Http\Middleware\EnsureCookAccess::class,
             'honeypot' => ProtectAgainstSpam::class,
         ]);
     })

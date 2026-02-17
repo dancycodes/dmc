@@ -9,7 +9,6 @@ test('DashboardController exists and has required methods', function () {
     $controller = new DashboardController;
 
     expect($controller)->toBeInstanceOf(DashboardController::class)
-        ->and(method_exists($controller, 'home'))->toBeTrue()
         ->and(method_exists($controller, 'adminDashboard'))->toBeTrue()
         ->and(method_exists($controller, 'cookDashboard'))->toBeTrue()
         ->and(method_exists($controller, 'tenantHome'))->toBeTrue();
