@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Cook;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cook\StoreTownRequest;
+use App\Http\Requests\Cook\UpdateTownRequest;
 use App\Services\DeliveryAreaService;
 use Illuminate\Http\Request;
 
@@ -109,5 +110,85 @@ class TownController extends Controller
 
         return redirect()->route('cook.locations.index')
             ->with('success', __('Town added successfully.'));
+    }
+
+    /**
+     * Update a town's name in the cook's delivery areas.
+     *
+     * F-084: Edit Town
+     * BR-219: Town name required in both EN and FR
+     * BR-220: Edited town name must remain unique within this cook's towns (excluding the current town)
+     * BR-221: Save via Gale; list updates without page reload
+     * BR-223: Edit action requires location management permission
+     * BR-224: All validation messages use __() localization
+     */
+    public function update(Request $request, int $deliveryArea, DeliveryAreaService $deliveryAreaService): mixed
+    {
+        $user = $request->user();
+        $tenant = tenant();
+
+        // BR-223: Permission check
+        if (! $user->can('can-manage-locations')) {
+            abort(403);
+        }
+
+        // Dual Gale/HTTP validation pattern
+        if ($request->isGale()) {
+            $validated = $request->validateState([
+                'edit_name_en' => ['required', 'string', 'max:255'],
+                'edit_name_fr' => ['required', 'string', 'max:255'],
+            ], [
+                'edit_name_en.required' => __('Town name is required in English.'),
+                'edit_name_en.max' => __('Town name must not exceed 255 characters.'),
+                'edit_name_fr.required' => __('Town name is required in French.'),
+                'edit_name_fr.max' => __('Town name must not exceed 255 characters.'),
+            ]);
+        } else {
+            $formRequest = app(UpdateTownRequest::class);
+            $validated = $formRequest->validated();
+            // Map standard keys for HTTP path
+            $validated['edit_name_en'] = $validated['name_en'];
+            $validated['edit_name_fr'] = $validated['name_fr'];
+        }
+
+        // BR-219: Trim whitespace before storage and uniqueness check
+        $nameEn = trim($validated['edit_name_en']);
+        $nameFr = trim($validated['edit_name_fr']);
+
+        // Use DeliveryAreaService for business logic
+        $result = $deliveryAreaService->updateTown($tenant, $deliveryArea, $nameEn, $nameFr);
+
+        if (! $result['success']) {
+            // BR-220: Uniqueness violation
+            if ($request->isGale()) {
+                return gale()->messages([
+                    'edit_name_en' => $result['error'],
+                ]);
+            }
+
+            return redirect()->back()->withErrors(['name_en' => $result['error']])->withInput();
+        }
+
+        // Activity logging
+        activity('delivery_areas')
+            ->causedBy($user)
+            ->withProperties([
+                'action' => 'town_updated',
+                'town_name_en' => $nameEn,
+                'town_name_fr' => $nameFr,
+                'tenant_id' => $tenant->id,
+                'delivery_area_id' => $deliveryArea,
+            ])
+            ->log('Town name updated');
+
+        // BR-221: Gale redirect with toast (list updates without page reload)
+        if ($request->isGale()) {
+            return gale()
+                ->redirect(url('/dashboard/locations'))
+                ->with('success', __('Town updated successfully.'));
+        }
+
+        return redirect()->route('cook.locations.index')
+            ->with('success', __('Town updated successfully.'));
     }
 }

@@ -148,6 +148,62 @@ class DeliveryAreaService
     }
 
     /**
+     * Update a town's name in the cook's delivery areas.
+     *
+     * BR-220: Edited town name must remain unique within this cook's towns (excluding the current town).
+     * BR-222: Changes to town name do not affect existing order records (orders reference town by ID).
+     *
+     * @return array{success: bool, error: string}
+     */
+    public function updateTown(Tenant $tenant, int $deliveryAreaId, string $nameEn, string $nameFr): array
+    {
+        $deliveryArea = DeliveryArea::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('id', $deliveryAreaId)
+            ->with('town')
+            ->first();
+
+        if (! $deliveryArea) {
+            return [
+                'success' => false,
+                'error' => __('Delivery area not found.'),
+            ];
+        }
+
+        // BR-220: Check uniqueness excluding the current town
+        $existingTownIds = DeliveryArea::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('id', '!=', $deliveryAreaId)
+            ->pluck('town_id');
+
+        $duplicate = Town::query()
+            ->whereIn('id', $existingTownIds)
+            ->where(function ($q) use ($nameEn, $nameFr) {
+                $q->whereRaw('LOWER(name_en) = ?', [mb_strtolower($nameEn)])
+                    ->orWhereRaw('LOWER(name_fr) = ?', [mb_strtolower($nameFr)]);
+            })
+            ->exists();
+
+        if ($duplicate) {
+            return [
+                'success' => false,
+                'error' => __('A town with this name already exists in your delivery areas.'),
+            ];
+        }
+
+        // Update the town record
+        $deliveryArea->town->update([
+            'name_en' => $nameEn,
+            'name_fr' => $nameFr,
+        ]);
+
+        return [
+            'success' => true,
+            'error' => '',
+        ];
+    }
+
+    /**
      * Remove a town from the tenant's delivery areas (cascade deletes quarters).
      */
     public function removeTown(Tenant $tenant, int $deliveryAreaId): bool

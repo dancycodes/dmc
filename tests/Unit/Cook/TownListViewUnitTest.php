@@ -196,10 +196,9 @@ describe('Locations blade -- town list view enhancements', function () {
         expect($content)->toContain('$action(');
     });
 
-    it('uses $navigate for edit link', function () use ($viewPath) {
+    it('uses startEdit for inline edit form (F-084)', function () use ($viewPath) {
         $content = file_get_contents($viewPath);
-        expect($content)->toContain('$navigate(');
-        expect($content)->toContain('/edit');
+        expect($content)->toContain('startEdit(');
     });
 
     it('uses delete action with method DELETE', function () use ($viewPath) {
