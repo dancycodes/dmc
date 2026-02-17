@@ -1097,5 +1097,22 @@
     "Search cooks, meals, towns": "Rechercher cuisiniers, plats, villes",
     "Close search": "Fermer la recherche",
     "No cooks found matching your search": "Aucun cuisinier trouv\u00e9 correspondant \u00e0 votre recherche",
-    "No cooks found matching your search. Try different keywords.": "Aucun cuisinier trouv\u00e9 correspondant \u00e0 votre recherche. Essayez d'autres mots-cl\u00e9s."
+    "No cooks found matching your search. Try different keywords.": "Aucun cuisinier trouv\u00e9 correspondant \u00e0 votre recherche. Essayez d'autres mots-cl\u00e9s.",
+
+    "Town": "Ville",
+    "All towns": "Toutes les villes",
+    "Availability": "Disponibilit\u00e9",
+    "All cooks": "Tous les cuisiniers",
+    "Available now": "Disponible maintenant",
+    "Available today": "Disponible aujourd'hui",
+    "Minimum Rating": "Note minimale",
+    "Minimum :stars stars": "Minimum :stars \u00e9toiles",
+    "+ stars": "+ \u00e9toiles",
+    "Meal Tags": "\u00c9tiquettes de plats",
+    "Clear all": "Tout effacer",
+    "Clear filters": "Effacer les filtres",
+    "Show results": "Afficher les r\u00e9sultats",
+    "No cooks match your filters": "Aucun cuisinier ne correspond \u00e0 vos filtres",
+    "No cooks match your filters. Try adjusting your criteria.": "Aucun cuisinier ne correspond \u00e0 vos filtres. Essayez d'ajuster vos crit\u00e8res.",
+    "Close filters": "Fermer les filtres"
 }

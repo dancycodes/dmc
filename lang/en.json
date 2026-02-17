@@ -1097,5 +1097,22 @@
     "Search cooks, meals, towns": "Search cooks, meals, towns",
     "Close search": "Close search",
     "No cooks found matching your search": "No cooks found matching your search",
-    "No cooks found matching your search. Try different keywords.": "No cooks found matching your search. Try different keywords."
+    "No cooks found matching your search. Try different keywords.": "No cooks found matching your search. Try different keywords.",
+
+    "Town": "Town",
+    "All towns": "All towns",
+    "Availability": "Availability",
+    "All cooks": "All cooks",
+    "Available now": "Available now",
+    "Available today": "Available today",
+    "Minimum Rating": "Minimum Rating",
+    "Minimum :stars stars": "Minimum :stars stars",
+    "+ stars": "+ stars",
+    "Meal Tags": "Meal Tags",
+    "Clear all": "Clear all",
+    "Clear filters": "Clear filters",
+    "Show results": "Show results",
+    "No cooks match your filters": "No cooks match your filters",
+    "No cooks match your filters. Try adjusting your criteria.": "No cooks match your filters. Try adjusting your criteria.",
+    "Close filters": "Close filters"
 }
