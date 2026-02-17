@@ -169,10 +169,10 @@ describe('Locations index blade view — quarter list enhancements', function ()
         expect($content)->toContain('x-show="getGroupFilter(');
     });
 
-    it('has edit button for each quarter (F-088 stub)', function () use ($viewPath) {
+    it('has edit button for each quarter (F-088)', function () use ($viewPath) {
         $content = file_get_contents($viewPath);
         expect($content)->toContain("__('Edit quarter')");
-        expect($content)->toContain("url('/dashboard/locations/quarters/' . \$quarter['id'] . '/edit')");
+        expect($content)->toContain('startEditQuarter(');
     });
 
     it('has delete button for each quarter (F-089 stub)', function () use ($viewPath) {
@@ -237,10 +237,11 @@ describe('Locations index blade view — quarter list enhancements', function ()
         expect($content)->toContain('aria-modal="true"');
     });
 
-    it('quarter edit link uses x-navigate-skip', function () use ($viewPath) {
+    it('quarter edit button triggers inline edit form (F-088)', function () use ($viewPath) {
         $content = file_get_contents($viewPath);
-        // The edit link should have x-navigate-skip since it is a stub
-        expect($content)->toContain('x-navigate-skip');
+        // The edit button triggers inline edit via Alpine startEditQuarter method
+        expect($content)->toContain('startEditQuarter(');
+        expect($content)->toContain('editingQuarterId');
     });
 
     it('quarter delete action URL uses correct pattern', function () use ($viewPath) {
