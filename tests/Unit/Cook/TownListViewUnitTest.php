@@ -165,7 +165,7 @@ describe('Locations blade -- town list view enhancements', function () {
 
     it('shows message for town with no quarters', function () use ($viewPath) {
         $content = file_get_contents($viewPath);
-        expect($content)->toContain("__('No quarters added yet.')");
+        expect($content)->toContain("__('No quarters added yet. Add a quarter to define delivery fees within this town.')");
     });
 
     it('has empty state when no towns exist (BR-217)', function () use ($viewPath) {

@@ -1,13 +1,15 @@
 {{--
-    Locations -- Town List & Add Town
-    --------------------------------
+    Locations -- Town List & Add Town & Add Quarter
+    ------------------------------------------------
     F-082: Add Town
     F-083: Town List View
     F-084: Edit Town
     F-085: Delete Town
+    F-086: Add Quarter
 
     Allows the cook to view existing towns and add new ones to their delivery areas.
     Each town is scoped to the tenant via the delivery_areas junction table.
+    Quarters can be added inline within each expanded town section.
 
     BR-207: Town name required in both EN and FR
     BR-208: Town name must be unique within this cook's towns (per language)
@@ -33,6 +35,16 @@
     BR-229: On success, toast notification confirms deletion
     BR-230: Delete action requires location management permission
     BR-231: Town list updates via Gale without page reload after deletion
+    BR-232: Quarter name required in both EN and FR
+    BR-233: Quarter name must be unique within its parent town
+    BR-234: Delivery fee is required and must be >= 0 XAF
+    BR-235: Delivery fee is stored as an integer in XAF
+    BR-236: A fee of 0 means free delivery to that quarter
+    BR-237: Quarter can optionally be assigned to a quarter group
+    BR-238: When assigned to a group, the group's delivery fee overrides the individual fee
+    BR-239: Quarter is scoped to its parent town (town_id foreign key)
+    BR-240: Save via Gale; quarter appears in list without page reload
+    BR-241: Only users with location management permission can add quarters
 --}}
 @extends('layouts.cook-dashboard')
 
@@ -105,9 +117,19 @@
             editingTownId: null,
             edit_name_en: '',
             edit_name_fr: '',
+            /* F-086: Add Quarter state */
+            showAddQuarterForm: null,
+            quarter_name_en: '',
+            quarter_name_fr: '',
+            quarter_delivery_fee: '',
             resetForm() {
                 this.name_en = '';
                 this.name_fr = '';
+            },
+            resetQuarterForm() {
+                this.quarter_name_en = '';
+                this.quarter_name_fr = '';
+                this.quarter_delivery_fee = '';
             },
             toggleTown(areaId) {
                 this.expandedTown = this.expandedTown === areaId ? null : areaId;
@@ -121,6 +143,14 @@
                 this.editingTownId = null;
                 this.edit_name_en = '';
                 this.edit_name_fr = '';
+            },
+            showQuarterForm(areaId) {
+                this.showAddQuarterForm = areaId;
+                this.resetQuarterForm();
+            },
+            hideQuarterForm() {
+                this.showAddQuarterForm = null;
+                this.resetQuarterForm();
             },
             confirmDelete(areaId, townName, quarterCount) {
                 this.confirmDeleteId = areaId;
@@ -139,7 +169,7 @@
                 }
             }
         }"
-        x-sync="['name_en', 'name_fr', 'edit_name_en', 'edit_name_fr']"
+        x-sync="['name_en', 'name_fr', 'edit_name_en', 'edit_name_fr', 'quarter_name_en', 'quarter_name_fr', 'quarter_delivery_fee']"
     >
         {{-- Header with Add Town button --}}
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -398,7 +428,7 @@
                             </form>
                         </div>
 
-                        {{-- Expanded Quarter Section (BR-216) --}}
+                        {{-- Expanded Quarter Section (BR-216, F-086: Add Quarter) --}}
                         <div
                             x-show="expandedTown === {{ $area['id'] }} && editingTownId !== {{ $area['id'] }}"
                             x-cloak
@@ -410,35 +440,178 @@
                             x-transition:leave-end="opacity-0"
                             class="border-t border-outline dark:border-outline bg-surface dark:bg-surface px-4 py-3"
                         >
+                            {{-- Quarter List Header with Add Button --}}
+                            <div class="flex items-center justify-between mb-3">
+                                <h5 class="text-xs font-semibold text-on-surface/60 uppercase tracking-wider">
+                                    {{ __('Quarters') }}
+                                </h5>
+                                <button
+                                    type="button"
+                                    x-on:click="showQuarterForm({{ $area['id'] }})"
+                                    x-show="showAddQuarterForm !== {{ $area['id'] }}"
+                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-primary hover:bg-primary-subtle transition-colors duration-200"
+                                >
+                                    {{-- Lucide: plus (xs=14) --}}
+                                    <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+                                    {{ __('Add Quarter') }}
+                                </button>
+                            </div>
+
+                            {{-- Quarter List --}}
                             @if($quarterCount > 0)
-                                <div class="space-y-2">
-                                    <h5 class="text-xs font-semibold text-on-surface/60 uppercase tracking-wider mb-2">
-                                        {{ __('Quarters') }}
-                                    </h5>
+                                <div class="space-y-2 mb-3">
                                     @foreach($area['quarters'] as $quarter)
-                                        <div class="flex items-center justify-between py-1.5 px-3 rounded-lg bg-surface-alt dark:bg-surface-alt">
-                                            <span class="text-sm text-on-surface-strong truncate">
-                                                {{ $locale === 'fr' ? $quarter['quarter_name_fr'] : $quarter['quarter_name_en'] }}
-                                            </span>
-                                            <span class="text-xs text-on-surface/60 shrink-0 ml-2">
-                                                {{ number_format($quarter['delivery_fee']) }} {{ __('XAF') }}
+                                        <div class="flex items-center justify-between py-2 px-3 rounded-lg bg-surface-alt dark:bg-surface-alt">
+                                            <div class="min-w-0 flex-1">
+                                                <span class="text-sm text-on-surface-strong truncate block">
+                                                    {{ $locale === 'fr' ? $quarter['quarter_name_fr'] : $quarter['quarter_name_en'] }}
+                                                </span>
+                                                @if($quarter['quarter_name_en'] !== $quarter['quarter_name_fr'])
+                                                    <span class="text-xs text-on-surface/50 truncate block">
+                                                        {{ $locale === 'fr' ? $quarter['quarter_name_en'] : $quarter['quarter_name_fr'] }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                            <span class="shrink-0 ml-2">
+                                                @if($quarter['delivery_fee'] === 0)
+                                                    {{-- BR-236: Free delivery badge --}}
+                                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-success-subtle text-success">
+                                                        {{-- Lucide: check (xs=14) --}}
+                                                        <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+                                                        {{ __('Free') }}
+                                                    </span>
+                                                @else
+                                                    <span class="text-xs font-medium text-on-surface/70">
+                                                        {{ number_format($quarter['delivery_fee']) }} {{ __('XAF') }}
+                                                    </span>
+                                                @endif
                                             </span>
                                         </div>
                                     @endforeach
                                 </div>
                             @else
-                                <p class="text-sm text-on-surface/60 italic py-2">
-                                    {{ __('No quarters added yet.') }}
-                                </p>
+                                <div x-show="showAddQuarterForm !== {{ $area['id'] }}" class="py-3">
+                                    <p class="text-sm text-on-surface/60 italic">
+                                        {{ __('No quarters added yet. Add a quarter to define delivery fees within this town.') }}
+                                    </p>
+                                </div>
                             @endif
 
-                            {{-- Manage Quarters link (forward-compatible for F-087) --}}
-                            <div class="mt-3 pt-3 border-t border-outline/50 dark:border-outline/50">
-                                <span class="inline-flex items-center gap-1.5 text-xs font-medium text-primary cursor-default">
-                                    {{-- Lucide: layout-grid (xs=14) --}}
-                                    <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect></svg>
-                                    {{ __('Quarter management coming soon') }}
-                                </span>
+                            {{-- Add Quarter Form (F-086: Inline within expanded town) --}}
+                            <div
+                                x-show="showAddQuarterForm === {{ $area['id'] }}"
+                                x-cloak
+                                x-transition:enter="transition ease-out duration-200"
+                                x-transition:enter-start="opacity-0 -translate-y-2"
+                                x-transition:enter-end="opacity-100 translate-y-0"
+                                x-transition:leave="transition ease-in duration-150"
+                                x-transition:leave-start="opacity-100 translate-y-0"
+                                x-transition:leave-end="opacity-0 -translate-y-2"
+                                class="mt-2"
+                            >
+                                <div class="bg-surface-alt dark:bg-surface-alt rounded-lg border border-outline/60 dark:border-outline/60 p-4">
+                                    <h6 class="text-sm font-semibold text-on-surface-strong mb-3 flex items-center gap-2">
+                                        {{-- Lucide: map-pin-plus --}}
+                                        <svg class="w-4 h-4 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                        {{ __('Add Quarter to') }} {{ $townName }}
+                                    </h6>
+
+                                    <form x-on:submit.prevent="$action('{{ url('/dashboard/locations/quarters/' . $area['id']) }}')" class="space-y-3">
+                                        {{-- Quarter Names (EN + FR) --}}
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            {{-- English Quarter Name (BR-232) --}}
+                                            <div>
+                                                <label for="quarter-name-en-{{ $area['id'] }}" class="block text-xs font-medium text-on-surface mb-1">
+                                                    {{ __('Quarter Name (English)') }}
+                                                    <span class="text-danger">*</span>
+                                                </label>
+                                                <input
+                                                    id="quarter-name-en-{{ $area['id'] }}"
+                                                    type="text"
+                                                    x-model="quarter_name_en"
+                                                    x-name="quarter_name_en"
+                                                    class="w-full px-3 py-2 rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface-strong placeholder-on-surface/40 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 text-sm"
+                                                    placeholder="{{ __('e.g. Bonaberi') }}"
+                                                    autocomplete="off"
+                                                >
+                                                <p x-message="quarter_name_en" class="mt-1 text-xs text-danger"></p>
+                                            </div>
+
+                                            {{-- French Quarter Name (BR-232) --}}
+                                            <div>
+                                                <label for="quarter-name-fr-{{ $area['id'] }}" class="block text-xs font-medium text-on-surface mb-1">
+                                                    {{ __('Quarter Name (French)') }}
+                                                    <span class="text-danger">*</span>
+                                                </label>
+                                                <input
+                                                    id="quarter-name-fr-{{ $area['id'] }}"
+                                                    type="text"
+                                                    x-model="quarter_name_fr"
+                                                    x-name="quarter_name_fr"
+                                                    class="w-full px-3 py-2 rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface-strong placeholder-on-surface/40 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 text-sm"
+                                                    placeholder="{{ __('e.g. Bonabéri') }}"
+                                                    autocomplete="off"
+                                                >
+                                                <p x-message="quarter_name_fr" class="mt-1 text-xs text-danger"></p>
+                                            </div>
+                                        </div>
+
+                                        {{-- Delivery Fee (BR-234, BR-235) --}}
+                                        <div>
+                                            <label for="quarter-fee-{{ $area['id'] }}" class="block text-xs font-medium text-on-surface mb-1">
+                                                {{ __('Delivery Fee') }}
+                                                <span class="text-danger">*</span>
+                                            </label>
+                                            <div class="relative">
+                                                <input
+                                                    id="quarter-fee-{{ $area['id'] }}"
+                                                    type="number"
+                                                    min="0"
+                                                    step="1"
+                                                    x-model="quarter_delivery_fee"
+                                                    x-name="quarter_delivery_fee"
+                                                    class="w-full px-3 py-2 pr-14 rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface-strong placeholder-on-surface/40 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 text-sm"
+                                                    placeholder="{{ __('e.g. 500') }}"
+                                                    autocomplete="off"
+                                                >
+                                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-on-surface/50">
+                                                    {{ __('XAF') }}
+                                                </span>
+                                            </div>
+                                            <p x-message="quarter_delivery_fee" class="mt-1 text-xs text-danger"></p>
+                                            <p class="mt-1 text-xs text-on-surface/50">
+                                                {{ __('Enter 0 for free delivery to this quarter.') }}
+                                            </p>
+                                        </div>
+
+                                        {{-- Quarter Group (BR-237, BR-238 — forward-compatible for F-090) --}}
+                                        {{-- Quarter groups not yet available (F-090). Hidden until groups exist. --}}
+
+                                        {{-- Form Actions --}}
+                                        <div class="flex items-center justify-end gap-2 pt-1">
+                                            <button
+                                                type="button"
+                                                x-on:click="hideQuarterForm()"
+                                                class="px-3 py-1.5 rounded-lg text-xs font-medium text-on-surface hover:bg-surface dark:hover:bg-surface transition-colors duration-200"
+                                            >
+                                                {{ __('Cancel') }}
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-on-primary text-xs font-medium hover:bg-primary-hover transition-colors duration-200 shadow-sm"
+                                            >
+                                                <span x-show="!$fetching()">
+                                                    {{-- Lucide: check (xs=14) --}}
+                                                    <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+                                                </span>
+                                                <span x-show="$fetching()">
+                                                    <svg class="w-3.5 h-3.5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                                </span>
+                                                <span x-text="$fetching() ? '{{ __('Saving...') }}' : '{{ __('Save Quarter') }}'"></span>
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     </div>
