@@ -1287,5 +1287,9 @@
     "XAF": "XAF",
     "Delete town confirmation": "Confirmation de suppression de ville",
     "Edit Town": "Modifier la ville",
-    "Town updated successfully.": "Ville mise à jour avec succès."
+    "Town updated successfully.": "Ville mise à jour avec succès.",
+    "Town deleted successfully.": "Ville supprimée avec succès.",
+    "Cannot delete :town because it has active orders. Complete or cancel the orders first.": "Impossible de supprimer :town car il y a des commandes actives. Terminez ou annulez les commandes d'abord.",
+    "and its": "et ses",
+    "Town deleted from delivery areas": "Ville supprimée des zones de livraison"
 }

@@ -350,11 +350,12 @@ Route::middleware('tenant.domain')->group(function () {
         Route::post('/profile/cover-images/reorder', [CoverImageController::class, 'reorder'])->name('cook.cover-images.reorder');
         Route::delete('/profile/cover-images/{mediaId}', [CoverImageController::class, 'destroy'])->name('cook.cover-images.destroy');
 
-        // Location management (F-082: Add Town, F-083: Town List View, F-084: Edit Town)
+        // Location management (F-082: Add Town, F-083: Town List View, F-084: Edit Town, F-085: Delete Town)
         // BR-212: Only users with can-manage-locations permission
         Route::get('/locations', [TownController::class, 'index'])->name('cook.locations.index');
         Route::post('/locations/towns', [TownController::class, 'store'])->name('cook.locations.towns.store');
         Route::put('/locations/towns/{deliveryArea}', [TownController::class, 'update'])->name('cook.locations.towns.update');
+        Route::delete('/locations/towns/{deliveryArea}', [TownController::class, 'destroy'])->name('cook.locations.towns.destroy');
     });
 
     // Tenant-specific routes will be added by later features (F-126, etc.)

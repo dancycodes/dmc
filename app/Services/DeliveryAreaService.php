@@ -205,21 +205,75 @@ class DeliveryAreaService
 
     /**
      * Remove a town from the tenant's delivery areas (cascade deletes quarters).
+     *
+     * F-085: Delete Town
+     * BR-225: Cannot delete a town with active (non-completed, non-cancelled) orders.
+     * BR-226: Deleting a town cascade-deletes all its quarters and their delivery fees.
+     * BR-227: Deleting a town cascade-removes quarters from any quarter groups.
+     *
+     * @return array{success: bool, error: string, town_name: string, quarter_count: int}
      */
-    public function removeTown(Tenant $tenant, int $deliveryAreaId): bool
+    public function removeTown(Tenant $tenant, int $deliveryAreaId): array
     {
         $deliveryArea = DeliveryArea::query()
             ->where('tenant_id', $tenant->id)
             ->where('id', $deliveryAreaId)
+            ->with(['town', 'deliveryAreaQuarters'])
             ->first();
 
         if (! $deliveryArea) {
-            return false;
+            return [
+                'success' => false,
+                'error' => __('Delivery area not found.'),
+                'town_name' => '',
+                'quarter_count' => 0,
+            ];
         }
 
+        $locale = app()->getLocale();
+        $townName = $deliveryArea->town->{'name_'.$locale} ?? $deliveryArea->town->name_en;
+        $quarterCount = $deliveryArea->deliveryAreaQuarters->count();
+
+        // BR-225: Check for active orders referencing this town (forward-compatible)
+        if (\Illuminate\Support\Facades\Schema::hasTable('orders')) {
+            $activeOrderCount = \Illuminate\Database\Eloquent\Model::resolveConnection()
+                ->table('orders')
+                ->where('tenant_id', $tenant->id)
+                ->where('town_id', $deliveryArea->town_id)
+                ->whereNotIn('status', ['completed', 'cancelled'])
+                ->count();
+
+            if ($activeOrderCount > 0) {
+                return [
+                    'success' => false,
+                    'error' => __('Cannot delete :town because it has active orders. Complete or cancel the orders first.', ['town' => $townName]),
+                    'town_name' => $townName,
+                    'quarter_count' => $quarterCount,
+                ];
+            }
+        }
+
+        // BR-226: Cascade delete quarters (FK on_delete cascade handles delivery_area_quarters)
+        // BR-227: Forward-compatible quarter group membership removal
+        if (\Illuminate\Support\Facades\Schema::hasTable('quarter_groups')) {
+            $quarterIds = $deliveryArea->deliveryAreaQuarters->pluck('quarter_id')->all();
+            if (! empty($quarterIds)) {
+                \Illuminate\Database\Eloquent\Model::resolveConnection()
+                    ->table('quarter_group_quarter')
+                    ->whereIn('quarter_id', $quarterIds)
+                    ->delete();
+            }
+        }
+
+        // Delete the delivery area (FK cascade handles delivery_area_quarters)
         $deliveryArea->delete();
 
-        return true;
+        return [
+            'success' => true,
+            'error' => '',
+            'town_name' => $townName,
+            'quarter_count' => $quarterCount,
+        ];
     }
 
     /**

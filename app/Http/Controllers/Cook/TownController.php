@@ -191,4 +191,63 @@ class TownController extends Controller
         return redirect()->route('cook.locations.index')
             ->with('success', __('Town updated successfully.'));
     }
+
+    /**
+     * Delete a town from the cook's delivery areas.
+     *
+     * F-085: Delete Town
+     * BR-225: Cannot delete a town with active (non-completed, non-cancelled) orders
+     * BR-226: Deleting a town cascade-deletes all its quarters and their delivery fees
+     * BR-227: Deleting a town cascade-removes quarters from any quarter groups
+     * BR-228: Confirmation dialog must be shown before deletion (handled in blade)
+     * BR-229: On success, toast notification confirms "Town deleted successfully"
+     * BR-230: Delete action requires location management permission
+     * BR-231: Town list updates via Gale without page reload after deletion
+     */
+    public function destroy(Request $request, int $deliveryArea, DeliveryAreaService $deliveryAreaService): mixed
+    {
+        $user = $request->user();
+        $tenant = tenant();
+
+        // BR-230: Permission check
+        if (! $user->can('can-manage-locations')) {
+            abort(403);
+        }
+
+        $result = $deliveryAreaService->removeTown($tenant, $deliveryArea);
+
+        if (! $result['success']) {
+            // BR-225: Active orders block deletion
+            if ($request->isGale()) {
+                return gale()
+                    ->redirect(url('/dashboard/locations'))
+                    ->with('error', $result['error']);
+            }
+
+            return redirect()->route('cook.locations.index')
+                ->with('error', $result['error']);
+        }
+
+        // Activity logging
+        activity('delivery_areas')
+            ->causedBy($user)
+            ->withProperties([
+                'action' => 'town_deleted',
+                'town_name' => $result['town_name'],
+                'quarters_deleted' => $result['quarter_count'],
+                'tenant_id' => $tenant->id,
+                'delivery_area_id' => $deliveryArea,
+            ])
+            ->log('Town deleted from delivery areas');
+
+        // BR-229 + BR-231: Toast notification and list update via Gale
+        if ($request->isGale()) {
+            return gale()
+                ->redirect(url('/dashboard/locations'))
+                ->with('success', __('Town deleted successfully.'));
+        }
+
+        return redirect()->route('cook.locations.index')
+            ->with('success', __('Town deleted successfully.'));
+    }
 }

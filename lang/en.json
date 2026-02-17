@@ -1287,5 +1287,9 @@
     "XAF": "XAF",
     "Delete town confirmation": "Delete town confirmation",
     "Edit Town": "Edit Town",
-    "Town updated successfully.": "Town updated successfully."
+    "Town updated successfully.": "Town updated successfully.",
+    "Town deleted successfully.": "Town deleted successfully.",
+    "Cannot delete :town because it has active orders. Complete or cancel the orders first.": "Cannot delete :town because it has active orders. Complete or cancel the orders first.",
+    "and its": "and its",
+    "Town deleted from delivery areas": "Town deleted from delivery areas"
 }
