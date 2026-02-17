@@ -120,25 +120,26 @@ class SetupWizardService
     }
 
     /**
-     * Check if at least 1 town with 1 quarter and delivery fee exists.
+     * Check if at least 1 delivery area (town with quarter) exists for this tenant.
      *
      * BR-109: Part of minimum setup requirements.
-     * Forward-compatible: checks if tables exist before querying.
+     * Forward-compatible: delivery_areas table created by F-074 links tenants to towns.
+     * Towns and quarters are global reference tables (no tenant_id).
      */
     public function hasDeliveryArea(Tenant $tenant): bool
     {
-        // Forward-compatible: towns/quarters tables created by F-082/F-086
-        if (! \Schema::hasTable('towns') || ! \Schema::hasTable('quarters')) {
+        // Forward-compatible: delivery_areas table created by F-074
+        if (! \Schema::hasTable('delivery_areas')) {
             return false;
         }
 
-        // Check if tenant has at least one town with at least one quarter
-        return \DB::table('towns')
-            ->where('tenant_id', $tenant->id)
+        // Check if tenant has at least one delivery area linked to a town with quarters
+        return \DB::table('delivery_areas')
+            ->where('delivery_areas.tenant_id', $tenant->id)
             ->whereExists(function ($query) {
                 $query->select(\DB::raw(1))
                     ->from('quarters')
-                    ->whereColumn('quarters.town_id', 'towns.id');
+                    ->whereColumn('quarters.town_id', 'delivery_areas.town_id');
             })
             ->exists();
     }
