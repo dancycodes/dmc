@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Meal;
+use App\Models\Schedule;
 use App\Models\Tenant;
 
 class SetupWizardService
@@ -151,29 +153,15 @@ class SetupWizardService
      * Check if at least 1 active meal with at least 1 component exists.
      *
      * BR-109: Part of minimum setup requirements.
-     * Forward-compatible: checks if tables exist before querying.
+     * BR-147: At least one meal with at least one component is required.
+     * BR-155: Step 4 is complete when at least one active meal with one component exists.
      */
     public function hasActiveMeal(Tenant $tenant): bool
     {
-        // Forward-compatible: meals/meal_components tables created by F-108/F-118
-        if (! \Schema::hasTable('meals')) {
-            return false;
-        }
-
-        $mealQuery = \DB::table('meals')
-            ->where('tenant_id', $tenant->id)
-            ->where('is_active', true);
-
-        // If meal_components table exists, also check for at least 1 component
-        if (\Schema::hasTable('meal_components')) {
-            $mealQuery->whereExists(function ($query) {
-                $query->select(\DB::raw(1))
-                    ->from('meal_components')
-                    ->whereColumn('meal_components.meal_id', 'meals.id');
-            });
-        }
-
-        return $mealQuery->exists();
+        return $tenant->meals()
+            ->active()
+            ->whereHas('components')
+            ->exists();
     }
 
     /**
@@ -256,6 +244,66 @@ class SetupWizardService
         }
 
         return false;
+    }
+
+    /**
+     * Get the schedule data for the wizard step 4 view.
+     *
+     * BR-146: Schedule sets availability per day of the week.
+     * Returns all 7 days with existing schedule data pre-filled.
+     *
+     * @return array<int, array{day: int, label: string, enabled: bool, start_time: string, end_time: string}>
+     */
+    public function getScheduleData(Tenant $tenant): array
+    {
+        $existing = $tenant->schedules()
+            ->where('is_available', true)
+            ->get()
+            ->keyBy('day_of_week');
+
+        $schedule = [];
+        foreach (Schedule::DAY_LABELS as $day => $label) {
+            $entry = $existing->get($day);
+            $schedule[] = [
+                'day' => $day,
+                'label' => $label,
+                'enabled' => $entry !== null,
+                'start_time' => $entry ? substr($entry->start_time, 0, 5) : '10:00',
+                'end_time' => $entry ? substr($entry->end_time, 0, 5) : '20:00',
+            ];
+        }
+
+        return $schedule;
+    }
+
+    /**
+     * Get the meals data for the wizard step 4 view (pre-population on revisit).
+     *
+     * @return array<int, array{id: int, name_en: string, name_fr: string, description_en: ?string, description_fr: ?string, price: int, components: array}>
+     */
+    public function getMealsData(Tenant $tenant): array
+    {
+        return $tenant->meals()
+            ->with('components')
+            ->orderBy('created_at', 'asc')
+            ->get()
+            ->map(fn (Meal $meal) => [
+                'id' => $meal->id,
+                'name_en' => $meal->name_en,
+                'name_fr' => $meal->name_fr,
+                'description_en' => $meal->description_en,
+                'description_fr' => $meal->description_fr,
+                'price' => $meal->price,
+                'components' => $meal->components->map(fn ($c) => [
+                    'id' => $c->id,
+                    'name_en' => $c->name_en,
+                    'name_fr' => $c->name_fr,
+                    'description_en' => $c->description_en,
+                    'description_fr' => $c->description_fr,
+                ])->values()->all(),
+            ])
+            ->values()
+            ->all();
     }
 
     /**

@@ -249,6 +249,26 @@ class Tenant extends Model implements HasMedia
     }
 
     /**
+     * Get the schedules for this tenant.
+     *
+     * F-075: Schedule & First Meal Step
+     */
+    public function schedules(): HasMany
+    {
+        return $this->hasMany(Schedule::class);
+    }
+
+    /**
+     * Get the meals for this tenant.
+     *
+     * F-075: Schedule & First Meal Step
+     */
+    public function meals(): HasMany
+    {
+        return $this->hasMany(Meal::class);
+    }
+
+    /**
      * Get the current commission rate for this tenant.
      *
      * BR-175: Default commission rate is 10%

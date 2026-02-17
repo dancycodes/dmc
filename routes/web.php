@@ -322,6 +322,10 @@ Route::middleware('tenant.domain')->group(function () {
         Route::delete('/setup/delivery-areas/remove-pickup/{pickupLocationId}', [SetupWizardController::class, 'removePickupLocation'])->name('cook.setup.delivery.remove-pickup');
         Route::post('/setup/delivery-areas/save', [SetupWizardController::class, 'saveDeliveryAreas'])->name('cook.setup.delivery.save');
 
+        // Schedule & First Meal (F-075: Schedule & First Meal Step)
+        Route::post('/setup/schedule/save', [SetupWizardController::class, 'saveSchedule'])->name('cook.setup.schedule.save');
+        Route::post('/setup/meal/save', [SetupWizardController::class, 'saveMeal'])->name('cook.setup.meal.save');
+
         Route::post('/setup/go-live', [SetupWizardController::class, 'goLive'])->name('cook.setup.go-live');
     });
 

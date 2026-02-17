@@ -180,20 +180,12 @@
                 @break
 
             @case(4)
-                {{-- Step 4: Schedule & First Meal — Content provided by F-075 --}}
-                <div class="text-center py-12 space-y-4">
-                    <div class="w-16 h-16 mx-auto rounded-full bg-warning-subtle flex items-center justify-center">
-                        {{-- Lucide: calendar-plus --}}
-                        <svg class="w-8 h-8 text-warning" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"></path><path d="M16 2v4"></path><path d="M21 13V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8"></path><path d="M3 10h18"></path><path d="M16 19h6"></path><path d="M19 16v6"></path></svg>
-                    </div>
-                    <h3 class="text-lg font-semibold text-on-surface-strong">{{ __('Schedule & First Meal') }}</h3>
-                    <p class="text-on-surface text-sm max-w-md mx-auto">
-                        {{ __('Set your operating schedule and create your first meal to start receiving orders.') }}
-                    </p>
-                    <p class="text-xs text-on-surface/60 italic">
-                        {{ __('This step will be available in a future update.') }}
-                    </p>
-                </div>
+                {{-- Step 4: Schedule & First Meal — F-075 --}}
+                @include('cook.setup.steps.schedule-meal', [
+                    'tenant' => $tenant,
+                    'scheduleData' => $scheduleData,
+                    'mealsData' => $mealsData,
+                ])
                 @break
         @endswitch
 
