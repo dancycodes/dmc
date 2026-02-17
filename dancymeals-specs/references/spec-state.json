@@ -1,0 +1,107 @@
+{
+  "project_name": "DancyMeals",
+  "project_type": "Multi-Tenant Food Marketplace Platform",
+  "status": "complete",
+  "last_updated": "2026-02-14T12:00:00Z",
+  "interview": {
+    "rounds_completed": 4,
+    "identity": {
+      "name": "DancyMeals",
+      "purpose": "Empower freelance cooks in Cameroon to run professional food businesses through branded websites",
+      "problem": "Cooks manage orders via WhatsApp (chaotic), collect cash payments (no records), have no online presence, cannot scale",
+      "solution": "Multi-tenant platform with branded websites, online ordering, mobile money payments, order tracking, analytics"
+    },
+    "user_roles": ["super-admin", "admin", "cook", "manager", "client"],
+    "modules": [
+      "Foundation", "Auth", "User Settings", "Admin", "Discovery",
+      "Cook Onboarding", "Cook Dashboard", "Cook Profile", "Location",
+      "Schedule", "Meal", "Meal Component", "Tenant Landing", "Meal Search",
+      "Ordering", "Payment", "Order Mgmt", "Order Tracking", "Client Financial",
+      "Wallet", "Rating", "Testimonial", "Complaint", "Messaging",
+      "Notification", "Favorites", "Analytics", "Manager", "Cook Settings", "Promo"
+    ],
+    "workflows": [
+      "Order: Browse > Select Components > Cart > Location > Pay > Track > Rate",
+      "Cook: Setup Wizard > Dashboard > Create Meals > Manage Orders > Withdraw",
+      "Admin: Create Tenant > Assign Cook > Monitor > Resolve Complaints > Payouts",
+      "Complaint: Client submits > Cook responds (24h) > Auto-escalate > Admin resolves",
+      "Payment: Client pays > Flutterwave processes > Webhook confirms > Cook wallet credited (unwithdrawable) > 3h timer > Withdrawable > Cook withdraws"
+    ],
+    "integrations": [
+      "Flutterwave v3 (MTN MoMo + Orange Money, split payments, transfers)",
+      "OpenStreetMap Nominatim (neighbourhood location search)",
+      "Webpush (push notifications)"
+    ],
+    "non_functional": {
+      "performance": "Mobile-first, 90%+ mobile users",
+      "availability": "PWA with offline page",
+      "security": "Rate limiting, honeypot, tenant isolation, RBAC",
+      "compliance": "Activity logging for audit trails"
+    },
+    "platform_targets": ["Web PWA"],
+    "user_decisions": [
+      "Order flow: Fixed statuses (Pending Payment > Paid > Confirmed > Preparing > Ready > Out for Delivery/Ready for Pickup > Delivered/Picked Up > Completed) + Cancelled + Refunded",
+      "Cancellation: Cook-configurable time window with full refund to wallet",
+      "Complaints: Tiered with auto-rules (categorized > cook responds 24h > auto-escalate > admin arbitrates)",
+      "Admin panel: Full management suite",
+      "Payment failure: Retry with 15-min timeout",
+      "Analytics: Comprehensive with CSV/PDF exports for all roles",
+      "Favorites: Full system (favorite cooks, meals, reorder from history)",
+      "Cook landing: Rich brand page (bio, carousel, meals, ratings, testimonials, schedule, areas, social)",
+      "Testimonials: Separate from ratings, cook approves display",
+      "Meal categorization: Tag-based system (cook-defined tags)",
+      "Email notifications: Push + DB + Email (3 channels)",
+      "User profile: Essential fields (name, email, phone, photo, language, addresses, payment methods)",
+      "Cook onboarding: Guided step-by-step setup wizard",
+      "Messaging: Basic in-app per-order message thread",
+      "Minimum order: Cook-configurable per-cook amount",
+      "Prep time: Estimated preparation time per meal",
+      "Future scheduling: Allow clients to schedule orders for future dates",
+      "Promos: Cook-level promo codes/discounts"
+    ],
+    "open_questions": []
+  },
+  "research": {
+    "queries_performed": [
+      "food delivery platform Africa freelance cook marketplace features 2025 2026",
+      "Flutterwave v3 mobile money Cameroon Orange MTN payment flow split payment 2025",
+      "multi-tenant Laravel subdomain custom domain implementation best practices 2025",
+      "Flutterwave v3 API split payment subaccount transfer payout documentation 2025",
+      "food ordering app order status workflow states transitions best practices"
+    ],
+    "findings": [
+      "African food delivery market $14.5B by 2025, CAGR 10.92%",
+      "Flutterwave supports Cameroon (CM) with MTN MoMo and Orange Money",
+      "Split payments use subaccounts with percentage or flat split types",
+      "Middleware-based tenant resolution is cleanest for Laravel multi-tenancy",
+      "TrustHost middleware must be configured for multi-domain support",
+      "Row-level isolation with global scopes is recommended approach",
+      "Standard order flow: Received > Confirmed > Preparing > Ready > Delivered > Completed"
+    ],
+    "recommendations_accepted": [
+      "Estimated preparation time per meal",
+      "Order scheduling for future dates",
+      "Cook-level promo codes/discounts"
+    ],
+    "recommendations_rejected": [
+      "Platform-wide promo codes (cook-level only for now)"
+    ]
+  },
+  "scope": {
+    "confirmed": true,
+    "total_features": 219,
+    "feature_catalog": "See SKILL.md Feature Catalog table",
+    "excluded_features": [
+      "Native mobile/desktop apps",
+      "Offline data sync",
+      "Platform-wide promo codes",
+      "General chat (only per-order messaging)",
+      "Cook-customizable order statuses",
+      "Order modification after payment",
+      "Dark kitchen logistics",
+      "Subscription/recurring orders",
+      "Languages beyond English/French"
+    ],
+    "notes": "Decomposition audit performed: 8 features split for CRUD granularity, bringing total from 197 to 219"
+  }
+}
