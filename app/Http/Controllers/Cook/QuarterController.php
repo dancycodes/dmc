@@ -205,4 +205,61 @@ class QuarterController extends Controller
         return redirect()->route('cook.locations.index')
             ->with('success', $successMessage);
     }
+
+    /**
+     * Delete a quarter from the cook's delivery areas.
+     *
+     * F-089: Delete Quarter
+     * BR-258: Cannot delete a quarter with active (non-completed, non-cancelled) orders
+     * BR-259: Deleting a quarter removes it from any quarter group it belongs to
+     * BR-260: Confirmation dialog must show the quarter name (handled in blade)
+     * BR-261: On success, toast notification: "Quarter deleted successfully"
+     * BR-262: Delete action requires location management permission
+     * BR-263: Quarter list updates via Gale without page reload
+     */
+    public function destroy(Request $request, int $deliveryAreaQuarter, DeliveryAreaService $deliveryAreaService): mixed
+    {
+        $user = $request->user();
+        $tenant = tenant();
+
+        // BR-262: Permission check
+        if (! $user->can('can-manage-locations')) {
+            abort(403);
+        }
+
+        $result = $deliveryAreaService->removeQuarter($tenant, $deliveryAreaQuarter);
+
+        if (! $result['success']) {
+            // BR-258: Active orders block deletion
+            if ($request->isGale()) {
+                return gale()
+                    ->redirect(url('/dashboard/locations'))
+                    ->with('error', $result['error']);
+            }
+
+            return redirect()->route('cook.locations.index')
+                ->with('error', $result['error']);
+        }
+
+        // Activity logging
+        activity('delivery_areas')
+            ->causedBy($user)
+            ->withProperties([
+                'action' => 'quarter_deleted',
+                'quarter_name' => $result['quarter_name'],
+                'tenant_id' => $tenant->id,
+                'delivery_area_quarter_id' => $deliveryAreaQuarter,
+            ])
+            ->log('Quarter deleted from delivery area');
+
+        // BR-261 + BR-263: Toast notification and list update via Gale
+        if ($request->isGale()) {
+            return gale()
+                ->redirect(url('/dashboard/locations'))
+                ->with('success', __('Quarter deleted successfully.'));
+        }
+
+        return redirect()->route('cook.locations.index')
+            ->with('success', __('Quarter deleted successfully.'));
+    }
 }

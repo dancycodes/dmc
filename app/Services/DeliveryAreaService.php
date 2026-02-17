@@ -481,23 +481,72 @@ class DeliveryAreaService
 
     /**
      * Remove a quarter from a delivery area.
+     *
+     * F-089: Delete Quarter
+     * BR-258: Cannot delete a quarter with active (non-completed, non-cancelled) orders.
+     * BR-259: Deleting a quarter removes it from any quarter group it belongs to.
+     *
+     * @return array{success: bool, error: string, quarter_name: string}
      */
-    public function removeQuarter(Tenant $tenant, int $deliveryAreaQuarterId): bool
+    public function removeQuarter(Tenant $tenant, int $deliveryAreaQuarterId): array
     {
         $daq = DeliveryAreaQuarter::query()
             ->whereHas('deliveryArea', function ($q) use ($tenant) {
                 $q->where('tenant_id', $tenant->id);
             })
             ->where('id', $deliveryAreaQuarterId)
+            ->with(['quarter', 'deliveryArea'])
             ->first();
 
         if (! $daq) {
-            return false;
+            return [
+                'success' => false,
+                'error' => __('Quarter not found.'),
+                'quarter_name' => '',
+            ];
         }
 
+        $locale = app()->getLocale();
+        $quarterName = $daq->quarter->{'name_'.$locale} ?? $daq->quarter->name_en;
+
+        // BR-258: Check for active orders referencing this quarter (forward-compatible)
+        if (\Illuminate\Support\Facades\Schema::hasTable('orders')) {
+            $activeOrderCount = \Illuminate\Database\Eloquent\Model::resolveConnection()
+                ->table('orders')
+                ->where('tenant_id', $tenant->id)
+                ->where('quarter_id', $daq->quarter_id)
+                ->whereNotIn('status', ['completed', 'cancelled'])
+                ->count();
+
+            if ($activeOrderCount > 0) {
+                return [
+                    'success' => false,
+                    'error' => trans_choice(
+                        '{1} Cannot delete :quarter because it has :count active order.|[2,*] Cannot delete :quarter because it has :count active orders.',
+                        $activeOrderCount,
+                        ['quarter' => $quarterName, 'count' => $activeOrderCount]
+                    ),
+                    'quarter_name' => $quarterName,
+                ];
+            }
+        }
+
+        // BR-259: Remove from quarter groups (forward-compatible for F-090)
+        if (\Illuminate\Support\Facades\Schema::hasTable('quarter_group_quarter')) {
+            \Illuminate\Database\Eloquent\Model::resolveConnection()
+                ->table('quarter_group_quarter')
+                ->where('quarter_id', $daq->quarter_id)
+                ->delete();
+        }
+
+        // Delete the delivery area quarter junction record
         $daq->delete();
 
-        return true;
+        return [
+            'success' => true,
+            'error' => '',
+            'quarter_name' => $quarterName,
+        ];
     }
 
     /**
