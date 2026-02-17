@@ -161,20 +161,8 @@
     <div id="wizard-content" class="bg-surface-alt dark:bg-surface-alt rounded-xl border border-outline dark:border-outline shadow-card p-4 sm:p-6 lg:p-8 min-h-[300px]">
         @switch($activeStep)
             @case(1)
-                {{-- Step 1: Brand Info — Content provided by F-072 --}}
-                <div class="text-center py-12 space-y-4">
-                    <div class="w-16 h-16 mx-auto rounded-full bg-primary-subtle flex items-center justify-center">
-                        {{-- Lucide: store --}}
-                        <svg class="w-8 h-8 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"></path><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"></path><path d="M2 7h20"></path><path d="M22 7v3a2 2 0 0 1-2 2a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12a2 2 0 0 1-2-2V7"></path></svg>
-                    </div>
-                    <h3 class="text-lg font-semibold text-on-surface-strong">{{ __('Brand Info') }}</h3>
-                    <p class="text-on-surface text-sm max-w-md mx-auto">
-                        {{ __('Tell your customers about your brand. Add your store name and description in English and French.') }}
-                    </p>
-                    <p class="text-xs text-on-surface/60 italic">
-                        {{ __('This step will be available in a future update.') }}
-                    </p>
-                </div>
+                {{-- Step 1: Brand Info — F-072 --}}
+                @include('cook.setup.steps.brand-info', ['tenant' => $tenant])
                 @break
 
             @case(2)

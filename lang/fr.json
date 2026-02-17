@@ -1152,5 +1152,27 @@
     "Going Live...": "Mise en ligne...",
     "Congratulations! Your store is now live.": "F\u00e9licitations ! Votre boutique est maintenant en ligne.",
     "Your store is live!": "Votre boutique est en ligne !",
-    "You can update any step above to make changes to your store setup.": "Vous pouvez modifier n'importe quelle \u00e9tape ci-dessus pour changer la configuration de votre boutique."
+    "You can update any step above to make changes to your store setup.": "Vous pouvez modifier n'importe quelle \u00e9tape ci-dessus pour changer la configuration de votre boutique.",
+
+    "Tell your customers about your brand and how to reach you.": "Informez vos clients sur votre marque et comment vous contacter.",
+    "Brand Name": "Nom de la marque",
+    "Bio / Description": "Bio / Description",
+    "If provided in one language, it must be provided in both.": "Si fournie dans une langue, elle doit \u00eatre fournie dans les deux.",
+    "Describe your brand and what makes your food special...": "D\u00e9crivez votre marque et ce qui rend votre cuisine sp\u00e9ciale...",
+    "Contact Information": "Coordonn\u00e9es",
+    "WhatsApp Number": "Num\u00e9ro WhatsApp",
+    "Phone Number": "Num\u00e9ro de t\u00e9l\u00e9phone",
+    "Social Links": "Liens sociaux",
+    "Save & Continue": "Enregistrer et continuer",
+    "Saving...": "Enregistrement...",
+    "Brand name is required in English.": "Le nom de la marque est requis en anglais.",
+    "Brand name is required in French.": "Le nom de la marque est requis en fran\u00e7ais.",
+    "Brand name must not exceed 100 characters.": "Le nom de la marque ne doit pas d\u00e9passer 100 caract\u00e8res.",
+    "Bio must not exceed 1000 characters.": "La bio ne doit pas d\u00e9passer 1000 caract\u00e8res.",
+    "Bio is required in French when provided in English.": "La bio est requise en fran\u00e7ais lorsqu'elle est fournie en anglais.",
+    "Bio is required in English when provided in French.": "La bio est requise en anglais lorsqu'elle est fournie en fran\u00e7ais.",
+    "WhatsApp number is required.": "Le num\u00e9ro WhatsApp est requis.",
+    "Brand info saved successfully.": "Informations de la marque enregistr\u00e9es avec succ\u00e8s.",
+    "e.g. Chef Latifa's Kitchen": "ex. La Cuisine de Chef Latifa",
+    "e.g. La Cuisine de Chef Latifa": "ex. La Cuisine de Chef Latifa"
 }

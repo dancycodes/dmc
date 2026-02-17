@@ -63,7 +63,7 @@ class TenantFactory extends Factory
         $index = array_rand(self::COOK_NAMES);
         $name = self::COOK_NAMES[$index];
         $uniqueSuffix = fake()->unique()->numerify('###');
-        $slug = Str::slug($name) . '-' . $uniqueSuffix;
+        $slug = Str::slug($name).'-'.$uniqueSuffix;
 
         return [
             'name_en' => $name,
@@ -156,6 +156,25 @@ class TenantFactory extends Factory
 
             return ['settings' => $settings];
         });
+    }
+
+    /**
+     * Set brand info fields (F-072: Brand Info Step).
+     *
+     * Sets WhatsApp, phone, descriptions, and social links.
+     * name_en/name_fr already set in definition().
+     */
+    public function withBrandInfo(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'description_en' => 'Authentic Cameroonian cuisine made with love and fresh local ingredients.',
+            'description_fr' => 'Cuisine camerounaise authentique preparee avec amour et des ingredients frais locaux.',
+            'whatsapp' => '+237'.fake()->numerify('6########'),
+            'phone' => '+237'.fake()->numerify('6########'),
+            'social_facebook' => 'https://facebook.com/'.Str::slug($attributes['name_en'] ?? 'cook'),
+            'social_instagram' => 'https://instagram.com/'.Str::slug($attributes['name_en'] ?? 'cook'),
+            'social_tiktok' => null,
+        ]);
     }
 
     /**

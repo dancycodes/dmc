@@ -213,11 +213,12 @@ describe('getStepCompletion', function () {
     });
 });
 
-describe('hasBrandInfo per BR-109', function () {
-    test('returns true when both name_en and name_fr are set', function () {
+describe('hasBrandInfo per BR-109 and BR-125', function () {
+    test('returns true when name_en, name_fr, and whatsapp are set', function () {
         $tenant = new Tenant([
             'name_en' => 'My Kitchen',
             'name_fr' => 'Ma Cuisine',
+            'whatsapp' => '+237670123456',
         ]);
 
         expect($this->service->hasBrandInfo($tenant))->toBeTrue();
@@ -227,6 +228,7 @@ describe('hasBrandInfo per BR-109', function () {
         $tenant = new Tenant([
             'name_en' => '',
             'name_fr' => 'Ma Cuisine',
+            'whatsapp' => '+237670123456',
         ]);
 
         expect($this->service->hasBrandInfo($tenant))->toBeFalse();
@@ -236,6 +238,17 @@ describe('hasBrandInfo per BR-109', function () {
         $tenant = new Tenant([
             'name_en' => 'My Kitchen',
             'name_fr' => '',
+            'whatsapp' => '+237670123456',
+        ]);
+
+        expect($this->service->hasBrandInfo($tenant))->toBeFalse();
+    });
+
+    test('returns false when whatsapp is empty', function () {
+        $tenant = new Tenant([
+            'name_en' => 'My Kitchen',
+            'name_fr' => 'Ma Cuisine',
+            'whatsapp' => null,
         ]);
 
         expect($this->service->hasBrandInfo($tenant))->toBeFalse();
@@ -245,6 +258,7 @@ describe('hasBrandInfo per BR-109', function () {
         $tenant = new Tenant([
             'name_en' => null,
             'name_fr' => null,
+            'whatsapp' => null,
         ]);
 
         expect($this->service->hasBrandInfo($tenant))->toBeFalse();
