@@ -99,7 +99,7 @@
                     {{ __('Add New Town') }}
                 </h3>
 
-                <form @submit.prevent="$action('{{ url('/dashboard/locations/towns') }}').then(() => { resetForm(); showAddTownForm = false; })" class="space-y-4">
+                <form @submit.prevent="$action('{{ url('/dashboard/locations/towns') }}')" class="space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {{-- English Town Name --}}
                         <div>
