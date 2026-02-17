@@ -58,6 +58,14 @@ class SetupWizardController extends Controller
             ? $this->deliveryAreaService->getPickupLocationsData($tenant)
             : [];
 
+        // Load schedule & meal data for step 4
+        $scheduleData = $activeStep === 4
+            ? $this->wizardService->getScheduleData($tenant)
+            : [];
+        $mealsData = $activeStep === 4
+            ? $this->wizardService->getMealsData($tenant)
+            : [];
+
         $viewData = [
             'tenant' => $tenant,
             'steps' => $steps,
@@ -67,6 +75,8 @@ class SetupWizardController extends Controller
             'coverImages' => $coverImages,
             'deliveryAreas' => $deliveryAreas,
             'pickupLocations' => $pickupLocations,
+            'scheduleData' => $scheduleData,
+            'mealsData' => $mealsData,
         ];
 
         // Handle Gale navigate for step switching within the wizard
@@ -868,6 +878,207 @@ class SetupWizardController extends Controller
 
         return redirect()->route('cook.setup', ['step' => 4])
             ->with('success', __('Delivery areas saved successfully.'));
+    }
+
+    /**
+     * Save schedule data (Step 4).
+     *
+     * F-075: Schedule & First Meal Step
+     * BR-146: Schedule sets availability per day of week with start and end times.
+     * BR-152: Schedule times use 24-hour format.
+     * BR-153: End time must be after start time.
+     * BR-154: Uses the same schedules table as the full schedule features.
+     */
+    public function saveSchedule(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if ($request->isGale()) {
+            $validated = $request->validateState([
+                'scheduleData' => ['required', 'array'],
+                'scheduleData.*.day' => ['required', 'integer', 'between:0,6'],
+                'scheduleData.*.enabled' => ['required', 'boolean'],
+                'scheduleData.*.start_time' => ['required_if:scheduleData.*.enabled,true', 'nullable', 'date_format:H:i'],
+                'scheduleData.*.end_time' => ['required_if:scheduleData.*.enabled,true', 'nullable', 'date_format:H:i'],
+            ], [
+                'scheduleData.*.start_time.date_format' => __('Please use a valid time format (HH:MM).'),
+                'scheduleData.*.end_time.date_format' => __('Please use a valid time format (HH:MM).'),
+            ]);
+            $scheduleEntries = $validated['scheduleData'];
+        } else {
+            $validated = $request->validate([
+                'schedule' => ['required', 'array'],
+                'schedule.*.day' => ['required', 'integer', 'between:0,6'],
+                'schedule.*.enabled' => ['required', 'boolean'],
+                'schedule.*.start_time' => ['required_if:schedule.*.enabled,true', 'nullable', 'date_format:H:i'],
+                'schedule.*.end_time' => ['required_if:schedule.*.enabled,true', 'nullable', 'date_format:H:i'],
+            ]);
+            $scheduleEntries = $validated['schedule'];
+        }
+
+        // BR-153: Validate end time > start time for enabled days
+        foreach ($scheduleEntries as $entry) {
+            if ($entry['enabled'] && ! empty($entry['start_time']) && ! empty($entry['end_time'])) {
+                if ($entry['end_time'] <= $entry['start_time']) {
+                    if ($request->isGale()) {
+                        $dayLabel = \App\Models\Schedule::DAY_LABELS[$entry['day']] ?? 'Unknown';
+
+                        return gale()->messages([
+                            'schedule' => __('End time must be after start time for :day.', ['day' => $dayLabel]),
+                        ]);
+                    }
+
+                    return redirect()->back()->withErrors([
+                        'schedule' => __('End time must be after start time.'),
+                    ]);
+                }
+            }
+        }
+
+        // Save schedule: delete existing, insert enabled ones
+        $tenant->schedules()->delete();
+
+        $enabledDays = [];
+        foreach ($scheduleEntries as $entry) {
+            if ($entry['enabled'] && ! empty($entry['start_time']) && ! empty($entry['end_time'])) {
+                $tenant->schedules()->create([
+                    'day_of_week' => $entry['day'],
+                    'start_time' => $entry['start_time'],
+                    'end_time' => $entry['end_time'],
+                    'is_available' => true,
+                ]);
+                $enabledDays[] = \App\Models\Schedule::DAY_LABELS[$entry['day']] ?? $entry['day'];
+            }
+        }
+
+        // Activity logging
+        activity('tenants')
+            ->performedOn($tenant)
+            ->causedBy($request->user())
+            ->withProperties([
+                'action' => 'schedule_saved',
+                'enabled_days' => $enabledDays,
+                'total_days' => count($enabledDays),
+            ])
+            ->log('Schedule saved via setup wizard');
+
+        if ($request->isGale()) {
+            $scheduleData = $this->wizardService->getScheduleData($tenant);
+
+            return gale()
+                ->state('scheduleData', $scheduleData)
+                ->state('scheduleSaved', true)
+                ->state('hasSchedule', count($enabledDays) > 0);
+        }
+
+        return redirect()->route('cook.setup', ['step' => 4])
+            ->with('success', __('Schedule saved successfully.'));
+    }
+
+    /**
+     * Save a meal with components (Step 4).
+     *
+     * F-075: Schedule & First Meal Step
+     * BR-147: At least one meal with at least one component is required.
+     * BR-148: Meal name required in both English and French.
+     * BR-149: Meal price must be > 0 XAF.
+     * BR-150: Each meal must have at least one component (name required in en/fr).
+     * BR-151: Created meals default to is_active = true.
+     * BR-155: Step 4 is complete when at least one active meal with one component exists.
+     */
+    public function saveMeal(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if ($request->isGale()) {
+            $validated = $request->validateState([
+                'meal_name_en' => ['required', 'string', 'max:255'],
+                'meal_name_fr' => ['required', 'string', 'max:255'],
+                'meal_description_en' => ['nullable', 'string', 'max:2000'],
+                'meal_description_fr' => ['nullable', 'string', 'max:2000'],
+                'meal_price' => ['required', 'integer', 'min:1'],
+                'components' => ['required', 'array', 'min:1'],
+                'components.*.name_en' => ['required', 'string', 'max:255'],
+                'components.*.name_fr' => ['required', 'string', 'max:255'],
+            ], [
+                'meal_name_en.required' => __('Meal name is required in English.'),
+                'meal_name_fr.required' => __('Meal name is required in French.'),
+                'meal_price.required' => __('Price is required.'),
+                'meal_price.integer' => __('Price must be a whole number.'),
+                'meal_price.min' => __('Price must be greater than 0 XAF.'),
+                'components.required' => __('At least one component is required.'),
+                'components.min' => __('At least one component is required.'),
+                'components.*.name_en.required' => __('Component name is required in English.'),
+                'components.*.name_fr.required' => __('Component name is required in French.'),
+            ]);
+        } else {
+            $validated = $request->validate([
+                'meal_name_en' => ['required', 'string', 'max:255'],
+                'meal_name_fr' => ['required', 'string', 'max:255'],
+                'meal_description_en' => ['nullable', 'string', 'max:2000'],
+                'meal_description_fr' => ['nullable', 'string', 'max:2000'],
+                'meal_price' => ['required', 'integer', 'min:1'],
+                'components' => ['required', 'array', 'min:1'],
+                'components.*.name_en' => ['required', 'string', 'max:255'],
+                'components.*.name_fr' => ['required', 'string', 'max:255'],
+            ]);
+        }
+
+        // Create the meal (BR-151: defaults to is_active = true)
+        $meal = $tenant->meals()->create([
+            'name_en' => trim($validated['meal_name_en']),
+            'name_fr' => trim($validated['meal_name_fr']),
+            'description_en' => ! empty($validated['meal_description_en']) ? trim($validated['meal_description_en']) : null,
+            'description_fr' => ! empty($validated['meal_description_fr']) ? trim($validated['meal_description_fr']) : null,
+            'price' => (int) $validated['meal_price'],
+            'is_active' => true,
+        ]);
+
+        // Create the components
+        foreach ($validated['components'] as $componentData) {
+            $meal->components()->create([
+                'name_en' => trim($componentData['name_en']),
+                'name_fr' => trim($componentData['name_fr']),
+                'description_en' => null,
+                'description_fr' => null,
+            ]);
+        }
+
+        // BR-155: Mark step 4 as complete when at least one active meal with component exists
+        if ($this->wizardService->hasActiveMeal($tenant)) {
+            $this->wizardService->markStepComplete($tenant, 4);
+        }
+
+        // Activity logging
+        activity('meals')
+            ->performedOn($meal)
+            ->causedBy($request->user())
+            ->withProperties([
+                'action' => 'meal_created',
+                'meal_name' => $meal->name_en,
+                'price' => $meal->price,
+                'component_count' => count($validated['components']),
+            ])
+            ->log('Meal created via setup wizard');
+
+        if ($request->isGale()) {
+            $mealsData = $this->wizardService->getMealsData($tenant);
+            $requirements = $this->wizardService->getRequirementsSummary($tenant);
+
+            return gale()
+                ->state('mealsData', $mealsData)
+                ->state('hasMeal', true)
+                ->state('canGoLive', $requirements['can_go_live'])
+                ->state('meal_name_en', '')
+                ->state('meal_name_fr', '')
+                ->state('meal_description_en', '')
+                ->state('meal_description_fr', '')
+                ->state('meal_price', '')
+                ->state('components', [['name_en' => '', 'name_fr' => '']]);
+        }
+
+        return redirect()->route('cook.setup', ['step' => 4])
+            ->with('success', __('Meal created successfully.'));
     }
 
     /**
