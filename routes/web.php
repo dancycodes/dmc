@@ -333,9 +333,13 @@ Route::middleware('tenant.domain')->group(function () {
 
         Route::post('/setup/go-live', [SetupWizardController::class, 'goLive'])->name('cook.setup.go-live');
 
-        // Brand profile (F-079: Cook Brand Profile View)
+        // Brand profile (F-079: Cook Brand Profile View, F-080: Cook Brand Profile Edit)
         // BR-181: All profile sections in a single view
         Route::get('/profile', [BrandProfileController::class, 'show'])->name('cook.profile.show');
+        // F-080: Cook Brand Profile Edit
+        // BR-195: Only users with profile edit permission can access
+        Route::get('/profile/edit', [BrandProfileController::class, 'edit'])->name('cook.profile.edit');
+        Route::post('/profile/update', [BrandProfileController::class, 'update'])->name('cook.profile.update');
     });
 
     // Tenant-specific routes will be added by later features (F-126, etc.)
