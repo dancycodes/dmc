@@ -113,7 +113,7 @@
                             x-transition:leave-end="opacity-0"
                             class="absolute inset-0 w-full h-full object-cover"
                             loading="lazy"
-                            @error="$el.src=''; $el.alt='{{ __('Image failed to load') }}'; $el.classList.add('hidden')"
+                            x-on:error="$el.src=''; $el.alt='{{ __('Image failed to load') }}'; $el.classList.add('hidden')"
                         >
                     </template>
 
