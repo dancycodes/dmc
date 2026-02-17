@@ -150,6 +150,7 @@ class ComplaintFactory extends Factory
             'status' => 'resolved',
             'resolved_at' => now()->subHours($this->faker->numberBetween(1, 24)),
             'resolution_notes' => $this->faker->sentence(),
+            'resolution_type' => $this->faker->randomElement(['partial_refund', 'full_refund', 'warning']),
         ]);
     }
 
@@ -162,6 +163,41 @@ class ComplaintFactory extends Factory
             'status' => 'dismissed',
             'resolved_at' => now()->subHours($this->faker->numberBetween(1, 24)),
             'resolution_notes' => $this->faker->sentence(),
+            'resolution_type' => 'dismiss',
+        ]);
+    }
+
+    /**
+     * State: resolved with partial refund.
+     */
+    public function resolvedWithPartialRefund(float $amount = 3000): static
+    {
+        return $this->resolved()->state(fn () => [
+            'resolution_type' => 'partial_refund',
+            'refund_amount' => $amount,
+        ]);
+    }
+
+    /**
+     * State: resolved with warning.
+     */
+    public function resolvedWithWarning(): static
+    {
+        return $this->resolved()->state(fn () => [
+            'resolution_type' => 'warning',
+            'refund_amount' => null,
+        ]);
+    }
+
+    /**
+     * State: resolved with cook suspension.
+     */
+    public function resolvedWithSuspension(int $days = 7): static
+    {
+        return $this->resolved()->state(fn () => [
+            'resolution_type' => 'suspend',
+            'suspension_days' => $days,
+            'suspension_ends_at' => now()->addDays($days),
         ]);
     }
 

@@ -257,9 +257,10 @@ Route::middleware('main.domain')->group(function () {
         Route::get('/payments', [PaymentTransactionController::class, 'index'])->name('admin.payments.index');
         Route::get('/payments/{transaction}', [PaymentTransactionController::class, 'show'])->name('admin.payments.show');
 
-        // Complaint escalation queue (F-060, F-061)
+        // Complaint escalation queue (F-060) & resolution (F-061)
         Route::get('/complaints', [ComplaintController::class, 'index'])->name('admin.complaints.index');
         Route::get('/complaints/{complaint}', [ComplaintController::class, 'show'])->name('admin.complaints.show');
+        Route::post('/complaints/{complaint}/resolve', [ComplaintController::class, 'resolve'])->name('admin.complaints.resolve');
     });
 });
 

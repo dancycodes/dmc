@@ -41,6 +41,17 @@ class Complaint extends Model
     ];
 
     /**
+     * BR-165: Resolution types available to admins.
+     */
+    public const RESOLUTION_TYPES = [
+        'dismiss',
+        'partial_refund',
+        'full_refund',
+        'warning',
+        'suspend',
+    ];
+
+    /**
      * All valid statuses including pre-escalation.
      */
     public const ALL_STATUSES = [
@@ -81,6 +92,10 @@ class Complaint extends Model
         'escalated_by',
         'resolved_by',
         'resolution_notes',
+        'resolution_type',
+        'refund_amount',
+        'suspension_days',
+        'suspension_ends_at',
         'resolved_at',
         'cook_response',
         'cook_responded_at',
@@ -100,6 +115,8 @@ class Complaint extends Model
             'resolved_at' => 'datetime',
             'cook_responded_at' => 'datetime',
             'submitted_at' => 'datetime',
+            'suspension_ends_at' => 'datetime',
+            'refund_amount' => 'decimal:2',
         ];
     }
 
@@ -197,6 +214,29 @@ class Complaint extends Model
     public function isUnresolved(): bool
     {
         return in_array($this->status, ['pending_resolution', 'under_review', 'escalated'], true);
+    }
+
+    /**
+     * BR-174: Check if this complaint has been resolved or dismissed.
+     */
+    public function isResolved(): bool
+    {
+        return in_array($this->status, ['resolved', 'dismissed'], true);
+    }
+
+    /**
+     * Get human-readable resolution type label.
+     */
+    public function resolutionTypeLabel(): string
+    {
+        return match ($this->resolution_type) {
+            'dismiss' => __('Dismissed'),
+            'partial_refund' => __('Partial Refund'),
+            'full_refund' => __('Full Refund'),
+            'warning' => __('Warning to Cook'),
+            'suspend' => __('Cook Suspended'),
+            default => __('Unknown'),
+        };
     }
 
     /**
