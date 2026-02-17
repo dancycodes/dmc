@@ -309,6 +309,9 @@ Route::middleware('tenant.domain')->group(function () {
         // BR-116: Accessible both before and after "Go Live"
         Route::get('/setup', [SetupWizardController::class, 'show'])->name('cook.setup');
         Route::post('/setup/brand-info', [SetupWizardController::class, 'saveBrandInfo'])->name('cook.setup.brand-info');
+        Route::post('/setup/cover-images/upload', [SetupWizardController::class, 'uploadCoverImages'])->name('cook.setup.cover-images.upload');
+        Route::post('/setup/cover-images/reorder', [SetupWizardController::class, 'reorderCoverImages'])->name('cook.setup.cover-images.reorder');
+        Route::delete('/setup/cover-images/{mediaId}', [SetupWizardController::class, 'deleteCoverImage'])->name('cook.setup.cover-images.delete');
         Route::post('/setup/go-live', [SetupWizardController::class, 'goLive'])->name('cook.setup.go-live');
     });
 

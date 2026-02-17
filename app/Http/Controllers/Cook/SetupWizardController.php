@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Cook;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Cook\UpdateBrandInfoRequest;
+use App\Services\CoverImageService;
 use App\Services\SetupWizardService;
 use Illuminate\Http\Request;
 
@@ -12,6 +13,7 @@ class SetupWizardController extends Controller
 {
     public function __construct(
         private SetupWizardService $wizardService,
+        private CoverImageService $coverImageService,
     ) {}
 
     /**
@@ -41,32 +43,28 @@ class SetupWizardController extends Controller
         $steps = $this->wizardService->getStepsData($tenant, $activeStep);
         $requirements = $this->wizardService->getRequirementsSummary($tenant);
 
-        // Handle Gale navigate for step switching within the wizard
-        if ($request->isGaleNavigate('wizard-step')) {
-            return gale()
-                ->fragment('cook.setup.wizard', 'wizard-content', [
-                    'tenant' => $tenant,
-                    'steps' => $steps,
-                    'activeStep' => $activeStep,
-                    'requirements' => $requirements,
-                    'setupComplete' => $tenant->isSetupComplete(),
-                ])
-                ->fragment('cook.setup.wizard', 'wizard-progress', [
-                    'tenant' => $tenant,
-                    'steps' => $steps,
-                    'activeStep' => $activeStep,
-                    'requirements' => $requirements,
-                    'setupComplete' => $tenant->isSetupComplete(),
-                ]);
-        }
+        // Load cover image data for step 2
+        $coverImages = $activeStep === 2
+            ? $this->coverImageService->getImagesData($tenant)
+            : [];
 
-        return gale()->view('cook.setup.wizard', [
+        $viewData = [
             'tenant' => $tenant,
             'steps' => $steps,
             'activeStep' => $activeStep,
             'requirements' => $requirements,
             'setupComplete' => $tenant->isSetupComplete(),
-        ], web: true);
+            'coverImages' => $coverImages,
+        ];
+
+        // Handle Gale navigate for step switching within the wizard
+        if ($request->isGaleNavigate('wizard-step')) {
+            return gale()
+                ->fragment('cook.setup.wizard', 'wizard-content', $viewData)
+                ->fragment('cook.setup.wizard', 'wizard-progress', $viewData);
+        }
+
+        return gale()->view('cook.setup.wizard', $viewData, web: true);
     }
 
     /**
@@ -218,6 +216,219 @@ class SetupWizardController extends Controller
 
         return redirect()->route('cook.setup', ['step' => 2])
             ->with('success', __('Brand info saved successfully.'));
+    }
+
+    /**
+     * Upload cover images (Step 2).
+     *
+     * F-073: Cover Images Step
+     * BR-127: Maximum 5 cover images per cook.
+     * BR-128: Accepted formats: JPEG, PNG, WebP.
+     * BR-129: Maximum file size: 2MB per image.
+     * BR-130: Images resized to 16:9 aspect ratio (handled by media conversions).
+     * BR-134: Stored via Spatie Media Library.
+     */
+    public function uploadCoverImages(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        // File validation uses standard $request->validate() per Gale docs
+        // (files come via FormData, not Alpine state)
+        $request->validate([
+            'images' => ['required', 'array', 'min:1'],
+            'images.*' => [
+                'required',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:'.CoverImageService::MAX_FILE_SIZE_KB,
+            ],
+        ], [
+            'images.required' => __('Please select at least one image to upload.'),
+            'images.*.image' => __('Only JPG, PNG, and WebP images are accepted.'),
+            'images.*.mimes' => __('Only JPG, PNG, and WebP images are accepted.'),
+            'images.*.max' => __('Image must be under 2MB.'),
+        ]);
+
+        $files = $request->file('images', []);
+        $currentCount = $this->coverImageService->getImageCount($tenant);
+        $remainingSlots = CoverImageService::MAX_IMAGES - $currentCount;
+
+        if ($remainingSlots <= 0) {
+            if ($request->isGale()) {
+                return gale()->messages([
+                    'images' => __('Maximum :count images allowed.', ['count' => CoverImageService::MAX_IMAGES]),
+                ]);
+            }
+
+            return redirect()->back()->withErrors([
+                'images' => __('Maximum :count images allowed.', ['count' => CoverImageService::MAX_IMAGES]),
+            ]);
+        }
+
+        // Limit files to remaining slots
+        $filesToUpload = array_slice($files, 0, $remainingSlots);
+
+        $result = $this->coverImageService->uploadImages($tenant, $filesToUpload);
+
+        // Mark step as complete if images were uploaded successfully
+        if (! empty($result['uploaded'])) {
+            $this->wizardService->markStepComplete($tenant, 2);
+
+            // Activity logging
+            activity('tenants')
+                ->performedOn($tenant)
+                ->causedBy($request->user())
+                ->withProperties([
+                    'action' => 'cover_images_uploaded',
+                    'count' => count($result['uploaded']),
+                    'total' => $this->coverImageService->getImageCount($tenant),
+                ])
+                ->log('Cover images uploaded via setup wizard');
+        }
+
+        if ($request->isGale()) {
+            $images = $this->coverImageService->getImagesData($tenant);
+            $imageCount = $this->coverImageService->getImageCount($tenant);
+
+            $response = gale()
+                ->state('images', $images)
+                ->state('imageCount', $imageCount)
+                ->state('canUploadMore', $imageCount < CoverImageService::MAX_IMAGES);
+
+            if (! empty($result['errors'])) {
+                $response->state('uploadErrors', $result['errors']);
+            } else {
+                $response->state('uploadErrors', []);
+            }
+
+            return $response;
+        }
+
+        $flashMsg = ! empty($result['errors'])
+            ? __('Some images could not be uploaded.')
+            : __('Images uploaded successfully.');
+
+        return redirect()->route('cook.setup', ['step' => 2])->with('success', $flashMsg);
+    }
+
+    /**
+     * Reorder cover images (Step 2).
+     *
+     * F-073: Cover Images Step
+     * BR-131: Image order determines carousel display order.
+     * BR-133: Drag-to-reorder works on desktop and mobile.
+     */
+    public function reorderCoverImages(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if ($request->isGale()) {
+            $validated = $request->validateState([
+                'orderedIds' => ['required', 'array', 'min:1'],
+                'orderedIds.*' => ['required', 'integer'],
+            ], [
+                'orderedIds.required' => __('Image order data is required.'),
+            ]);
+        } else {
+            $validated = $request->validate([
+                'orderedIds' => ['required', 'array', 'min:1'],
+                'orderedIds.*' => ['required', 'integer'],
+            ]);
+        }
+
+        $success = $this->coverImageService->reorderImages($tenant, $validated['orderedIds']);
+
+        if (! $success) {
+            if ($request->isGale()) {
+                return gale()->messages([
+                    'reorder' => __('Unable to reorder images. Please try again.'),
+                ]);
+            }
+
+            return redirect()->back()->withErrors([
+                'reorder' => __('Unable to reorder images. Please try again.'),
+            ]);
+        }
+
+        // Activity logging
+        activity('tenants')
+            ->performedOn($tenant)
+            ->causedBy($request->user())
+            ->withProperties([
+                'action' => 'cover_images_reordered',
+                'order' => $validated['orderedIds'],
+            ])
+            ->log('Cover images reordered via setup wizard');
+
+        if ($request->isGale()) {
+            $images = $this->coverImageService->getImagesData($tenant);
+
+            return gale()
+                ->state('images', $images)
+                ->state('reorderSuccess', true);
+        }
+
+        return redirect()->route('cook.setup', ['step' => 2])->with('success', __('Image order updated.'));
+    }
+
+    /**
+     * Delete a cover image (Step 2).
+     *
+     * F-073: Cover Images Step
+     * BR-135: Deleting an image requires confirmation (handled in UI).
+     */
+    public function deleteCoverImage(Request $request, int $mediaId): mixed
+    {
+        $tenant = tenant();
+
+        $success = $this->coverImageService->deleteImage($tenant, $mediaId);
+
+        if (! $success) {
+            if ($request->isGale()) {
+                return gale()->messages([
+                    'delete' => __('Image not found or already deleted.'),
+                ]);
+            }
+
+            return redirect()->back()->withErrors([
+                'delete' => __('Image not found or already deleted.'),
+            ]);
+        }
+
+        // Refresh the media relationship to get updated count
+        $tenant->load('media');
+        $imageCount = $this->coverImageService->getImageCount($tenant);
+
+        // If no images remain, un-mark step 2 as complete
+        if ($imageCount === 0) {
+            $completedSteps = $tenant->getSetting('setup_steps', []);
+            $completedSteps = array_values(array_filter($completedSteps, fn ($s) => $s !== 2));
+            $tenant->setSetting('setup_steps', $completedSteps);
+            $tenant->save();
+        }
+
+        // Activity logging
+        activity('tenants')
+            ->performedOn($tenant)
+            ->causedBy($request->user())
+            ->withProperties([
+                'action' => 'cover_image_deleted',
+                'media_id' => $mediaId,
+                'remaining' => $imageCount,
+            ])
+            ->log('Cover image deleted via setup wizard');
+
+        if ($request->isGale()) {
+            $images = $this->coverImageService->getImagesData($tenant);
+
+            return gale()
+                ->state('images', $images)
+                ->state('imageCount', $imageCount)
+                ->state('canUploadMore', $imageCount < CoverImageService::MAX_IMAGES)
+                ->remove('#cover-image-'.$mediaId);
+        }
+
+        return redirect()->route('cook.setup', ['step' => 2])->with('success', __('Image deleted.'));
     }
 
     /**

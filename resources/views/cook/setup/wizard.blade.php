@@ -166,20 +166,8 @@
                 @break
 
             @case(2)
-                {{-- Step 2: Cover Images — Content provided by F-073 --}}
-                <div class="text-center py-12 space-y-4">
-                    <div class="w-16 h-16 mx-auto rounded-full bg-secondary-subtle flex items-center justify-center">
-                        {{-- Lucide: image --}}
-                        <svg class="w-8 h-8 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></svg>
-                    </div>
-                    <h3 class="text-lg font-semibold text-on-surface-strong">{{ __('Cover Images') }}</h3>
-                    <p class="text-on-surface text-sm max-w-md mx-auto">
-                        {{ __('Add attractive photos to showcase your food and kitchen. Great images help attract more customers.') }}
-                    </p>
-                    <p class="text-xs text-on-surface/60 italic">
-                        {{ __('This step will be available in a future update.') }}
-                    </p>
-                </div>
+                {{-- Step 2: Cover Images — F-073 --}}
+                @include('cook.setup.steps.cover-images', ['tenant' => $tenant])
                 @break
 
             @case(3)
