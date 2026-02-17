@@ -1,6 +1,6 @@
 {{--
-    Discovery Page Layout (F-066)
-    -----------------------------
+    Discovery Page Layout (F-066) + Filters (F-069)
+    -------------------------------------------------
     Main domain discovery page showing cook card grid with search, filters, and sort.
     BR-066: Main domain only
     BR-067: Active tenants with cook assigned
@@ -10,6 +10,14 @@
     BR-071: All text localized
     BR-072: Light/dark mode
     BR-073: Gale fragment updates
+    BR-090: Filter categories: town, availability, tags, min_rating
+    BR-091: AND logic between filter categories
+    BR-092: OR logic within tags
+    BR-093: Active filter count badge
+    BR-094: Clear all resets filters
+    BR-095: Filter changes update grid via Gale
+    BR-096: Filters combine with search
+    BR-097: Towns from active cook delivery areas
 --}}
 @extends('layouts.main-public')
 
@@ -24,18 +32,74 @@
     showScrollTop: false,
     searching: false,
     mobileSearchOpen: false,
+    selectedTown: '{{ $selectedTown ?? '' }}',
+    selectedAvailability: '{{ $selectedAvailability }}',
+    selectedTags: @js($selectedTags ?? []),
+    selectedMinRating: {{ $selectedMinRating ? $selectedMinRating : 'null' }},
+    activeFilterCount: {{ $activeFilterCount }},
+    get hasActiveFilters() {
+        return this.activeFilterCount > 0;
+    },
+    buildUrl() {
+        let params = new URLSearchParams();
+        if (this.search) params.set('search', this.search);
+        if (this.sort !== 'newest') params.set('sort', this.sort);
+        if (this.direction !== 'desc') params.set('direction', this.direction);
+        if (this.selectedTown) params.set('town', this.selectedTown);
+        if (this.selectedAvailability && this.selectedAvailability !== 'all') params.set('availability', this.selectedAvailability);
+        if (this.selectedTags.length > 0) {
+            this.selectedTags.forEach(t => params.append('tags[]', t));
+        }
+        if (this.selectedMinRating) params.set('min_rating', this.selectedMinRating);
+        let qs = params.toString();
+        return '/' + (qs ? '?' + qs : '');
+    },
     doSearch() {
         // BR-089: Minimum 2 characters before triggering server request
         if (this.search.length > 0 && this.search.length < 2) {
             return;
         }
         this.searching = true;
-        $navigate('/?search=' + encodeURIComponent(this.search) + '&sort=' + this.sort + '&direction=' + this.direction, { key: 'discovery', replace: true });
+        $navigate(this.buildUrl(), { key: 'discovery', replace: true });
     },
     clearSearch() {
         this.search = '';
         this.searching = true;
-        $navigate('/?sort=' + this.sort + '&direction=' + this.direction, { key: 'discovery', replace: true });
+        $navigate(this.buildUrl(), { key: 'discovery', replace: true });
+    },
+    applyFilters() {
+        // BR-095: Update grid via Gale without page reload
+        this.updateFilterCount();
+        this.searching = true;
+        $navigate(this.buildUrl(), { key: 'discovery', replace: true });
+    },
+    clearFilters() {
+        // BR-094: Reset all filters to default
+        this.selectedTown = '';
+        this.selectedAvailability = 'all';
+        this.selectedTags = [];
+        this.selectedMinRating = null;
+        this.activeFilterCount = 0;
+        this.searching = true;
+        $navigate(this.buildUrl(), { key: 'discovery', replace: true });
+    },
+    toggleTag(tagId) {
+        // BR-092: Toggle tag selection (OR logic within tags)
+        let idx = this.selectedTags.indexOf(tagId);
+        if (idx > -1) {
+            this.selectedTags.splice(idx, 1);
+        } else {
+            this.selectedTags.push(tagId);
+        }
+    },
+    updateFilterCount() {
+        // BR-093: Count active individual filter values
+        let count = 0;
+        if (this.selectedTown) count++;
+        if (this.selectedAvailability && this.selectedAvailability !== 'all') count++;
+        count += this.selectedTags.length;
+        if (this.selectedMinRating) count++;
+        this.activeFilterCount = count;
     }
 }" x-init="
     window.addEventListener('scroll', () => {
@@ -183,21 +247,21 @@
                         >
                             <div class="py-1">
                                 <button
-                                    @click="sort = 'newest'; direction = 'desc'; sortOpen = false; $navigate('/?search=' + encodeURIComponent(search) + '&sort=newest&direction=desc', { key: 'discovery', replace: true })"
+                                    @click="sort = 'newest'; direction = 'desc'; sortOpen = false; applyFilters()"
                                     class="w-full text-left px-4 py-2 text-sm hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors"
                                     :class="sort === 'newest' ? 'text-primary font-medium' : 'text-on-surface'"
                                 >
                                     {{ __('Newest first') }}
                                 </button>
                                 <button
-                                    @click="sort = 'name'; direction = 'asc'; sortOpen = false; $navigate('/?search=' + encodeURIComponent(search) + '&sort=name&direction=asc', { key: 'discovery', replace: true })"
+                                    @click="sort = 'name'; direction = 'asc'; sortOpen = false; applyFilters()"
                                     class="w-full text-left px-4 py-2 text-sm hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors"
-                                    :class="sort === 'name' ? 'text-primary font-medium' : 'text-on-surface'"
+                                    :class="sort === 'name' && direction === 'asc' ? 'text-primary font-medium' : 'text-on-surface'"
                                 >
                                     {{ __('Name A-Z') }}
                                 </button>
                                 <button
-                                    @click="sort = 'name'; direction = 'desc'; sortOpen = false; $navigate('/?search=' + encodeURIComponent(search) + '&sort=name&direction=desc', { key: 'discovery', replace: true })"
+                                    @click="sort = 'name'; direction = 'desc'; sortOpen = false; applyFilters()"
                                     class="w-full text-left px-4 py-2 text-sm hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors"
                                     :class="sort === 'name' && direction === 'desc' ? 'text-primary font-medium' : 'text-on-surface'"
                                 >
@@ -207,22 +271,32 @@
                         </div>
                     </div>
 
-                    {{-- Mobile Filter Button (placeholder for F-069) --}}
+                    {{-- Mobile/Tablet Filter Button with Badge (F-069) --}}
                     <button
                         @click="filterOpen = !filterOpen"
-                        class="lg:hidden inline-flex items-center gap-2 h-9 px-3 rounded-lg text-sm font-medium border border-outline dark:border-outline text-on-surface hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors duration-200"
+                        class="lg:hidden inline-flex items-center gap-2 h-9 px-3 rounded-lg text-sm font-medium border transition-colors duration-200 relative"
+                        :class="hasActiveFilters
+                            ? 'border-primary text-primary bg-primary-subtle dark:bg-primary-subtle hover:bg-primary-subtle'
+                            : 'border-outline dark:border-outline text-on-surface hover:bg-surface-alt dark:hover:bg-surface-alt'"
                         aria-label="{{ __('Filters') }}"
                     >
                         {{-- SlidersHorizontal icon (Lucide) --}}
                         <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" x2="14" y1="4" y2="4"></line><line x1="10" x2="3" y1="4" y2="4"></line><line x1="21" x2="12" y1="12" y2="12"></line><line x1="8" x2="3" y1="12" y2="12"></line><line x1="21" x2="16" y1="20" y2="20"></line><line x1="12" x2="3" y1="20" y2="20"></line><line x1="14" x2="14" y1="2" y2="6"></line><line x1="8" x2="8" y1="10" y2="14"></line><line x1="16" x2="16" y1="18" y2="22"></line></svg>
                         <span>{{ __('Filters') }}</span>
+                        {{-- BR-093: Active filter count badge --}}
+                        <span
+                            x-show="hasActiveFilters"
+                            x-cloak
+                            x-text="activeFilterCount"
+                            class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-on-primary text-xs font-bold"
+                        ></span>
                     </button>
                 </div>
             </div>
         </div>
     </section>
 
-    {{-- Mobile Filter Bottom Sheet (placeholder for F-069) --}}
+    {{-- Mobile Filter Bottom Sheet (F-069) --}}
     <div
         x-show="filterOpen"
         x-cloak
@@ -250,19 +324,50 @@
             x-transition:leave="transition ease-in duration-200"
             x-transition:leave-start="translate-y-0"
             x-transition:leave-end="translate-y-full"
-            class="absolute bottom-0 inset-x-0 bg-surface dark:bg-surface rounded-t-2xl border-t border-outline dark:border-outline shadow-dropdown max-h-[70vh] overflow-y-auto"
+            class="absolute bottom-0 inset-x-0 bg-surface dark:bg-surface rounded-t-2xl border-t border-outline dark:border-outline shadow-dropdown max-h-[80vh] overflow-y-auto"
         >
             <div class="px-4 py-4">
                 {{-- Handle bar --}}
                 <div class="w-10 h-1 bg-outline dark:bg-outline rounded-full mx-auto mb-4"></div>
                 <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-lg font-semibold text-on-surface-strong">{{ __('Filters') }}</h2>
-                    <button @click="filterOpen = false" class="text-on-surface hover:text-on-surface-strong transition-colors" aria-label="{{ __('Close filters') }}">
-                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                    <h2 class="text-lg font-semibold text-on-surface-strong inline-flex items-center gap-2">
+                        {{ __('Filters') }}
+                        {{-- Active filter count badge --}}
+                        <span
+                            x-show="hasActiveFilters"
+                            x-cloak
+                            x-text="activeFilterCount"
+                            class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-on-primary text-xs font-bold"
+                        ></span>
+                    </h2>
+                    <div class="flex items-center gap-3">
+                        {{-- Clear all button (BR-094) --}}
+                        <button
+                            x-show="hasActiveFilters"
+                            x-cloak
+                            @click="clearFilters()"
+                            class="text-sm font-medium text-primary hover:text-primary-hover transition-colors"
+                        >
+                            {{ __('Clear all') }}
+                        </button>
+                        <button @click="filterOpen = false" class="text-on-surface hover:text-on-surface-strong transition-colors" aria-label="{{ __('Close filters') }}">
+                            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                {{-- Filter controls (shared partial) --}}
+                @include('discovery._filters')
+
+                {{-- Apply button (mobile) --}}
+                <div class="sticky bottom-0 pt-3 pb-2 bg-surface dark:bg-surface border-t border-outline dark:border-outline -mx-4 px-4 mt-2">
+                    <button
+                        @click="filterOpen = false"
+                        class="w-full h-11 rounded-lg font-semibold bg-primary hover:bg-primary-hover text-on-primary transition-all duration-200 text-sm"
+                    >
+                        {{ __('Show results') }}
                     </button>
                 </div>
-                {{-- Filter content will be added by F-069 --}}
-                <p class="text-sm text-on-surface py-8 text-center">{{ __('Filters coming soon') }}</p>
             </div>
         </div>
     </div>
@@ -270,12 +375,33 @@
     {{-- Main Content Area --}}
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div class="flex gap-6 lg:gap-8">
-            {{-- Desktop Filter Sidebar (placeholder for F-069) --}}
+            {{-- Desktop Filter Sidebar (F-069) --}}
             <aside class="hidden lg:block w-64 shrink-0">
                 <div class="sticky top-20 bg-surface-alt dark:bg-surface-alt rounded-xl border border-outline dark:border-outline p-4">
-                    <h2 class="text-sm font-semibold text-on-surface-strong uppercase tracking-wider mb-3">{{ __('Filters') }}</h2>
-                    {{-- Filter content will be added by F-069 --}}
-                    <p class="text-sm text-on-surface py-4 text-center">{{ __('Filters coming soon') }}</p>
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-sm font-semibold text-on-surface-strong uppercase tracking-wider inline-flex items-center gap-2">
+                            {{ __('Filters') }}
+                            {{-- Active filter count badge --}}
+                            <span
+                                x-show="hasActiveFilters"
+                                x-cloak
+                                x-text="activeFilterCount"
+                                class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-on-primary text-xs font-bold"
+                            ></span>
+                        </h2>
+                        {{-- Clear all button (BR-094) --}}
+                        <button
+                            x-show="hasActiveFilters"
+                            x-cloak
+                            @click="clearFilters()"
+                            class="text-xs font-medium text-primary hover:text-primary-hover transition-colors"
+                        >
+                            {{ __('Clear all') }}
+                        </button>
+                    </div>
+
+                    {{-- Filter controls (shared partial) --}}
+                    @include('discovery._filters')
                 </div>
             </aside>
 
@@ -339,10 +465,9 @@
                 @else
                     {{-- Empty State --}}
                     <div class="flex flex-col items-center justify-center py-16 sm:py-24 text-center">
-                        {{-- Search icon for search, ChefHat for no cooks --}}
                         <div class="w-20 h-20 rounded-full bg-primary-subtle dark:bg-primary-subtle flex items-center justify-center mb-6">
-                            @if(!empty($search))
-                                {{-- Search icon (Lucide, lg=24) --}}
+                            @if($hasActiveFilters || !empty($search))
+                                {{-- Search/Filter icon (Lucide, lg=24) --}}
                                 <svg class="w-10 h-10 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
                             @else
                                 {{-- ChefHat icon (Lucide) --}}
@@ -350,29 +475,44 @@
                             @endif
                         </div>
                         <h2 class="text-xl sm:text-2xl font-semibold text-on-surface-strong mb-2">
-                            @if(!empty($search))
+                            @if($hasActiveFilters)
+                                {{ __('No cooks match your filters') }}
+                            @elseif(!empty($search))
                                 {{ __('No cooks found matching your search') }}
                             @else
                                 {{ __('No cooks available yet') }}
                             @endif
                         </h2>
                         <p class="text-on-surface max-w-md text-base">
-                            @if(!empty($search))
+                            @if($hasActiveFilters)
+                                {{ __('No cooks match your filters. Try adjusting your criteria.') }}
+                            @elseif(!empty($search))
                                 {{ __('No cooks found matching your search. Try different keywords.') }}
                             @else
                                 {{ __('Check back soon! Talented cooks are joining DancyMeals every day.') }}
                             @endif
                         </p>
-                        @if(!empty($search))
-                            <div class="mt-6">
-                                <button
-                                    @click="clearSearch()"
-                                    class="h-10 px-6 rounded-lg font-medium bg-primary hover:bg-primary-hover text-on-primary transition-all duration-200 inline-flex items-center gap-2 text-sm"
-                                >
-                                    {{-- X icon (Lucide, sm=16) --}}
-                                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
-                                    {{ __('Clear search') }}
-                                </button>
+                        @if($hasActiveFilters || !empty($search))
+                            <div class="mt-6 flex items-center gap-3">
+                                @if($hasActiveFilters)
+                                    <button
+                                        @click="clearFilters()"
+                                        class="h-10 px-6 rounded-lg font-medium bg-primary hover:bg-primary-hover text-on-primary transition-all duration-200 inline-flex items-center gap-2 text-sm"
+                                    >
+                                        {{-- FilterX icon (Lucide, sm=16) --}}
+                                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.013 3H2l8 9.46V19l4 2v-8.54l.9-1.055"></path><path d="m22 3-5 5"></path><path d="m17 3 5 5"></path></svg>
+                                        {{ __('Clear filters') }}
+                                    </button>
+                                @endif
+                                @if(!empty($search))
+                                    <button
+                                        @click="clearSearch()"
+                                        class="h-10 px-6 rounded-lg font-medium border border-outline text-on-surface hover:bg-surface-alt transition-all duration-200 inline-flex items-center gap-2 text-sm"
+                                    >
+                                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                                        {{ __('Clear search') }}
+                                    </button>
+                                @endif
                             </div>
                         @endif
                     </div>

@@ -15,26 +15,59 @@ class DiscoveryController extends Controller
      * BR-068: No authentication required.
      * BR-069: Paginated in pages of 12.
      * BR-073: Grid updates via Gale without full page reload.
+     * BR-090: Filter categories: town, availability, tags, min_rating.
+     * BR-091: Filters between categories combine with AND logic.
+     * BR-095: Filter changes update the grid via Gale without page reload.
+     * BR-096: Filters combine with any active search query (F-068).
      */
     public function index(DiscoveryRequest $request, DiscoveryService $discoveryService): mixed
     {
+        // Extract validated filter parameters
+        $search = $request->validated('search');
+        $sort = $request->validated('sort');
+        $direction = $request->validated('direction');
+        $town = $request->validated('town') ? (int) $request->validated('town') : null;
+        $availability = $request->validated('availability');
+        $tags = $request->validated('tags');
+        $minRating = $request->validated('min_rating') ? (int) $request->validated('min_rating') : null;
+
         $cooks = $discoveryService->getDiscoverableCooks(
-            search: $request->validated('search'),
-            sort: $request->validated('sort'),
-            direction: $request->validated('direction'),
+            search: $search,
+            sort: $sort,
+            direction: $direction,
+            town: $town,
+            availability: $availability,
+            tags: $tags,
+            minRating: $minRating,
         );
 
         $totalCooks = $discoveryService->getDiscoverableCookCount();
+        $filterTowns = $discoveryService->getFilterTowns();
+        $filterTags = $discoveryService->getFilterTags();
+        $activeFilterCount = $discoveryService->countActiveFilters(
+            town: $town,
+            availability: $availability,
+            tags: $tags,
+            minRating: $minRating,
+        );
 
         $data = [
             'cooks' => $cooks,
             'totalCooks' => $totalCooks,
-            'search' => $request->validated('search', ''),
-            'sort' => $request->validated('sort', 'newest'),
-            'direction' => $request->validated('direction', 'desc'),
+            'search' => $search ?? '',
+            'sort' => $sort ?? 'newest',
+            'direction' => $direction ?? 'desc',
+            'filterTowns' => $filterTowns,
+            'filterTags' => $filterTags,
+            'selectedTown' => $town,
+            'selectedAvailability' => $availability ?? 'all',
+            'selectedTags' => $tags ?? [],
+            'selectedMinRating' => $minRating,
+            'activeFilterCount' => $activeFilterCount,
+            'hasActiveFilters' => $activeFilterCount > 0,
         ];
 
-        // BR-073/BR-088: Fragment-based partial update for Gale navigate requests
+        // BR-073/BR-088/BR-095: Fragment-based partial update for Gale navigate requests
         // Returns both the result count and cook grid fragments
         if ($request->isGaleNavigate('discovery')) {
             return gale()
