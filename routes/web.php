@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\CommissionController;
 use App\Http\Controllers\Admin\ComplaintController;
 use App\Http\Controllers\Admin\CookAssignmentController;
 use App\Http\Controllers\Admin\PaymentTransactionController;
+use App\Http\Controllers\Admin\PlatformSettingController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\TenantController;
 use App\Http\Controllers\Admin\UserController;
@@ -267,6 +268,10 @@ Route::middleware('main.domain')->group(function () {
         Route::get('/complaints', [ComplaintController::class, 'index'])->name('admin.complaints.index');
         Route::get('/complaints/{complaint}', [ComplaintController::class, 'show'])->name('admin.complaints.show');
         Route::post('/complaints/{complaint}/resolve', [ComplaintController::class, 'resolve'])->name('admin.complaints.resolve');
+
+        // Platform settings (F-063)
+        Route::get('/settings', [PlatformSettingController::class, 'index'])->name('admin.settings.index');
+        Route::post('/settings', [PlatformSettingController::class, 'update'])->name('admin.settings.update');
     });
 });
 
