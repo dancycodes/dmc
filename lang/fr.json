@@ -1389,5 +1389,25 @@
     "Maximum :count images allowed. Delete one to upload a new one.": "Maximum :count images autoris\u00e9es. Supprimez-en une pour en t\u00e9l\u00e9charger une nouvelle.",
     "Cover images uploaded via profile management": "Images de couverture t\u00e9l\u00e9charg\u00e9es via la gestion du profil",
     "Cover images reordered via profile management": "Images de couverture r\u00e9organis\u00e9es via la gestion du profil",
-    "Cover image deleted via profile management": "Image de couverture supprim\u00e9e via la gestion du profil"
+    "Cover image deleted via profile management": "Image de couverture supprim\u00e9e via la gestion du profil",
+
+    "Delivery Towns": "Villes de livraison",
+    "Manage the towns and areas where you offer delivery.": "G\u00e9rez les villes et zones o\u00f9 vous proposez la livraison.",
+    "Add Town": "Ajouter une ville",
+    "Add New Town": "Ajouter une nouvelle ville",
+    "Town Name (English)": "Nom de la ville (Anglais)",
+    "Town Name (French)": "Nom de la ville (Fran\u00e7ais)",
+    "e.g. Douala": "ex. Douala",
+    "Save Town": "Enregistrer la ville",
+    "Saving...": "Enregistrement...",
+    "Town added successfully.": "Ville ajout\u00e9e avec succ\u00e8s.",
+    "Town name is required in English.": "Le nom de la ville est requis en anglais.",
+    "Town name is required in French.": "Le nom de la ville est requis en fran\u00e7ais.",
+    "Town name must not exceed 255 characters.": "Le nom de la ville ne doit pas d\u00e9passer 255 caract\u00e8res.",
+    "No delivery towns yet": "Aucune ville de livraison",
+    "Add towns where you offer food delivery to get started.": "Ajoutez les villes o\u00f9 vous proposez la livraison pour commencer.",
+    "Add Your First Town": "Ajouter votre premi\u00e8re ville",
+    "Town added to delivery areas": "Ville ajout\u00e9e aux zones de livraison",
+    "quarter": "quartier",
+    "quarters": "quartiers"
 }

@@ -1389,5 +1389,25 @@
     "Maximum :count images allowed. Delete one to upload a new one.": "Maximum :count images allowed. Delete one to upload a new one.",
     "Cover images uploaded via profile management": "Cover images uploaded via profile management",
     "Cover images reordered via profile management": "Cover images reordered via profile management",
-    "Cover image deleted via profile management": "Cover image deleted via profile management"
+    "Cover image deleted via profile management": "Cover image deleted via profile management",
+
+    "Delivery Towns": "Delivery Towns",
+    "Manage the towns and areas where you offer delivery.": "Manage the towns and areas where you offer delivery.",
+    "Add Town": "Add Town",
+    "Add New Town": "Add New Town",
+    "Town Name (English)": "Town Name (English)",
+    "Town Name (French)": "Town Name (French)",
+    "e.g. Douala": "e.g. Douala",
+    "Save Town": "Save Town",
+    "Saving...": "Saving...",
+    "Town added successfully.": "Town added successfully.",
+    "Town name is required in English.": "Town name is required in English.",
+    "Town name is required in French.": "Town name is required in French.",
+    "Town name must not exceed 255 characters.": "Town name must not exceed 255 characters.",
+    "No delivery towns yet": "No delivery towns yet",
+    "Add towns where you offer food delivery to get started.": "Add towns where you offer food delivery to get started.",
+    "Add Your First Town": "Add Your First Town",
+    "Town added to delivery areas": "Town added to delivery areas",
+    "quarter": "quarter",
+    "quarters": "quarters"
 }
