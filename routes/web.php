@@ -15,6 +15,7 @@ use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Cook\SetupWizardController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DiscoveryController;
 use App\Http\Controllers\LanguagePreferenceController;
@@ -302,6 +303,12 @@ Route::middleware('tenant.domain')->group(function () {
     // BR-157: Only users with cook or manager role for the current tenant
     Route::prefix('dashboard')->middleware(['auth', 'cook.access', 'throttle:moderate'])->group(function () {
         Route::get('/', [DashboardController::class, 'cookDashboard'])->name('cook.dashboard');
+
+        // Setup wizard (F-071: Cook Setup Wizard Shell)
+        // BR-113: Only accessible to cook/manager role (enforced by cook.access middleware)
+        // BR-116: Accessible both before and after "Go Live"
+        Route::get('/setup', [SetupWizardController::class, 'show'])->name('cook.setup');
+        Route::post('/setup/go-live', [SetupWizardController::class, 'goLive'])->name('cook.setup.go-live');
     });
 
     // Tenant-specific routes will be added by later features (F-126, etc.)
