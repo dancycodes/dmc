@@ -229,6 +229,26 @@ class Tenant extends Model implements HasMedia
     }
 
     /**
+     * Get the delivery areas for this tenant.
+     *
+     * F-074: Delivery Areas Step
+     */
+    public function deliveryAreas(): HasMany
+    {
+        return $this->hasMany(DeliveryArea::class);
+    }
+
+    /**
+     * Get the pickup locations for this tenant.
+     *
+     * F-074: Delivery Areas Step
+     */
+    public function pickupLocations(): HasMany
+    {
+        return $this->hasMany(PickupLocation::class);
+    }
+
+    /**
      * Get the current commission rate for this tenant.
      *
      * BR-175: Default commission rate is 10%
