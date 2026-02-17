@@ -191,7 +191,7 @@
             </h2>
             @if($canEdit)
                 <a
-                    href="{{ url('/dashboard/setup?step=1') }}"
+                    href="{{ url('/dashboard/profile/edit') }}"
                     class="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary-hover transition-colors duration-200"
                     title="{{ __('Edit brand name') }}"
                 >
@@ -225,7 +225,7 @@
             </h2>
             @if($canEdit)
                 <a
-                    href="{{ url('/dashboard/setup?step=1') }}"
+                    href="{{ url('/dashboard/profile/edit') }}"
                     class="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary-hover transition-colors duration-200"
                     title="{{ __('Edit bio') }}"
                 >
@@ -256,7 +256,7 @@
             </h2>
             @if($canEdit)
                 <a
-                    href="{{ url('/dashboard/setup?step=1') }}"
+                    href="{{ url('/dashboard/profile/edit') }}"
                     class="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary-hover transition-colors duration-200"
                     title="{{ __('Edit contact info') }}"
                 >
@@ -313,7 +313,7 @@
             </h2>
             @if($canEdit)
                 <a
-                    href="{{ url('/dashboard/setup?step=1') }}"
+                    href="{{ url('/dashboard/profile/edit') }}"
                     class="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary-hover transition-colors duration-200"
                     title="{{ __('Edit social links') }}"
                 >
