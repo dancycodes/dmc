@@ -4,6 +4,7 @@
     F-082: Add Town
     F-083: Town List View
     F-084: Edit Town
+    F-085: Delete Town
 
     Allows the cook to view existing towns and add new ones to their delivery areas.
     Each town is scoped to the tenant via the delivery_areas junction table.
@@ -25,6 +26,13 @@
     BR-221: Save via Gale; list updates without page reload (edit)
     BR-223: Edit action requires location management permission
     BR-224: All validation messages use __() localization (edit)
+    BR-225: Cannot delete a town with active orders
+    BR-226: Deleting a town cascade-deletes all its quarters and their delivery fees
+    BR-227: Deleting a town cascade-removes quarters from any quarter groups
+    BR-228: Confirmation dialog with town name and quarter count
+    BR-229: On success, toast notification confirms deletion
+    BR-230: Delete action requires location management permission
+    BR-231: Town list updates via Gale without page reload after deletion
 --}}
 @extends('layouts.cook-dashboard')
 
@@ -63,6 +71,27 @@
         </div>
     @endif
 
+    {{-- Error Toast (F-085: BR-225 active order block message) --}}
+    @if(session('error'))
+        <div
+            x-data="{ show: true }"
+            x-show="show"
+            x-init="setTimeout(() => show = false, 6000)"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 translate-y-2"
+            x-transition:enter-end="opacity-100 translate-y-0"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 translate-y-0"
+            x-transition:leave-end="opacity-0 translate-y-2"
+            class="mb-6 p-4 rounded-lg border bg-danger-subtle border-danger/30 text-danger flex items-center gap-3"
+            role="alert"
+        >
+            {{-- Lucide: alert-circle --}}
+            <svg class="w-5 h-5 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" x2="12" y1="8" y2="12"></line><line x1="12" x2="12.01" y1="16" y2="16"></line></svg>
+            <p class="text-sm font-medium">{{ session('error') }}</p>
+        </div>
+    @endif
+
     {{-- Locations Page Content --}}
     <div
         x-data="{
@@ -71,6 +100,8 @@
             name_fr: '',
             expandedTown: null,
             confirmDeleteId: null,
+            confirmDeleteName: '',
+            confirmDeleteQuarterCount: 0,
             editingTownId: null,
             edit_name_en: '',
             edit_name_fr: '',
@@ -90,6 +121,22 @@
                 this.editingTownId = null;
                 this.edit_name_en = '';
                 this.edit_name_fr = '';
+            },
+            confirmDelete(areaId, townName, quarterCount) {
+                this.confirmDeleteId = areaId;
+                this.confirmDeleteName = townName;
+                this.confirmDeleteQuarterCount = quarterCount;
+            },
+            cancelDelete() {
+                this.confirmDeleteId = null;
+                this.confirmDeleteName = '';
+                this.confirmDeleteQuarterCount = 0;
+            },
+            executeDelete() {
+                if (this.confirmDeleteId) {
+                    $action('/dashboard/locations/towns/' + this.confirmDeleteId, { method: 'DELETE' });
+                    this.cancelDelete();
+                }
             }
         }"
         x-sync="['name_en', 'name_fr', 'edit_name_en', 'edit_name_fr']"
@@ -263,10 +310,10 @@
                                     <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg>
                                 </button>
 
-                                {{-- Delete button (BR-214) — stub for F-085 --}}
+                                {{-- Delete button (F-085: Delete Town, BR-228) --}}
                                 <button
                                     type="button"
-                                    x-on:click="confirmDeleteId = {{ $area['id'] }}"
+                                    x-on:click="confirmDelete({{ $area['id'] }}, '{{ addslashes($townName) }}', {{ $quarterCount }})"
                                     class="p-2 rounded-lg text-on-surface/60 hover:text-danger hover:bg-danger-subtle transition-colors duration-200"
                                     title="{{ __('Delete town') }}"
                                     aria-label="{{ __('Delete') }} {{ $townName }}"
@@ -405,7 +452,7 @@
                 </p>
             </div>
 
-            {{-- Delete Confirmation Modal (stub for F-085) --}}
+            {{-- Delete Confirmation Modal (F-085: Delete Town, BR-228) --}}
             <div
                 x-show="confirmDeleteId !== null"
                 x-cloak
@@ -423,7 +470,7 @@
                 {{-- Backdrop --}}
                 <div
                     class="absolute inset-0 bg-black/50"
-                    x-on:click="confirmDeleteId = null"
+                    x-on:click="cancelDelete()"
                 ></div>
 
                 {{-- Modal Content --}}
@@ -437,27 +484,31 @@
                     x-transition:leave-end="opacity-0 scale-95"
                     class="relative bg-surface-alt dark:bg-surface-alt rounded-xl border border-outline dark:border-outline shadow-lg max-w-sm w-full p-6"
                 >
-                    <div class="flex items-center gap-3 mb-4">
+                    <div class="flex items-start gap-3 mb-4">
                         <div class="w-10 h-10 rounded-full bg-danger-subtle flex items-center justify-center shrink-0">
                             {{-- Lucide: alert-triangle --}}
                             <svg class="w-5 h-5 text-danger" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
                         </div>
                         <div>
                             <h3 class="text-base font-semibold text-on-surface-strong">{{ __('Delete this town?') }}</h3>
-                            <p class="text-sm text-on-surface mt-1">{{ __('This will remove the town and all its quarters from your delivery areas. This action cannot be undone.') }}</p>
+                            {{-- BR-228: Show town name and quarter count in confirmation --}}
+                            <p class="text-sm text-on-surface mt-1">
+                                <span x-show="confirmDeleteQuarterCount > 0" x-text="'{{ __('Delete') }} ' + confirmDeleteName + ' {{ __('and its') }} ' + confirmDeleteQuarterCount + ' ' + (confirmDeleteQuarterCount === 1 ? '{{ __('quarter') }}' : '{{ __('quarters') }}') + '? {{ __('This cannot be undone.') }}'"></span>
+                                <span x-show="confirmDeleteQuarterCount === 0" x-text="'{{ __('Delete') }} ' + confirmDeleteName + '? {{ __('This cannot be undone.') }}'"></span>
+                            </p>
                         </div>
                     </div>
                     <div class="flex items-center justify-end gap-3">
                         <button
                             type="button"
-                            x-on:click="confirmDeleteId = null"
+                            x-on:click="cancelDelete()"
                             class="px-4 py-2 rounded-lg text-sm font-medium text-on-surface hover:bg-surface dark:hover:bg-surface transition-colors duration-200"
                         >
                             {{ __('Cancel') }}
                         </button>
                         <button
                             type="button"
-                            x-on:click="$action('/dashboard/locations/towns/' + confirmDeleteId, { method: 'DELETE' }); confirmDeleteId = null"
+                            x-on:click="executeDelete()"
                             class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-danger text-on-danger text-sm font-medium hover:bg-danger/90 transition-colors duration-200 shadow-sm"
                         >
                             {{-- Lucide: trash-2 --}}
