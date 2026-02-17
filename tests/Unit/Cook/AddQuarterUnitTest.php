@@ -46,76 +46,76 @@ describe('QuarterController', function () {
     });
 
     it('store checks can-manage-locations permission (BR-241)', function () use ($projectRoot) {
-        $content = file_get_contents($projectRoot . '/app/Http/Controllers/Cook/QuarterController.php');
+        $content = file_get_contents($projectRoot.'/app/Http/Controllers/Cook/QuarterController.php');
         expect($content)->toContain("can('can-manage-locations')");
         expect($content)->toContain('abort(403)');
     });
 
     it('store uses dual Gale/HTTP validation pattern', function () use ($projectRoot) {
-        $content = file_get_contents($projectRoot . '/app/Http/Controllers/Cook/QuarterController.php');
+        $content = file_get_contents($projectRoot.'/app/Http/Controllers/Cook/QuarterController.php');
         expect($content)->toContain('isGale()');
         expect($content)->toContain('validateState');
         expect($content)->toContain('StoreQuarterRequest');
     });
 
     it('store validates quarter_name_en as required (BR-232)', function () use ($projectRoot) {
-        $content = file_get_contents($projectRoot . '/app/Http/Controllers/Cook/QuarterController.php');
+        $content = file_get_contents($projectRoot.'/app/Http/Controllers/Cook/QuarterController.php');
         expect($content)->toContain("'quarter_name_en'");
         expect($content)->toContain("'required'");
     });
 
     it('store validates quarter_name_fr as required (BR-232)', function () use ($projectRoot) {
-        $content = file_get_contents($projectRoot . '/app/Http/Controllers/Cook/QuarterController.php');
+        $content = file_get_contents($projectRoot.'/app/Http/Controllers/Cook/QuarterController.php');
         expect($content)->toContain("'quarter_name_fr'");
     });
 
     it('store validates quarter_delivery_fee as integer min:0 (BR-234, BR-235)', function () use ($projectRoot) {
-        $content = file_get_contents($projectRoot . '/app/Http/Controllers/Cook/QuarterController.php');
+        $content = file_get_contents($projectRoot.'/app/Http/Controllers/Cook/QuarterController.php');
         expect($content)->toContain("'quarter_delivery_fee'");
         expect($content)->toContain("'integer'");
         expect($content)->toContain("'min:0'");
     });
 
     it('store trims whitespace from quarter names', function () use ($projectRoot) {
-        $content = file_get_contents($projectRoot . '/app/Http/Controllers/Cook/QuarterController.php');
+        $content = file_get_contents($projectRoot.'/app/Http/Controllers/Cook/QuarterController.php');
         expect($content)->toContain("trim(\$validated['quarter_name_en'])");
         expect($content)->toContain("trim(\$validated['quarter_name_fr'])");
     });
 
     it('store uses DeliveryAreaService::addQuarter for business logic', function () use ($projectRoot) {
-        $content = file_get_contents($projectRoot . '/app/Http/Controllers/Cook/QuarterController.php');
+        $content = file_get_contents($projectRoot.'/app/Http/Controllers/Cook/QuarterController.php');
         expect($content)->toContain('$deliveryAreaService->addQuarter(');
     });
 
     it('store returns Gale messages on duplicate error (BR-233)', function () use ($projectRoot) {
-        $content = file_get_contents($projectRoot . '/app/Http/Controllers/Cook/QuarterController.php');
+        $content = file_get_contents($projectRoot.'/app/Http/Controllers/Cook/QuarterController.php');
         expect($content)->toContain('gale()->messages(');
     });
 
     it('store redirects with success message on save (BR-240)', function () use ($projectRoot) {
-        $content = file_get_contents($projectRoot . '/app/Http/Controllers/Cook/QuarterController.php');
+        $content = file_get_contents($projectRoot.'/app/Http/Controllers/Cook/QuarterController.php');
         expect($content)->toContain("redirect(url('/dashboard/locations'))");
         expect($content)->toContain("__('Quarter added successfully.')");
     });
 
     it('store logs activity on quarter creation', function () use ($projectRoot) {
-        $content = file_get_contents($projectRoot . '/app/Http/Controllers/Cook/QuarterController.php');
+        $content = file_get_contents($projectRoot.'/app/Http/Controllers/Cook/QuarterController.php');
         expect($content)->toContain("activity('delivery_areas')");
         expect($content)->toContain("'quarter_added'");
     });
 
     it('store includes high fee warning in success message', function () use ($projectRoot) {
-        $content = file_get_contents($projectRoot . '/app/Http/Controllers/Cook/QuarterController.php');
+        $content = file_get_contents($projectRoot.'/app/Http/Controllers/Cook/QuarterController.php');
         expect($content)->toContain("\$result['warning']");
     });
 
     it('store casts delivery fee to integer (BR-235)', function () use ($projectRoot) {
-        $content = file_get_contents($projectRoot . '/app/Http/Controllers/Cook/QuarterController.php');
+        $content = file_get_contents($projectRoot.'/app/Http/Controllers/Cook/QuarterController.php');
         expect($content)->toContain("(int) \$validated['quarter_delivery_fee']");
     });
 
     it('never uses bare return view()', function () use ($projectRoot) {
-        $content = file_get_contents($projectRoot . '/app/Http/Controllers/Cook/QuarterController.php');
+        $content = file_get_contents($projectRoot.'/app/Http/Controllers/Cook/QuarterController.php');
         expect($content)->not->toMatch('/return\s+view\s*\(/');
     });
 });
@@ -132,7 +132,7 @@ describe('StoreQuarterRequest', function () {
     });
 
     it('has authorize method checking can-manage-locations (BR-241)', function () use ($projectRoot) {
-        $content = file_get_contents($projectRoot . '/app/Http/Requests/Cook/StoreQuarterRequest.php');
+        $content = file_get_contents($projectRoot.'/app/Http/Requests/Cook/StoreQuarterRequest.php');
         expect($content)->toContain("can('can-manage-locations')");
     });
 
@@ -188,7 +188,7 @@ describe('StoreQuarterRequest', function () {
     });
 
     it('messages cover all validation rules', function () use ($projectRoot) {
-        $content = file_get_contents($projectRoot . '/app/Http/Requests/Cook/StoreQuarterRequest.php');
+        $content = file_get_contents($projectRoot.'/app/Http/Requests/Cook/StoreQuarterRequest.php');
         expect($content)->toContain("'name_en.required'");
         expect($content)->toContain("'name_fr.required'");
         expect($content)->toContain("'delivery_fee.required'");
@@ -226,7 +226,7 @@ describe('DeliveryAreaService::addQuarter', function () {
     });
 
     it('checks uniqueness with case-insensitive comparison (BR-233)', function () use ($projectRoot) {
-        $content = file_get_contents($projectRoot . '/app/Services/DeliveryAreaService.php');
+        $content = file_get_contents($projectRoot.'/app/Services/DeliveryAreaService.php');
         $addQuarterMethod = substr($content, strpos($content, 'public function addQuarter'));
         $addQuarterEnd = strpos($addQuarterMethod, "\n    /**", 10);
         $addQuarterMethod = substr($addQuarterMethod, 0, $addQuarterEnd ?: strlen($addQuarterMethod));
@@ -234,7 +234,7 @@ describe('DeliveryAreaService::addQuarter', function () {
     });
 
     it('returns array with success, quarter_data, error, and warning', function () use ($projectRoot) {
-        $content = file_get_contents($projectRoot . '/app/Services/DeliveryAreaService.php');
+        $content = file_get_contents($projectRoot.'/app/Services/DeliveryAreaService.php');
         $addQuarterMethod = substr($content, strpos($content, 'public function addQuarter'));
         $addQuarterEnd = strpos($addQuarterMethod, "\n    /**", 10);
         $addQuarterMethod = substr($addQuarterMethod, 0, $addQuarterEnd ?: strlen($addQuarterMethod));
@@ -250,7 +250,7 @@ describe('DeliveryAreaService::addQuarter', function () {
     });
 
     it('generates warning for high delivery fee', function () use ($projectRoot) {
-        $content = file_get_contents($projectRoot . '/app/Services/DeliveryAreaService.php');
+        $content = file_get_contents($projectRoot.'/app/Services/DeliveryAreaService.php');
         $addQuarterMethod = substr($content, strpos($content, 'public function addQuarter'));
         $addQuarterEnd = strpos($addQuarterMethod, "\n    /**", 10);
         $addQuarterMethod = substr($addQuarterMethod, 0, $addQuarterEnd ?: strlen($addQuarterMethod));
@@ -263,7 +263,7 @@ describe('DeliveryAreaService::addQuarter', function () {
 // ============================================================
 describe('Locations index blade view — quarter additions', function () {
     $projectRoot = dirname(__DIR__, 3);
-    $viewPath = $projectRoot . '/resources/views/cook/locations/index.blade.php';
+    $viewPath = $projectRoot.'/resources/views/cook/locations/index.blade.php';
 
     it('has Add Quarter button in expanded town section', function () use ($viewPath) {
         $content = file_get_contents($viewPath);
@@ -306,7 +306,8 @@ describe('Locations index blade view — quarter additions', function () {
 
     it('shows free delivery badge for 0 fee quarters (BR-236)', function () use ($viewPath) {
         $content = file_get_contents($viewPath);
-        expect($content)->toContain("__('Free')");
+        // F-087: Updated from "Free" to "Free delivery" per BR-246
+        expect($content)->toContain("__('Free delivery')");
         expect($content)->toContain('bg-success-subtle');
         expect($content)->toContain('text-success');
     });
@@ -344,7 +345,8 @@ describe('Locations index blade view — quarter additions', function () {
 
     it('has empty state for quarters within a town', function () use ($viewPath) {
         $content = file_get_contents($viewPath);
-        expect($content)->toContain("__('No quarters added yet. Add a quarter to define delivery fees within this town.')");
+        // F-087: Updated empty state per BR-248
+        expect($content)->toContain("__('No quarters added yet. Add your first quarter.')");
     });
 
     it('displays bilingual quarter names in list', function () use ($viewPath) {
@@ -375,7 +377,7 @@ describe('Locations index blade view — quarter additions', function () {
 // ============================================================
 describe('Quarter route configuration', function () {
     $projectRoot = dirname(__DIR__, 3);
-    $routesContent = file_get_contents($projectRoot . '/routes/web.php');
+    $routesContent = file_get_contents($projectRoot.'/routes/web.php');
 
     it('has quarter store route', function () use ($routesContent) {
         expect($routesContent)->toContain("Route::post('/locations/quarters/{deliveryArea}'");
@@ -401,7 +403,7 @@ describe('Quarter translation strings', function () {
     $projectRoot = dirname(__DIR__, 3);
 
     it('has English translations for quarter feature', function () use ($projectRoot) {
-        $enContent = file_get_contents($projectRoot . '/lang/en.json');
+        $enContent = file_get_contents($projectRoot.'/lang/en.json');
         $en = json_decode($enContent, true);
 
         expect($en)->toHaveKey('Add Quarter');
@@ -420,7 +422,7 @@ describe('Quarter translation strings', function () {
     });
 
     it('has French translations for quarter feature', function () use ($projectRoot) {
-        $frContent = file_get_contents($projectRoot . '/lang/fr.json');
+        $frContent = file_get_contents($projectRoot.'/lang/fr.json');
         $fr = json_decode($frContent, true);
 
         expect($fr)->toHaveKey('Add Quarter');
@@ -439,7 +441,7 @@ describe('Quarter translation strings', function () {
     });
 
     it('French translations are not identical to English keys', function () use ($projectRoot) {
-        $frContent = file_get_contents($projectRoot . '/lang/fr.json');
+        $frContent = file_get_contents($projectRoot.'/lang/fr.json');
         $fr = json_decode($frContent, true);
 
         expect($fr['Save Quarter'])->not->toBe('Save Quarter');

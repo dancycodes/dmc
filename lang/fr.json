@@ -1300,5 +1300,12 @@
     "Quarter name must not exceed 255 characters.": "Le nom du quartier ne doit pas dépasser 255 caractères.",
     "Delivery fee must be 0 or greater.": "Les frais de livraison doivent être de 0 ou plus.",
     "Quarter added to delivery area": "Quartier ajouté à la zone de livraison",
-    "e.g. Bonabéri": "ex. Bonabéri"
+    "e.g. Bonabéri": "ex. Bonabéri",
+    "All quarters": "Tous les quartiers",
+    "Filter by group": "Filtrer par groupe",
+    "Edit quarter": "Modifier le quartier",
+    "Delete quarter": "Supprimer le quartier",
+    "Delete this quarter?": "Supprimer ce quartier ?",
+    "Delete quarter confirmation": "Confirmation de suppression du quartier",
+    "No quarters added yet. Add your first quarter.": "Aucun quartier ajouté. Ajoutez votre premier quartier."
 }
