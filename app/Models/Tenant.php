@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Tenant extends Model
 {
@@ -126,6 +127,34 @@ class Tenant extends Model
     public function cook(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cook_id');
+    }
+
+    /**
+     * Get the commission change history for this tenant.
+     *
+     * F-062: Commission Configuration per Cook
+     */
+    public function commissionChanges(): HasMany
+    {
+        return $this->hasMany(CommissionChange::class);
+    }
+
+    /**
+     * Get the current commission rate for this tenant.
+     *
+     * BR-175: Default commission rate is 10%
+     */
+    public function getCommissionRate(): float
+    {
+        return (float) $this->getSetting('commission_rate', CommissionChange::DEFAULT_RATE);
+    }
+
+    /**
+     * Check if the tenant has a custom commission rate (different from default).
+     */
+    public function hasCustomCommissionRate(): bool
+    {
+        return $this->getCommissionRate() !== CommissionChange::DEFAULT_RATE;
     }
 
     /**

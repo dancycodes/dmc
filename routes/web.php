@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AddressController;
+use App\Http\Controllers\Admin\CommissionController;
 use App\Http\Controllers\Admin\ComplaintController;
 use App\Http\Controllers\Admin\CookAssignmentController;
 use App\Http\Controllers\Admin\PaymentTransactionController;
@@ -252,6 +253,11 @@ Route::middleware('main.domain')->group(function () {
         Route::get('/roles/{role}/permissions', [RoleController::class, 'permissions'])->name('admin.roles.permissions');
         Route::post('/roles/{role}/permissions/toggle', [RoleController::class, 'togglePermission'])->name('admin.roles.permissions.toggle');
         Route::post('/roles/{role}/permissions/toggle-module', [RoleController::class, 'toggleModule'])->name('admin.roles.permissions.toggle-module');
+
+        // Commission configuration (F-062)
+        Route::get('/tenants/{tenant}/commission', [CommissionController::class, 'show'])->name('admin.tenants.commission');
+        Route::post('/tenants/{tenant}/commission', [CommissionController::class, 'update'])->name('admin.tenants.commission.update');
+        Route::post('/tenants/{tenant}/commission/reset', [CommissionController::class, 'resetToDefault'])->name('admin.tenants.commission.reset');
 
         // Payment monitoring (F-059)
         Route::get('/payments', [PaymentTransactionController::class, 'index'])->name('admin.payments.index');
