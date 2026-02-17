@@ -110,13 +110,16 @@ class SetupWizardService
     }
 
     /**
-     * Check if brand info is saved (name in both languages).
+     * Check if brand info is saved (name in both languages + WhatsApp).
      *
      * BR-109: Part of minimum setup requirements.
+     * BR-125: Step complete when name (both languages) and WhatsApp are saved.
      */
     public function hasBrandInfo(Tenant $tenant): bool
     {
-        return ! empty($tenant->name_en) && ! empty($tenant->name_fr);
+        return ! empty($tenant->name_en)
+            && ! empty($tenant->name_fr)
+            && ! empty($tenant->whatsapp);
     }
 
     /**

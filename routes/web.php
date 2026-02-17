@@ -308,6 +308,7 @@ Route::middleware('tenant.domain')->group(function () {
         // BR-113: Only accessible to cook/manager role (enforced by cook.access middleware)
         // BR-116: Accessible both before and after "Go Live"
         Route::get('/setup', [SetupWizardController::class, 'show'])->name('cook.setup');
+        Route::post('/setup/brand-info', [SetupWizardController::class, 'saveBrandInfo'])->name('cook.setup.brand-info');
         Route::post('/setup/go-live', [SetupWizardController::class, 'goLive'])->name('cook.setup.go-live');
     });
 

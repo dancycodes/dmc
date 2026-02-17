@@ -1152,5 +1152,27 @@
     "Going Live...": "Going Live...",
     "Congratulations! Your store is now live.": "Congratulations! Your store is now live.",
     "Your store is live!": "Your store is live!",
-    "You can update any step above to make changes to your store setup.": "You can update any step above to make changes to your store setup."
+    "You can update any step above to make changes to your store setup.": "You can update any step above to make changes to your store setup.",
+
+    "Tell your customers about your brand and how to reach you.": "Tell your customers about your brand and how to reach you.",
+    "Brand Name": "Brand Name",
+    "Bio / Description": "Bio / Description",
+    "If provided in one language, it must be provided in both.": "If provided in one language, it must be provided in both.",
+    "Describe your brand and what makes your food special...": "Describe your brand and what makes your food special...",
+    "Contact Information": "Contact Information",
+    "WhatsApp Number": "WhatsApp Number",
+    "Phone Number": "Phone Number",
+    "Social Links": "Social Links",
+    "Save & Continue": "Save & Continue",
+    "Saving...": "Saving...",
+    "Brand name is required in English.": "Brand name is required in English.",
+    "Brand name is required in French.": "Brand name is required in French.",
+    "Brand name must not exceed 100 characters.": "Brand name must not exceed 100 characters.",
+    "Bio must not exceed 1000 characters.": "Bio must not exceed 1000 characters.",
+    "Bio is required in French when provided in English.": "Bio is required in French when provided in English.",
+    "Bio is required in English when provided in French.": "Bio is required in English when provided in French.",
+    "WhatsApp number is required.": "WhatsApp number is required.",
+    "Brand info saved successfully.": "Brand info saved successfully.",
+    "e.g. Chef Latifa's Kitchen": "e.g. Chef Latifa's Kitchen",
+    "e.g. La Cuisine de Chef Latifa": "e.g. La Cuisine de Chef Latifa"
 }
