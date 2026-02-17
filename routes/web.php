@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AddressController;
+use App\Http\Controllers\Admin\ComplaintController;
 use App\Http\Controllers\Admin\CookAssignmentController;
 use App\Http\Controllers\Admin\PaymentTransactionController;
 use App\Http\Controllers\Admin\RoleController;
@@ -255,6 +256,10 @@ Route::middleware('main.domain')->group(function () {
         // Payment monitoring (F-059)
         Route::get('/payments', [PaymentTransactionController::class, 'index'])->name('admin.payments.index');
         Route::get('/payments/{transaction}', [PaymentTransactionController::class, 'show'])->name('admin.payments.show');
+
+        // Complaint escalation queue (F-060, F-061)
+        Route::get('/complaints', [ComplaintController::class, 'index'])->name('admin.complaints.index');
+        Route::get('/complaints/{complaint}', [ComplaintController::class, 'show'])->name('admin.complaints.show');
     });
 });
 
