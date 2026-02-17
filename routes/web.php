@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\Admin\CookAssignmentController;
+use App\Http\Controllers\Admin\PaymentTransactionController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\TenantController;
 use App\Http\Controllers\Admin\UserController;
@@ -250,6 +251,10 @@ Route::middleware('main.domain')->group(function () {
         Route::get('/roles/{role}/permissions', [RoleController::class, 'permissions'])->name('admin.roles.permissions');
         Route::post('/roles/{role}/permissions/toggle', [RoleController::class, 'togglePermission'])->name('admin.roles.permissions.toggle');
         Route::post('/roles/{role}/permissions/toggle-module', [RoleController::class, 'toggleModule'])->name('admin.roles.permissions.toggle-module');
+
+        // Payment monitoring (F-059)
+        Route::get('/payments', [PaymentTransactionController::class, 'index'])->name('admin.payments.index');
+        Route::get('/payments/{transaction}', [PaymentTransactionController::class, 'show'])->name('admin.payments.show');
     });
 });
 
