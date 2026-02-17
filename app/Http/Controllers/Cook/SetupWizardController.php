@@ -27,18 +27,13 @@ class SetupWizardController extends Controller
         $requestedStep = (int) $request->query('step', 0);
 
         // Determine the active step
-        $currentStep = $this->wizardService->getCurrentStep($tenant);
+        // Any valid step can be viewed when explicitly requested via URL.
+        // The progress bar controls navigability (links vs plain text per BR-112).
+        // The Continue/Skip buttons always advance to the next step.
         if ($requestedStep > 0 && $this->wizardService->isValidStep($requestedStep)) {
-            // Allow navigation to navigable steps (completed or current)
-            // Also allow the next step after current (for Continue/Skip buttons)
-            if ($this->wizardService->isStepNavigable($tenant, $requestedStep)
-                || $requestedStep === $currentStep + 1) {
-                $activeStep = $requestedStep;
-            } else {
-                $activeStep = $currentStep;
-            }
+            $activeStep = $requestedStep;
         } else {
-            $activeStep = $currentStep;
+            $activeStep = $this->wizardService->getCurrentStep($tenant);
         }
 
         $steps = $this->wizardService->getStepsData($tenant, $activeStep);
