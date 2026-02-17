@@ -18,6 +18,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Cook\BrandProfileController;
 use App\Http\Controllers\Cook\CoverImageController;
 use App\Http\Controllers\Cook\QuarterController;
+use App\Http\Controllers\Cook\QuarterGroupController;
 use App\Http\Controllers\Cook\SetupWizardController;
 use App\Http\Controllers\Cook\TownController;
 use App\Http\Controllers\DashboardController;
@@ -363,6 +364,9 @@ Route::middleware('tenant.domain')->group(function () {
         Route::post('/locations/quarters/{deliveryArea}', [QuarterController::class, 'store'])->name('cook.locations.quarters.store');
         Route::put('/locations/quarters/{deliveryAreaQuarter}', [QuarterController::class, 'update'])->name('cook.locations.quarters.update');
         Route::delete('/locations/quarters/{deliveryAreaQuarter}', [QuarterController::class, 'destroy'])->name('cook.locations.quarters.destroy');
+
+        // Quarter group management (F-090: Quarter Group Creation)
+        Route::post('/locations/groups', [QuarterGroupController::class, 'store'])->name('cook.locations.groups.store');
     });
 
     // Tenant-specific routes will be added by later features (F-126, etc.)

@@ -68,12 +68,12 @@ describe('DeliveryAreaService quarter list enhancements', function () {
         expect($methodContent)->toContain("'group_fee' => null");
     });
 
-    it('uses Schema::hasTable for forward-compatible quarter_groups check', function () use ($projectRoot) {
+    it('uses QuarterGroup Eloquent model for quarter groups (F-090 replaced Schema::hasTable)', function () use ($projectRoot) {
         $content = file_get_contents($projectRoot.'/app/Services/DeliveryAreaService.php');
         $methodContent = substr($content, strpos($content, 'public function getDeliveryAreasData'));
         $methodEnd = strpos($methodContent, "\n    /**", 10);
         $methodContent = substr($methodContent, 0, $methodEnd ?: strlen($methodContent));
-        expect($methodContent)->toContain("Schema::hasTable('quarter_groups')");
+        expect($methodContent)->toContain('QuarterGroup::query()');
     });
 
     it('has getQuarterGroupsForArea method (BR-245)', function () {
@@ -81,13 +81,12 @@ describe('DeliveryAreaService quarter list enhancements', function () {
         expect($reflection->isPublic())->toBeTrue();
     });
 
-    it('getQuarterGroupsForArea returns empty array when quarter_groups table does not exist', function () use ($projectRoot) {
+    it('getQuarterGroupsForArea uses QuarterGroup Eloquent model (F-090 replaced Schema::hasTable)', function () use ($projectRoot) {
         $content = file_get_contents($projectRoot.'/app/Services/DeliveryAreaService.php');
         $methodContent = substr($content, strpos($content, 'public function getQuarterGroupsForArea'));
         $methodEnd = strpos($methodContent, "\n    /**", 10);
         $methodContent = substr($methodContent, 0, $methodEnd ?: strlen($methodContent));
-        expect($methodContent)->toContain("Schema::hasTable('quarter_groups')");
-        expect($methodContent)->toContain('return [];');
+        expect($methodContent)->toContain('QuarterGroup::query()');
     });
 
     it('getQuarterGroupsForArea accepts Tenant and deliveryAreaId', function () {

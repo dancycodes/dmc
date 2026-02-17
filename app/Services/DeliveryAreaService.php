@@ -6,8 +6,10 @@ use App\Models\DeliveryArea;
 use App\Models\DeliveryAreaQuarter;
 use App\Models\PickupLocation;
 use App\Models\Quarter;
+use App\Models\QuarterGroup;
 use App\Models\Tenant;
 use App\Models\Town;
+use Illuminate\Support\Facades\DB;
 
 class DeliveryAreaService
 {
@@ -60,20 +62,17 @@ class DeliveryAreaService
                             'group_fee' => null,
                         ];
 
-                        // F-087: Forward-compatible quarter group data (F-090 creates the tables)
-                        if (\Illuminate\Support\Facades\Schema::hasTable('quarter_groups')) {
-                            $groupMembership = \Illuminate\Database\Eloquent\Model::resolveConnection()
-                                ->table('quarter_group_quarter')
-                                ->join('quarter_groups', 'quarter_groups.id', '=', 'quarter_group_quarter.quarter_group_id')
-                                ->where('quarter_group_quarter.quarter_id', $daq->quarter_id)
-                                ->select('quarter_groups.id', 'quarter_groups.name_'.$locale.' as group_name', 'quarter_groups.delivery_fee as group_fee')
-                                ->first();
+                        // F-090: Quarter group data via Eloquent
+                        $group = QuarterGroup::query()
+                            ->whereHas('quarters', function ($q) use ($daq) {
+                                $q->where('quarters.id', $daq->quarter_id);
+                            })
+                            ->first();
 
-                            if ($groupMembership) {
-                                $quarterData['group_id'] = $groupMembership->id;
-                                $quarterData['group_name'] = $groupMembership->group_name;
-                                $quarterData['group_fee'] = $groupMembership->group_fee;
-                            }
+                        if ($group) {
+                            $quarterData['group_id'] = $group->id;
+                            $quarterData['group_name'] = $group->name;
+                            $quarterData['group_fee'] = $group->delivery_fee;
                         }
 
                         return $quarterData;
@@ -277,15 +276,12 @@ class DeliveryAreaService
         }
 
         // BR-226: Cascade delete quarters (FK on_delete cascade handles delivery_area_quarters)
-        // BR-227: Forward-compatible quarter group membership removal
-        if (\Illuminate\Support\Facades\Schema::hasTable('quarter_groups')) {
-            $quarterIds = $deliveryArea->deliveryAreaQuarters->pluck('quarter_id')->all();
-            if (! empty($quarterIds)) {
-                \Illuminate\Database\Eloquent\Model::resolveConnection()
-                    ->table('quarter_group_quarter')
-                    ->whereIn('quarter_id', $quarterIds)
-                    ->delete();
-            }
+        // BR-227: Remove quarters from any quarter groups before deletion
+        $quarterIds = $deliveryArea->deliveryAreaQuarters->pluck('quarter_id')->all();
+        if (! empty($quarterIds)) {
+            DB::table('quarter_group_quarter')
+                ->whereIn('quarter_id', $quarterIds)
+                ->delete();
         }
 
         // Delete the delivery area (FK cascade handles delivery_area_quarters)
@@ -531,13 +527,10 @@ class DeliveryAreaService
             }
         }
 
-        // BR-259: Remove from quarter groups (forward-compatible for F-090)
-        if (\Illuminate\Support\Facades\Schema::hasTable('quarter_group_quarter')) {
-            \Illuminate\Database\Eloquent\Model::resolveConnection()
-                ->table('quarter_group_quarter')
-                ->where('quarter_id', $daq->quarter_id)
-                ->delete();
-        }
+        // BR-259: Remove from quarter groups
+        DB::table('quarter_group_quarter')
+            ->where('quarter_id', $daq->quarter_id)
+            ->delete();
 
         // Delete the delivery area quarter junction record
         $daq->delete();
@@ -640,18 +633,11 @@ class DeliveryAreaService
      * Get quarter groups for a specific delivery area (town) for filter dropdown.
      *
      * F-087: BR-245 — Filter by group available if quarter groups exist.
-     * Forward-compatible for F-090 (Quarter Group Creation).
      *
      * @return array<int, array{id: int, name: string}>
      */
     public function getQuarterGroupsForArea(Tenant $tenant, int $deliveryAreaId): array
     {
-        if (! \Illuminate\Support\Facades\Schema::hasTable('quarter_groups')) {
-            return [];
-        }
-
-        $locale = app()->getLocale();
-
         $quarterIds = DeliveryAreaQuarter::query()
             ->where('delivery_area_id', $deliveryAreaId)
             ->pluck('quarter_id');
@@ -660,16 +646,15 @@ class DeliveryAreaService
             return [];
         }
 
-        $groups = \Illuminate\Database\Eloquent\Model::resolveConnection()
-            ->table('quarter_group_quarter')
-            ->join('quarter_groups', 'quarter_groups.id', '=', 'quarter_group_quarter.quarter_group_id')
-            ->whereIn('quarter_group_quarter.quarter_id', $quarterIds)
-            ->select('quarter_groups.id', 'quarter_groups.name_'.$locale.' as name')
-            ->distinct()
+        $groups = QuarterGroup::query()
+            ->where('tenant_id', $tenant->id)
+            ->whereHas('quarters', function ($q) use ($quarterIds) {
+                $q->whereIn('quarters.id', $quarterIds);
+            })
             ->orderBy('name')
             ->get();
 
-        return $groups->map(fn ($g) => ['id' => $g->id, 'name' => $g->name])->values()->all();
+        return $groups->map(fn (QuarterGroup $g) => ['id' => $g->id, 'name' => $g->name])->values()->all();
     }
 
     /**
@@ -683,5 +668,147 @@ class DeliveryAreaService
             ->where('tenant_id', $tenant->id)
             ->whereHas('deliveryAreaQuarters')
             ->exists();
+    }
+
+    /**
+     * Create a quarter group with optional quarter assignments.
+     *
+     * F-090: Quarter Group Creation
+     * BR-264: Group name is required (plain text, not translatable)
+     * BR-265: Group name must be unique within this tenant
+     * BR-266: Delivery fee is required and must be >= 0 XAF
+     * BR-267: Group fee overrides individual quarter fees
+     * BR-268: A quarter can belong to at most one group at a time
+     * BR-269: Quarters from any town under this tenant can be assigned
+     * BR-270: Groups are tenant-scoped
+     * BR-271: Creating without assigning quarters is allowed
+     *
+     * @param  list<int>  $quarterIds  Quarter IDs to assign to the group
+     * @return array{success: bool, group: ?QuarterGroup, error: string}
+     */
+    public function createQuarterGroup(Tenant $tenant, string $name, int $deliveryFee, array $quarterIds = []): array
+    {
+        // BR-265: Check uniqueness within tenant
+        $duplicate = QuarterGroup::query()
+            ->where('tenant_id', $tenant->id)
+            ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
+            ->exists();
+
+        if ($duplicate) {
+            return [
+                'success' => false,
+                'group' => null,
+                'error' => __('A group with this name already exists.'),
+            ];
+        }
+
+        // BR-269: Validate that all quarter IDs belong to this tenant's delivery areas
+        if (! empty($quarterIds)) {
+            $tenantQuarterIds = DeliveryAreaQuarter::query()
+                ->whereHas('deliveryArea', function ($q) use ($tenant) {
+                    $q->where('tenant_id', $tenant->id);
+                })
+                ->pluck('quarter_id')
+                ->all();
+
+            $invalidIds = array_diff($quarterIds, $tenantQuarterIds);
+            if (! empty($invalidIds)) {
+                return [
+                    'success' => false,
+                    'group' => null,
+                    'error' => __('Some selected quarters do not belong to your delivery areas.'),
+                ];
+            }
+        }
+
+        return DB::transaction(function () use ($tenant, $name, $deliveryFee, $quarterIds) {
+            // Create the group
+            $group = QuarterGroup::create([
+                'tenant_id' => $tenant->id,
+                'name' => $name,
+                'delivery_fee' => $deliveryFee,
+            ]);
+
+            // BR-268: Assign quarters (remove from old groups first)
+            if (! empty($quarterIds)) {
+                // Remove quarters from any existing groups
+                DB::table('quarter_group_quarter')
+                    ->whereIn('quarter_id', $quarterIds)
+                    ->delete();
+
+                // Assign to the new group
+                $group->quarters()->attach($quarterIds);
+            }
+
+            return [
+                'success' => true,
+                'group' => $group,
+                'error' => '',
+            ];
+        });
+    }
+
+    /**
+     * Get all quarter groups for a tenant.
+     *
+     * @return array<int, array{id: int, name: string, delivery_fee: int, quarter_count: int}>
+     */
+    public function getQuarterGroupsData(Tenant $tenant): array
+    {
+        $groups = QuarterGroup::query()
+            ->where('tenant_id', $tenant->id)
+            ->withCount('quarters')
+            ->orderBy('name')
+            ->get();
+
+        return $groups->map(fn (QuarterGroup $group) => [
+            'id' => $group->id,
+            'name' => $group->name,
+            'delivery_fee' => $group->delivery_fee,
+            'quarter_count' => $group->quarters_count,
+        ])->values()->all();
+    }
+
+    /**
+     * Get all available quarters for a tenant (for group assignment multi-select).
+     *
+     * Returns quarters grouped by town, with current group assignment info.
+     *
+     * @return array<int, array{town_name: string, quarters: array}>
+     */
+    public function getQuartersForGroupAssignment(Tenant $tenant): array
+    {
+        $locale = app()->getLocale();
+
+        $deliveryAreas = DeliveryArea::query()
+            ->where('tenant_id', $tenant->id)
+            ->with(['town', 'deliveryAreaQuarters.quarter'])
+            ->join('towns', 'delivery_areas.town_id', '=', 'towns.id')
+            ->orderBy('towns.name_'.$locale)
+            ->select('delivery_areas.*')
+            ->get();
+
+        return $deliveryAreas->map(function (DeliveryArea $area) use ($locale) {
+            return [
+                'town_name' => $area->town->{'name_'.$locale} ?? $area->town->name_en,
+                'quarters' => $area->deliveryAreaQuarters
+                    ->sortBy(fn (DeliveryAreaQuarter $daq) => mb_strtolower($daq->quarter->{'name_'.$locale} ?? $daq->quarter->name_en))
+                    ->map(function (DeliveryAreaQuarter $daq) use ($locale) {
+                        // Check current group membership
+                        $currentGroup = QuarterGroup::query()
+                            ->whereHas('quarters', function ($q) use ($daq) {
+                                $q->where('quarters.id', $daq->quarter_id);
+                            })
+                            ->first();
+
+                        return [
+                            'quarter_id' => $daq->quarter_id,
+                            'quarter_name' => $daq->quarter->{'name_'.$locale} ?? $daq->quarter->name_en,
+                            'current_group_id' => $currentGroup?->id,
+                            'current_group_name' => $currentGroup?->name,
+                        ];
+                    })->values()->all(),
+            ];
+        })->filter(fn ($area) => count($area['quarters']) > 0)->values()->all();
     }
 }

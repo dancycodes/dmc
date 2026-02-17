@@ -144,7 +144,8 @@ describe('DeliveryAreaService removeTown', function () {
         $methodEnd = strpos($removeMethod, "\n    /**", 10);
         $removeMethod = substr($removeMethod, 0, $methodEnd ?: strlen($removeMethod));
 
-        expect($removeMethod)->toContain("Schema::hasTable('quarter_groups')");
+        // F-090 replaced Schema::hasTable with direct DB calls since quarter_groups table now exists
+        expect($removeMethod)->toContain("DB::table('quarter_group_quarter')");
         expect($removeMethod)->toContain('quarter_group_quarter');
     });
 

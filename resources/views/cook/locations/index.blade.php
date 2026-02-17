@@ -104,6 +104,11 @@
             edit_quarter_name_en: '',
             edit_quarter_name_fr: '',
             edit_quarter_delivery_fee: '',
+            /* F-090: Quarter Group state */
+            showGroupForm: false,
+            group_name: '',
+            group_delivery_fee: '',
+            group_quarter_ids: [],
             /* F-087: Quarter List View state */
             quarterGroupFilter: {},
             confirmDeleteQuarterId: null,
@@ -116,6 +121,23 @@
                 this.quarter_name_en = '';
                 this.quarter_name_fr = '';
                 this.quarter_delivery_fee = '';
+            },
+            resetGroupForm() {
+                this.group_name = '';
+                this.group_delivery_fee = '';
+                this.group_quarter_ids = [];
+            },
+            toggleGroupQuarter(quarterId) {
+                const id = parseInt(quarterId);
+                const idx = this.group_quarter_ids.indexOf(id);
+                if (idx === -1) {
+                    this.group_quarter_ids.push(id);
+                } else {
+                    this.group_quarter_ids.splice(idx, 1);
+                }
+            },
+            isGroupQuarterSelected(quarterId) {
+                return this.group_quarter_ids.includes(parseInt(quarterId));
             },
             toggleTown(areaId) {
                 this.expandedTown = this.expandedTown === areaId ? null : areaId;
@@ -190,7 +212,7 @@
                 this.quarterGroupFilter[areaId] = groupId;
             }
         }"
-        x-sync="['name_en', 'name_fr', 'edit_name_en', 'edit_name_fr', 'quarter_name_en', 'quarter_name_fr', 'quarter_delivery_fee', 'edit_quarter_name_en', 'edit_quarter_name_fr', 'edit_quarter_delivery_fee']"
+        x-sync="['name_en', 'name_fr', 'edit_name_en', 'edit_name_fr', 'quarter_name_en', 'quarter_name_fr', 'quarter_delivery_fee', 'edit_quarter_name_en', 'edit_quarter_name_fr', 'edit_quarter_delivery_fee', 'group_name', 'group_delivery_fee', 'group_quarter_ids']"
     >
         {{-- Header with Add Town button --}}
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -850,6 +872,230 @@
                 <p class="text-xs text-on-surface/50">
                     {{ count($deliveryAreas) }} {{ count($deliveryAreas) === 1 ? __('town') : __('towns') }}
                 </p>
+            </div>
+
+            {{-- F-090: Quarter Groups Section --}}
+            <div class="mt-10">
+                {{-- Group Header with Create Group button --}}
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-xl font-semibold text-on-surface-strong">{{ __('Quarter Groups') }}</h2>
+                        <p class="text-sm text-on-surface mt-1">{{ __('Group quarters that share the same delivery fee.') }}</p>
+                    </div>
+                    <button
+                        x-on:click="showGroupForm = !showGroupForm; if (!showGroupForm) { resetGroupForm() }"
+                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-on-primary text-sm font-medium hover:bg-primary-hover transition-colors duration-200 shadow-sm self-start sm:self-auto"
+                    >
+                        {{-- Lucide: layers --}}
+                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"></path><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"></path><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"></path></svg>
+                        <span x-text="showGroupForm ? '{{ __('Cancel') }}' : '{{ __('Create Group') }}'"></span>
+                    </button>
+                </div>
+
+                {{-- Create Group Form --}}
+                <div
+                    x-show="showGroupForm"
+                    x-cloak
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="opacity-0 -translate-y-2"
+                    x-transition:enter-end="opacity-100 translate-y-0"
+                    x-transition:leave="transition ease-in duration-150"
+                    x-transition:leave-start="opacity-100 translate-y-0"
+                    x-transition:leave-end="opacity-0 -translate-y-2"
+                    class="mb-6"
+                >
+                    <div class="bg-surface-alt dark:bg-surface-alt rounded-xl border border-outline dark:border-outline p-5 shadow-card">
+                        <h3 class="text-sm font-semibold text-on-surface-strong mb-4 flex items-center gap-2">
+                            {{-- Lucide: layers --}}
+                            <svg class="w-4 h-4 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"></path><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"></path><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"></path></svg>
+                            {{ __('Create Quarter Group') }}
+                        </h3>
+
+                        <form x-on:submit.prevent="$action('{{ url('/dashboard/locations/groups') }}')" class="space-y-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {{-- Group Name (BR-264: plain text, not translatable) --}}
+                                <div>
+                                    <label for="group-name" class="block text-sm font-medium text-on-surface mb-1.5">
+                                        {{ __('Group Name') }}
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <input
+                                        id="group-name"
+                                        type="text"
+                                        x-model="group_name"
+                                        x-name="group_name"
+                                        maxlength="100"
+                                        class="w-full px-3.5 py-2.5 rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface-strong placeholder-on-surface/40 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 text-sm"
+                                        placeholder="{{ __('e.g. Central Douala') }}"
+                                        autocomplete="off"
+                                    >
+                                    <p x-message="group_name" class="mt-1 text-xs text-danger"></p>
+                                </div>
+
+                                {{-- Delivery Fee (BR-266) --}}
+                                <div>
+                                    <label for="group-fee" class="block text-sm font-medium text-on-surface mb-1.5">
+                                        {{ __('Delivery Fee') }}
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="relative">
+                                        <input
+                                            id="group-fee"
+                                            type="number"
+                                            min="0"
+                                            step="1"
+                                            x-model="group_delivery_fee"
+                                            x-name="group_delivery_fee"
+                                            class="w-full px-3.5 py-2.5 pr-14 rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface-strong placeholder-on-surface/40 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 text-sm"
+                                            placeholder="{{ __('e.g. 300') }}"
+                                            autocomplete="off"
+                                        >
+                                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-on-surface/50">
+                                            {{ __('XAF') }}
+                                        </span>
+                                    </div>
+                                    <p x-message="group_delivery_fee" class="mt-1 text-xs text-danger"></p>
+                                    <p class="mt-1 text-xs text-on-surface/50">
+                                        {{ __('Enter 0 for free delivery. This fee applies to all quarters in the group.') }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {{-- Quarter Selection (BR-269: Multi-select with checkboxes) --}}
+                            @if(count($quartersForGroupAssignment) > 0)
+                                <div>
+                                    <label class="block text-sm font-medium text-on-surface mb-2">
+                                        {{ __('Assign Quarters') }}
+                                        <span class="text-xs text-on-surface/50 font-normal ml-1">{{ __('(optional)') }}</span>
+                                    </label>
+                                    <p class="text-xs text-on-surface/60 mb-3">
+                                        {{ __('Select quarters to include in this group. Quarters in another group will be moved to this group.') }}
+                                    </p>
+                                    <div class="max-h-60 overflow-y-auto rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface p-3 space-y-3">
+                                        @foreach($quartersForGroupAssignment as $townGroup)
+                                            <div>
+                                                <p class="text-xs font-semibold text-on-surface/60 uppercase tracking-wider mb-1.5">
+                                                    {{ $townGroup['town_name'] }}
+                                                </p>
+                                                <div class="space-y-1">
+                                                    @foreach($townGroup['quarters'] as $q)
+                                                        <label
+                                                            class="flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-surface-alt dark:hover:bg-surface-alt cursor-pointer transition-colors duration-150"
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                value="{{ $q['quarter_id'] }}"
+                                                                x-on:change="toggleGroupQuarter({{ $q['quarter_id'] }})"
+                                                                x-bind:checked="isGroupQuarterSelected({{ $q['quarter_id'] }})"
+                                                                class="w-4 h-4 rounded border-outline text-primary focus:ring-primary/50"
+                                                            >
+                                                            <span class="text-sm text-on-surface-strong flex-1">
+                                                                {{ $q['quarter_name'] }}
+                                                            </span>
+                                                            @if($q['current_group_name'])
+                                                                <span class="text-[10px] px-1.5 py-0.5 rounded bg-warning-subtle text-warning font-medium">
+                                                                    {{ $q['current_group_name'] }}
+                                                                </span>
+                                                            @endif
+                                                        </label>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+
+                            {{-- Form Actions --}}
+                            <div class="flex items-center justify-end gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    x-on:click="showGroupForm = false; resetGroupForm()"
+                                    class="px-4 py-2 rounded-lg text-sm font-medium text-on-surface hover:bg-surface dark:hover:bg-surface transition-colors duration-200"
+                                >
+                                    {{ __('Cancel') }}
+                                </button>
+                                <button
+                                    type="submit"
+                                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-on-primary text-sm font-medium hover:bg-primary-hover transition-colors duration-200 shadow-sm"
+                                >
+                                    <span x-show="!$fetching()">
+                                        {{-- Lucide: check --}}
+                                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+                                    </span>
+                                    <span x-show="$fetching()">
+                                        <svg class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                    </span>
+                                    <span x-text="$fetching() ? '{{ __('Saving...') }}' : '{{ __('Save Group') }}'"></span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                {{-- Group List --}}
+                @if(count($quarterGroups) > 0)
+                    <div class="space-y-3">
+                        @foreach($quarterGroups as $group)
+                            <div class="bg-surface-alt dark:bg-surface-alt rounded-xl border border-outline dark:border-outline shadow-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                                        <div class="w-10 h-10 rounded-full bg-info-subtle flex items-center justify-center shrink-0">
+                                            {{-- Lucide: layers --}}
+                                            <svg class="w-5 h-5 text-info" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"></path><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"></path><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"></path></svg>
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <h4 class="text-sm font-semibold text-on-surface-strong truncate">
+                                                {{ $group['name'] }}
+                                            </h4>
+                                            <p class="text-xs text-on-surface/60 mt-0.5">
+                                                {{ $group['quarter_count'] }} {{ $group['quarter_count'] === 1 ? __('quarter') : __('quarters') }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="shrink-0 ml-3">
+                                        @if($group['delivery_fee'] === 0)
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-success-subtle text-success">
+                                                {{-- Lucide: check --}}
+                                                <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+                                                {{ __('Free delivery') }}
+                                            </span>
+                                        @else
+                                            <span class="text-sm font-medium text-on-surface/70">
+                                                {{ number_format($group['delivery_fee']) }} {{ __('XAF') }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    {{-- Group Count Summary --}}
+                    <div class="mt-4 text-center">
+                        <p class="text-xs text-on-surface/50">
+                            {{ count($quarterGroups) }} {{ count($quarterGroups) === 1 ? __('group') : __('groups') }}
+                        </p>
+                    </div>
+                @else
+                    {{-- Empty State --}}
+                    <div x-show="!showGroupForm" class="bg-surface-alt dark:bg-surface-alt rounded-xl border border-outline dark:border-outline border-dashed p-6 text-center">
+                        <div class="w-12 h-12 rounded-full bg-info-subtle/50 flex items-center justify-center mx-auto mb-3">
+                            {{-- Lucide: layers --}}
+                            <svg class="w-6 h-6 text-info/60" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"></path><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"></path><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"></path></svg>
+                        </div>
+                        <h3 class="text-sm font-semibold text-on-surface-strong mb-1">{{ __('No quarter groups yet') }}</h3>
+                        <p class="text-xs text-on-surface/60 mb-3">{{ __('Create groups to manage delivery fees for multiple quarters at once.') }}</p>
+                        <button
+                            x-on:click="showGroupForm = true"
+                            class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-primary text-on-primary text-xs font-medium hover:bg-primary-hover transition-colors duration-200 shadow-sm"
+                        >
+                            {{-- Lucide: plus --}}
+                            <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+                            {{ __('Create Your First Group') }}
+                        </button>
+                    </div>
+                @endif
             </div>
 
             {{-- Delete Confirmation Modal (F-085: Delete Town, BR-228) --}}
