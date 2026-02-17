@@ -62,7 +62,8 @@ class TenantFactory extends Factory
     {
         $index = array_rand(self::COOK_NAMES);
         $name = self::COOK_NAMES[$index];
-        $slug = Str::slug($name);
+        $uniqueSuffix = fake()->unique()->numerify('###');
+        $slug = Str::slug($name) . '-' . $uniqueSuffix;
 
         return [
             'name_en' => $name,
