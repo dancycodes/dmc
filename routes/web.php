@@ -15,6 +15,7 @@ use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Cook\BrandProfileController;
 use App\Http\Controllers\Cook\SetupWizardController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DiscoveryController;
@@ -331,6 +332,10 @@ Route::middleware('tenant.domain')->group(function () {
         Route::post('/setup/meal/save', [SetupWizardController::class, 'saveMeal'])->name('cook.setup.meal.save');
 
         Route::post('/setup/go-live', [SetupWizardController::class, 'goLive'])->name('cook.setup.go-live');
+
+        // Brand profile (F-079: Cook Brand Profile View)
+        // BR-181: All profile sections in a single view
+        Route::get('/profile', [BrandProfileController::class, 'show'])->name('cook.profile.show');
     });
 
     // Tenant-specific routes will be added by later features (F-126, etc.)
