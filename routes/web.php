@@ -358,10 +358,11 @@ Route::middleware('tenant.domain')->group(function () {
         Route::put('/locations/towns/{deliveryArea}', [TownController::class, 'update'])->name('cook.locations.towns.update');
         Route::delete('/locations/towns/{deliveryArea}', [TownController::class, 'destroy'])->name('cook.locations.towns.destroy');
 
-        // Quarter management (F-086: Add Quarter, F-088: Edit Quarter)
-        // BR-241/BR-257: Only users with can-manage-locations permission
+        // Quarter management (F-086: Add Quarter, F-088: Edit Quarter, F-089: Delete Quarter)
+        // BR-241/BR-257/BR-262: Only users with can-manage-locations permission
         Route::post('/locations/quarters/{deliveryArea}', [QuarterController::class, 'store'])->name('cook.locations.quarters.store');
         Route::put('/locations/quarters/{deliveryAreaQuarter}', [QuarterController::class, 'update'])->name('cook.locations.quarters.update');
+        Route::delete('/locations/quarters/{deliveryAreaQuarter}', [QuarterController::class, 'destroy'])->name('cook.locations.quarters.destroy');
     });
 
     // Tenant-specific routes will be added by later features (F-126, etc.)

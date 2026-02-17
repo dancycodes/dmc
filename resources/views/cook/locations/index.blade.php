@@ -8,6 +8,7 @@
     F-086: Add Quarter
     F-087: Quarter List View
     F-088: Edit Quarter
+    F-089: Delete Quarter
 
     Allows the cook to view existing towns and add new ones to their delivery areas.
     Each town is scoped to the tenant via the delivery_areas junction table.
@@ -918,7 +919,7 @@
                 </div>
             </div>
 
-            {{-- Quarter Delete Confirmation Modal (F-087/F-089 stub) --}}
+            {{-- Quarter Delete Confirmation Modal (F-089: Delete Quarter, BR-260) --}}
             <div
                 x-show="confirmDeleteQuarterId !== null"
                 x-cloak
@@ -957,8 +958,9 @@
                         </div>
                         <div>
                             <h3 class="text-base font-semibold text-on-surface-strong">{{ __('Delete this quarter?') }}</h3>
+                            {{-- BR-260: Show quarter name and warning --}}
                             <p class="text-sm text-on-surface mt-1">
-                                <span x-text="'{{ __('Delete') }} ' + confirmDeleteQuarterName + '? {{ __('This cannot be undone.') }}'"></span>
+                                <span x-text="'{{ __('Delete') }} ' + confirmDeleteQuarterName + '? {{ __('Clients will no longer be able to order to this quarter.') }}'"></span>
                             </p>
                         </div>
                     </div>

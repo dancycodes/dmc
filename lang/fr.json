@@ -1311,5 +1311,9 @@
     "Delete quarter": "Supprimer le quartier",
     "Delete this quarter?": "Supprimer ce quartier ?",
     "Delete quarter confirmation": "Confirmation de suppression du quartier",
-    "No quarters added yet. Add your first quarter.": "Aucun quartier ajouté. Ajoutez votre premier quartier."
+    "No quarters added yet. Add your first quarter.": "Aucun quartier ajouté. Ajoutez votre premier quartier.",
+    "Quarter deleted successfully.": "Quartier supprimé avec succès.",
+    "Clients will no longer be able to order to this quarter.": "Les clients ne pourront plus commander vers ce quartier.",
+    "Quarter deleted from delivery area": "Quartier supprimé de la zone de livraison",
+    "{1} Cannot delete :quarter because it has :count active order.|[2,*] Cannot delete :quarter because it has :count active orders.": "{1} Impossible de supprimer :quarter car il a :count commande active.|[2,*] Impossible de supprimer :quarter car il a :count commandes actives."
 }

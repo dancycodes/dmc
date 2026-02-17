@@ -1311,5 +1311,9 @@
     "Delete quarter": "Delete quarter",
     "Delete this quarter?": "Delete this quarter?",
     "Delete quarter confirmation": "Delete quarter confirmation",
-    "No quarters added yet. Add your first quarter.": "No quarters added yet. Add your first quarter."
+    "No quarters added yet. Add your first quarter.": "No quarters added yet. Add your first quarter.",
+    "Quarter deleted successfully.": "Quarter deleted successfully.",
+    "Clients will no longer be able to order to this quarter.": "Clients will no longer be able to order to this quarter.",
+    "Quarter deleted from delivery area": "Quarter deleted from delivery area",
+    "{1} Cannot delete :quarter because it has :count active order.|[2,*] Cannot delete :quarter because it has :count active orders.": "{1} Cannot delete :quarter because it has :count active order.|[2,*] Cannot delete :quarter because it has :count active orders."
 }
