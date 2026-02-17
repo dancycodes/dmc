@@ -34,9 +34,11 @@ class DiscoveryController extends Controller
             'direction' => $request->validated('direction', 'desc'),
         ];
 
-        // BR-073: Fragment-based partial update for Gale navigate requests
+        // BR-073/BR-088: Fragment-based partial update for Gale navigate requests
+        // Returns both the result count and cook grid fragments
         if ($request->isGaleNavigate('discovery')) {
             return gale()
+                ->fragment('discovery.index', 'result-count', $data)
                 ->fragment('discovery.index', 'cook-grid', $data);
         }
 

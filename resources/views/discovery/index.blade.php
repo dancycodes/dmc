@@ -146,14 +146,16 @@
     <section class="bg-surface dark:bg-surface border-b border-outline dark:border-outline">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
             <div class="flex items-center justify-between gap-3">
-                {{-- Result Count --}}
-                <p class="text-sm text-on-surface">
+                {{-- Result Count (Fragment for Gale navigate updates) --}}
+                @fragment('result-count')
+                <p id="result-count" class="text-sm text-on-surface">
                     @if($cooks->total() > 0)
                         {{ trans_choice(':count cook found|:count cooks found', $cooks->total(), ['count' => $cooks->total()]) }}
                     @else
                         {{ __('No cooks found') }}
                     @endif
                 </p>
+                @endfragment
 
                 <div class="flex items-center gap-2">
                     {{-- Sort Dropdown --}}
