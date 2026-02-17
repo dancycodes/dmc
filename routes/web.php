@@ -18,6 +18,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Cook\BrandProfileController;
 use App\Http\Controllers\Cook\CoverImageController;
 use App\Http\Controllers\Cook\SetupWizardController;
+use App\Http\Controllers\Cook\TownController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DiscoveryController;
 use App\Http\Controllers\LanguagePreferenceController;
@@ -348,6 +349,11 @@ Route::middleware('tenant.domain')->group(function () {
         Route::post('/profile/cover-images/upload', [CoverImageController::class, 'upload'])->name('cook.cover-images.upload');
         Route::post('/profile/cover-images/reorder', [CoverImageController::class, 'reorder'])->name('cook.cover-images.reorder');
         Route::delete('/profile/cover-images/{mediaId}', [CoverImageController::class, 'destroy'])->name('cook.cover-images.destroy');
+
+        // Location management (F-082: Add Town, F-083: Town List View)
+        // BR-212: Only users with can-manage-locations permission
+        Route::get('/locations', [TownController::class, 'index'])->name('cook.locations.index');
+        Route::post('/locations/towns', [TownController::class, 'store'])->name('cook.locations.towns.store');
     });
 
     // Tenant-specific routes will be added by later features (F-126, etc.)
