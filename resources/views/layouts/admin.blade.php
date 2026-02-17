@@ -98,6 +98,7 @@
                     'icon' => '<rect width="20" height="14" x="2" y="5" rx="2"></rect><line x1="2" x2="22" y1="10" y2="10"></line>',
                     'label' => __('Payouts'),
                     'permission' => 'can-manage-payouts',
+                    'badge' => \App\Models\PayoutTask::where('status', 'pending')->count(),
                 ],
             ],
         ],
@@ -219,7 +220,12 @@
                                 @if($isActive) aria-current="page" @endif
                             >
                                 <svg class="w-5 h-5 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{!! $item['icon'] !!}</svg>
-                                <span x-show="!sidebarCollapsed" class="truncate">{{ $item['label'] }}</span>
+                                <span x-show="!sidebarCollapsed" class="truncate flex-1">{{ $item['label'] }}</span>
+                                @if(isset($item['badge']) && $item['badge'] > 0)
+                                    <span x-show="!sidebarCollapsed" class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-bold bg-danger text-on-danger">
+                                        {{ $item['badge'] }}
+                                    </span>
+                                @endif
                             </a>
                         @endforeach
                     </div>
