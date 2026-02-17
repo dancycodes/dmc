@@ -64,7 +64,7 @@
 
         cancelConfirm() {
             this.showConfirm = false;
-            {{-- Revert the toggle if cancelled --}}
+            // Revert the toggle if cancelled
             if (this.confirmAction === 'wallet_enabled') {
                 this.wallet_enabled = !this.wallet_enabled;
             } else if (this.confirmAction === 'maintenance_mode') {
