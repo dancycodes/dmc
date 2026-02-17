@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\CommissionController;
 use App\Http\Controllers\Admin\ComplaintController;
 use App\Http\Controllers\Admin\CookAssignmentController;
 use App\Http\Controllers\Admin\PaymentTransactionController;
+use App\Http\Controllers\Admin\PayoutController;
 use App\Http\Controllers\Admin\PlatformSettingController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\TenantController;
@@ -268,6 +269,12 @@ Route::middleware('main.domain')->group(function () {
         Route::get('/complaints', [ComplaintController::class, 'index'])->name('admin.complaints.index');
         Route::get('/complaints/{complaint}', [ComplaintController::class, 'show'])->name('admin.complaints.show');
         Route::post('/complaints/{complaint}/resolve', [ComplaintController::class, 'resolve'])->name('admin.complaints.resolve');
+
+        // Manual payout task queue (F-065)
+        Route::get('/payouts', [PayoutController::class, 'index'])->name('admin.payouts.index');
+        Route::get('/payouts/{task}', [PayoutController::class, 'show'])->name('admin.payouts.show');
+        Route::post('/payouts/{task}/retry', [PayoutController::class, 'retry'])->name('admin.payouts.retry');
+        Route::post('/payouts/{task}/mark-complete', [PayoutController::class, 'markComplete'])->name('admin.payouts.mark-complete');
 
         // Platform settings (F-063)
         Route::get('/settings', [PlatformSettingController::class, 'index'])->name('admin.settings.index');
