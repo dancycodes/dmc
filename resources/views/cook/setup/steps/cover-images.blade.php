@@ -119,7 +119,7 @@
     }"
     x-sync="['orderedIds']"
     x-init="startCarousel(); $watch('images', () => { startCarousel(); if (carouselIndex >= images.length) carouselIndex = Math.max(0, images.length - 1); })"
-    @gale:file-error.window="uploadErrors = [$event.detail.message]"
+    x-on:gale:file-error.window="uploadErrors = [$event.detail.message]"
 >
     {{-- Step Header --}}
     <div class="mb-6">
