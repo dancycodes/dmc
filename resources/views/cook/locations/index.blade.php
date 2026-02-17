@@ -3,6 +3,7 @@
     --------------------------------
     F-082: Add Town
     F-083: Town List View
+    F-084: Edit Town
 
     Allows the cook to view existing towns and add new ones to their delivery areas.
     Each town is scoped to the tenant via the delivery_areas junction table.
@@ -19,6 +20,11 @@
     BR-216: Clicking a town navigates to or expands its quarter management view
     BR-217: Empty state shown when no towns exist
     BR-218: Town list updates via Gale when towns are added or removed (no page reload)
+    BR-219: Town name required in both EN and FR (edit)
+    BR-220: Edited town name must remain unique within this cook's towns
+    BR-221: Save via Gale; list updates without page reload (edit)
+    BR-223: Edit action requires location management permission
+    BR-224: All validation messages use __() localization (edit)
 --}}
 @extends('layouts.cook-dashboard')
 
@@ -65,15 +71,28 @@
             name_fr: '',
             expandedTown: null,
             confirmDeleteId: null,
+            editingTownId: null,
+            edit_name_en: '',
+            edit_name_fr: '',
             resetForm() {
                 this.name_en = '';
                 this.name_fr = '';
             },
             toggleTown(areaId) {
                 this.expandedTown = this.expandedTown === areaId ? null : areaId;
+            },
+            startEdit(areaId, nameEn, nameFr) {
+                this.editingTownId = areaId;
+                this.edit_name_en = nameEn;
+                this.edit_name_fr = nameFr;
+            },
+            cancelEdit() {
+                this.editingTownId = null;
+                this.edit_name_en = '';
+                this.edit_name_fr = '';
             }
         }"
-        x-sync="['name_en', 'name_fr']"
+        x-sync="['name_en', 'name_fr', 'edit_name_en', 'edit_name_fr']"
     >
         {{-- Header with Add Town button --}}
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -191,8 +210,8 @@
                         $quarterCount = count($area['quarters']);
                     @endphp
                     <div class="bg-surface-alt dark:bg-surface-alt rounded-xl border border-outline dark:border-outline shadow-card transition-all duration-200 hover:shadow-md overflow-hidden">
-                        {{-- Town Row --}}
-                        <div class="flex items-center justify-between p-4">
+                        {{-- Town Row (Display Mode) --}}
+                        <div x-show="editingTownId !== {{ $area['id'] }}" class="flex items-center justify-between p-4">
                             {{-- Clickable Town Info (BR-216) --}}
                             <button
                                 type="button"
@@ -232,10 +251,10 @@
                                     {{ $quarterCount }} {{ $quarterCount === 1 ? __('quarter') : __('quarters') }}
                                 </span>
 
-                                {{-- Edit button (BR-214) — stub link for F-084 --}}
+                                {{-- Edit button (F-084: Edit Town) --}}
                                 <button
                                     type="button"
-                                    x-on:click="$navigate('{{ url('/dashboard/locations/towns/' . $area['id'] . '/edit') }}')"
+                                    x-on:click="startEdit({{ $area['id'] }}, '{{ addslashes($area['town_name_en']) }}', '{{ addslashes($area['town_name_fr']) }}')"
                                     class="p-2 rounded-lg text-on-surface/60 hover:text-primary hover:bg-primary-subtle transition-colors duration-200"
                                     title="{{ __('Edit town') }}"
                                     aria-label="{{ __('Edit') }} {{ $townName }}"
@@ -258,9 +277,83 @@
                             </div>
                         </div>
 
+                        {{-- Inline Edit Form (F-084: Edit Town) --}}
+                        <div x-show="editingTownId === {{ $area['id'] }}" x-cloak class="p-4">
+                            <div class="flex items-center gap-2 mb-4">
+                                <div class="w-10 h-10 rounded-full bg-primary-subtle flex items-center justify-center shrink-0">
+                                    {{-- Lucide: pencil --}}
+                                    <svg class="w-5 h-5 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg>
+                                </div>
+                                <h4 class="text-sm font-semibold text-on-surface-strong">{{ __('Edit Town') }}</h4>
+                            </div>
+                            <form x-on:submit.prevent="$action('{{ url('/dashboard/locations/towns/' . $area['id']) }}', { method: 'PUT' })" class="space-y-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {{-- English Town Name --}}
+                                    <div>
+                                        <label for="edit-town-name-en-{{ $area['id'] }}" class="block text-sm font-medium text-on-surface mb-1.5">
+                                            {{ __('Town Name (English)') }}
+                                            <span class="text-danger">*</span>
+                                        </label>
+                                        <input
+                                            id="edit-town-name-en-{{ $area['id'] }}"
+                                            type="text"
+                                            x-model="edit_name_en"
+                                            x-name="edit_name_en"
+                                            class="w-full px-3.5 py-2.5 rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface-strong placeholder-on-surface/40 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 text-sm"
+                                            placeholder="{{ __('e.g. Douala') }}"
+                                            autocomplete="off"
+                                        >
+                                        <p x-message="edit_name_en" class="mt-1 text-xs text-danger"></p>
+                                    </div>
+
+                                    {{-- French Town Name --}}
+                                    <div>
+                                        <label for="edit-town-name-fr-{{ $area['id'] }}" class="block text-sm font-medium text-on-surface mb-1.5">
+                                            {{ __('Town Name (French)') }}
+                                            <span class="text-danger">*</span>
+                                        </label>
+                                        <input
+                                            id="edit-town-name-fr-{{ $area['id'] }}"
+                                            type="text"
+                                            x-model="edit_name_fr"
+                                            x-name="edit_name_fr"
+                                            class="w-full px-3.5 py-2.5 rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface-strong placeholder-on-surface/40 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 text-sm"
+                                            placeholder="{{ __('e.g. Douala') }}"
+                                            autocomplete="off"
+                                        >
+                                        <p x-message="edit_name_fr" class="mt-1 text-xs text-danger"></p>
+                                    </div>
+                                </div>
+
+                                {{-- Form Actions --}}
+                                <div class="flex items-center justify-end gap-3 pt-2">
+                                    <button
+                                        type="button"
+                                        x-on:click="cancelEdit()"
+                                        class="px-4 py-2 rounded-lg text-sm font-medium text-on-surface hover:bg-surface dark:hover:bg-surface transition-colors duration-200"
+                                    >
+                                        {{ __('Cancel') }}
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-on-primary text-sm font-medium hover:bg-primary-hover transition-colors duration-200 shadow-sm"
+                                    >
+                                        <span x-show="!$fetching()">
+                                            {{-- Lucide: check --}}
+                                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+                                        </span>
+                                        <span x-show="$fetching()">
+                                            <svg class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                        </span>
+                                        <span x-text="$fetching() ? '{{ __('Saving...') }}' : '{{ __('Save Changes') }}'"></span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
                         {{-- Expanded Quarter Section (BR-216) --}}
                         <div
-                            x-show="expandedTown === {{ $area['id'] }}"
+                            x-show="expandedTown === {{ $area['id'] }} && editingTownId !== {{ $area['id'] }}"
                             x-cloak
                             x-transition:enter="transition ease-out duration-200"
                             x-transition:enter-start="opacity-0"
