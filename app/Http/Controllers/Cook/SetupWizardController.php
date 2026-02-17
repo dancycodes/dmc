@@ -151,14 +151,14 @@ class SetupWizardController extends Controller
             $hasFr = ! empty($descFr) && trim($descFr) !== '';
 
             if ($hasEn && ! $hasFr) {
-                return gale()->state('errors', [
-                    'description_fr' => [__('Bio is required in French when provided in English.')],
+                return gale()->messages([
+                    'description_fr' => __('Bio is required in French when provided in English.'),
                 ]);
             }
 
             if ($hasFr && ! $hasEn) {
-                return gale()->state('errors', [
-                    'description_en' => [__('Bio is required in English when provided in French.')],
+                return gale()->messages([
+                    'description_en' => __('Bio is required in English when provided in French.'),
                 ]);
             }
         } else {
