@@ -45,17 +45,6 @@
         },
         get enabledDayCount() {
             return this.scheduleData.filter(s => s.enabled).length;
-        },
-        get timeSlots() {
-            let slots = [];
-            for (let h = 0; h < 24; h++) {
-                for (let m = 0; m < 60; m += 30) {
-                    let hour = String(h).padStart(2, '0');
-                    let minute = String(m).padStart(2, '0');
-                    slots.push(hour + ':' + minute);
-                }
-            }
-            return slots;
         }
     }"
     x-sync="['scheduleData', 'meal_name_en', 'meal_name_fr', 'meal_description_en', 'meal_description_fr', 'meal_price', 'components']"
@@ -112,9 +101,11 @@
                             class="flex-1 sm:w-auto px-3 py-2 text-sm rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface focus:ring-2 focus:ring-primary/50 focus:border-primary"
                             :aria-label="day.label + ' {{ __('start time') }}'"
                         >
-                            <template x-for="time in timeSlots" :key="'start-' + day.day + '-' + time">
-                                <option :value="time" x-text="time"></option>
-                            </template>
+                            @for ($h = 0; $h < 24; $h++)
+                                @for ($m = 0; $m < 60; $m += 30)
+                                    <option value="{{ sprintf('%02d:%02d', $h, $m) }}">{{ sprintf('%02d:%02d', $h, $m) }}</option>
+                                @endfor
+                            @endfor
                         </select>
 
                         <span class="text-on-surface text-sm">{{ __('to') }}</span>
@@ -124,9 +115,11 @@
                             class="flex-1 sm:w-auto px-3 py-2 text-sm rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface focus:ring-2 focus:ring-primary/50 focus:border-primary"
                             :aria-label="day.label + ' {{ __('end time') }}'"
                         >
-                            <template x-for="time in timeSlots" :key="'end-' + day.day + '-' + time">
-                                <option :value="time" x-text="time"></option>
-                            </template>
+                            @for ($h = 0; $h < 24; $h++)
+                                @for ($m = 0; $m < 60; $m += 30)
+                                    <option value="{{ sprintf('%02d:%02d', $h, $m) }}">{{ sprintf('%02d:%02d', $h, $m) }}</option>
+                                @endfor
+                            @endfor
                         </select>
 
                         {{-- Time validation warning --}}
@@ -372,11 +365,10 @@
                                     <input
                                         type="text"
                                         x-model="component.name_en"
-                                        :x-name="'components.' + compIndex + '.name_en'"
                                         placeholder="{{ __('e.g., Ndole with spinach') }}"
                                         class="w-full px-3 py-2 text-sm rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface placeholder:text-on-surface/40 focus:ring-2 focus:ring-primary/50 focus:border-primary"
                                     >
-                                    <p :x-message="'components.' + compIndex + '.name_en'" class="mt-1 text-xs text-danger"></p>
+                                    <p x-message="`components.${compIndex}.name_en`" class="mt-1 text-xs text-danger"></p>
                                 </div>
                                 <div>
                                     <label class="block text-xs font-medium text-on-surface mb-1">
@@ -385,11 +377,10 @@
                                     <input
                                         type="text"
                                         x-model="component.name_fr"
-                                        :x-name="'components.' + compIndex + '.name_fr'"
                                         placeholder="{{ __('e.g., Ndole aux epinards') }}"
                                         class="w-full px-3 py-2 text-sm rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface placeholder:text-on-surface/40 focus:ring-2 focus:ring-primary/50 focus:border-primary"
                                     >
-                                    <p :x-message="'components.' + compIndex + '.name_fr'" class="mt-1 text-xs text-danger"></p>
+                                    <p x-message="`components.${compIndex}.name_fr`" class="mt-1 text-xs text-danger"></p>
                                 </div>
                             </div>
                         </div>
