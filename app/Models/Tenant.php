@@ -106,6 +106,86 @@ class Tenant extends Model
     }
 
     /**
+     * Scope: discovery search across cook name, meal name, town name, and tags.
+     *
+     * BR-083: Search matches cook name (en/fr), meal name (en/fr), town name (en/fr), meal tags.
+     * BR-084: Case-insensitive and accent-insensitive via PostgreSQL unaccent().
+     * BR-085: Partial matching (contains, not exact).
+     *
+     * Forward-compatible: meal and tag search will activate when F-108/F-115 tables exist.
+     */
+    public function scopeDiscoverySearch(Builder $query, ?string $term): Builder
+    {
+        if (empty($term) || mb_strlen(trim($term)) < 2) {
+            return $query;
+        }
+
+        $normalized = '%'.mb_strtolower(trim($term)).'%';
+
+        return $query->where(function (Builder $q) use ($normalized) {
+            // Search by cook/tenant name (en/fr) — accent-insensitive
+            $q->whereRaw('LOWER(unaccent(name_en)) LIKE LOWER(unaccent(?))', [$normalized])
+                ->orWhereRaw('LOWER(unaccent(name_fr)) LIKE LOWER(unaccent(?))', [$normalized])
+                ->orWhereRaw('LOWER(unaccent(COALESCE(description_en, \'\'))) LIKE LOWER(unaccent(?))', [$normalized])
+                ->orWhereRaw('LOWER(unaccent(COALESCE(description_fr, \'\'))) LIKE LOWER(unaccent(?))', [$normalized]);
+
+            // Search by town name — tenants whose cooks deliver to matching towns
+            // Towns are linked via addresses table (user addresses reference towns)
+            // However, the direct tenant-town relationship comes via delivery areas (F-074)
+            // For now, search towns directly and match tenants in those towns
+            if (\Schema::hasTable('towns')) {
+                $q->orWhereExists(function ($sub) use ($normalized) {
+                    $sub->select(\DB::raw(1))
+                        ->from('towns')
+                        ->where('towns.is_active', true)
+                        ->where(function ($tw) use ($normalized) {
+                            $tw->whereRaw('LOWER(unaccent(towns.name_en)) LIKE LOWER(unaccent(?))', [$normalized])
+                                ->orWhereRaw('LOWER(unaccent(towns.name_fr)) LIKE LOWER(unaccent(?))', [$normalized]);
+                        });
+
+                    // When delivery_areas table exists (F-074), link via tenant_id
+                    if (\Schema::hasTable('delivery_areas')) {
+                        $sub->whereRaw('delivery_areas.tenant_id = tenants.id')
+                            ->join('delivery_areas', 'delivery_areas.town_id', '=', 'towns.id');
+                    } else {
+                        // Fallback: match any tenant if town name matches (broad match)
+                        // This will be tightened when delivery areas are implemented
+                    }
+                });
+            }
+
+            // Forward-compatible: search by meal name when meals table exists (F-108)
+            if (\Schema::hasTable('meals')) {
+                $q->orWhereExists(function ($sub) use ($normalized) {
+                    $sub->select(\DB::raw(1))
+                        ->from('meals')
+                        ->whereRaw('meals.tenant_id = tenants.id')
+                        ->where('meals.is_active', true)
+                        ->where(function ($mw) use ($normalized) {
+                            $mw->whereRaw('LOWER(unaccent(meals.name_en)) LIKE LOWER(unaccent(?))', [$normalized])
+                                ->orWhereRaw('LOWER(unaccent(meals.name_fr)) LIKE LOWER(unaccent(?))', [$normalized]);
+                        });
+                });
+            }
+
+            // Forward-compatible: search by tag name when tags/meal_tag tables exist (F-115)
+            if (\Schema::hasTable('tags') && \Schema::hasTable('meal_tag')) {
+                $q->orWhereExists(function ($sub) use ($normalized) {
+                    $sub->select(\DB::raw(1))
+                        ->from('tags')
+                        ->join('meal_tag', 'meal_tag.tag_id', '=', 'tags.id')
+                        ->join('meals', 'meals.id', '=', 'meal_tag.meal_id')
+                        ->whereRaw('meals.tenant_id = tenants.id')
+                        ->where(function ($tw) use ($normalized) {
+                            $tw->whereRaw('LOWER(unaccent(tags.name_en)) LIKE LOWER(unaccent(?))', [$normalized])
+                                ->orWhereRaw('LOWER(unaccent(tags.name_fr)) LIKE LOWER(unaccent(?))', [$normalized]);
+                        });
+                });
+            }
+        });
+    }
+
+    /**
      * Scope: filter tenants by status.
      *
      * BR-066: Status filter options: All, Active, Inactive

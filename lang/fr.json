@@ -1091,5 +1091,11 @@
     ":count meal|:count meals": ":count plat|:count plats",
     "Average rating": "Note moyenne",
     "No ratings yet": "Pas encore de notes",
-    "Primary delivery area": "Zone de livraison principale"
+    "Primary delivery area": "Zone de livraison principale",
+
+    "Search cooks, meals, towns...": "Rechercher cuisiniers, plats, villes...",
+    "Search cooks, meals, towns": "Rechercher cuisiniers, plats, villes",
+    "Close search": "Fermer la recherche",
+    "No cooks found matching your search": "Aucun cuisinier trouv\u00e9 correspondant \u00e0 votre recherche",
+    "No cooks found matching your search. Try different keywords.": "Aucun cuisinier trouv\u00e9 correspondant \u00e0 votre recherche. Essayez d'autres mots-cl\u00e9s."
 }

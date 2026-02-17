@@ -20,6 +20,8 @@ class DiscoveryRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
+     * BR-089: Minimum search query length is 2 characters.
+     *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array

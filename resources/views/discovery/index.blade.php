@@ -21,12 +21,31 @@
     sort: '{{ $sort }}',
     direction: '{{ $direction }}',
     filterOpen: false,
-    showScrollTop: false
+    showScrollTop: false,
+    searching: false,
+    mobileSearchOpen: false,
+    doSearch() {
+        // BR-089: Minimum 2 characters before triggering server request
+        if (this.search.length > 0 && this.search.length < 2) {
+            return;
+        }
+        this.searching = true;
+        $navigate('/?search=' + encodeURIComponent(this.search) + '&sort=' + this.sort + '&direction=' + this.direction, { key: 'discovery', replace: true });
+    },
+    clearSearch() {
+        this.search = '';
+        this.searching = true;
+        $navigate('/?sort=' + this.sort + '&direction=' + this.direction, { key: 'discovery', replace: true });
+    }
 }" x-init="
     window.addEventListener('scroll', () => {
         showScrollTop = window.scrollY > 400;
     });
-">
+    // Reset searching state when Gale finishes navigate (DOM update completes)
+    const observer = new MutationObserver(() => { searching = false; });
+    const gridEl = document.getElementById('cook-grid');
+    if (gridEl) observer.observe(gridEl, { childList: true, subtree: true });
+" x-navigate>
     {{-- Hero Header with Search --}}
     <section class="bg-primary-subtle dark:bg-primary-subtle border-b border-outline dark:border-outline">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 lg:py-16">
@@ -38,8 +57,8 @@
                     {{ __('Discover talented cooks in your area and order delicious home-cooked meals.') }}
                 </p>
 
-                {{-- Search Bar --}}
-                <div class="mt-6 sm:mt-8 max-w-xl mx-auto" x-data x-navigate>
+                {{-- Search Bar (Desktop — always visible) --}}
+                <div class="mt-6 sm:mt-8 max-w-xl mx-auto hidden sm:block">
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             {{-- Search icon (Lucide) --}}
@@ -48,21 +67,75 @@
                         <input
                             type="text"
                             x-model="search"
-                            @input.debounce.400ms="$navigate('/?search=' + encodeURIComponent(search) + '&sort=' + sort + '&direction=' + direction, { key: 'discovery', replace: true })"
-                            placeholder="{{ __('Search cooks by name...') }}"
-                            class="w-full h-12 pl-11 pr-10 rounded-xl bg-surface dark:bg-surface text-on-surface-strong placeholder:text-on-surface/50 border border-outline dark:border-outline focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 text-base shadow-card"
-                            aria-label="{{ __('Search cooks') }}"
+                            @input.debounce.300ms="doSearch()"
+                            placeholder="{{ __('Search cooks, meals, towns...') }}"
+                            class="w-full h-12 pl-11 pr-16 rounded-xl bg-surface dark:bg-surface text-on-surface-strong placeholder:text-on-surface/50 border border-outline dark:border-outline focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 text-base shadow-card"
+                            aria-label="{{ __('Search cooks, meals, towns') }}"
                         >
+                        <div class="absolute inset-y-0 right-0 pr-4 flex items-center gap-2">
+                            {{-- Loading spinner --}}
+                            <svg x-show="searching" x-cloak class="w-4 h-4 text-primary animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                            {{-- Clear button --}}
+                            <button
+                                x-show="search.length > 0 && !searching"
+                                x-cloak
+                                @click="clearSearch()"
+                                class="text-on-surface hover:text-on-surface-strong transition-colors"
+                                aria-label="{{ __('Clear search') }}"
+                            >
+                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Mobile Search: icon that expands to full-width input --}}
+                <div class="mt-6 sm:hidden">
+                    {{-- Collapsed: search icon button --}}
+                    <div x-show="!mobileSearchOpen" class="flex justify-center">
                         <button
-                            x-show="search.length > 0"
-                            x-cloak
-                            @click="search = ''; $navigate('/?sort=' + sort + '&direction=' + direction, { key: 'discovery', replace: true })"
-                            class="absolute inset-y-0 right-0 pr-4 flex items-center text-on-surface hover:text-on-surface-strong transition-colors"
-                            aria-label="{{ __('Clear search') }}"
+                            @click="mobileSearchOpen = true; $nextTick(() => { $refs.mobileSearchInput.focus(); })"
+                            class="h-12 px-6 rounded-xl bg-surface dark:bg-surface border border-outline dark:border-outline shadow-card text-on-surface hover:bg-surface-alt dark:hover:bg-surface-alt transition-all duration-200 inline-flex items-center gap-2"
+                            aria-label="{{ __('Search cooks, meals, towns') }}"
                         >
-                            {{-- X icon (Lucide) --}}
-                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+                            <span class="text-on-surface/60 text-sm">{{ __('Search cooks, meals, towns...') }}</span>
                         </button>
+                    </div>
+
+                    {{-- Expanded: full-width input --}}
+                    <div
+                        x-show="mobileSearchOpen || search.length > 0"
+                        x-transition:enter="transition ease-out duration-200"
+                        x-transition:enter-start="opacity-0 scale-95"
+                        x-transition:enter-end="opacity-100 scale-100"
+                        class="relative"
+                    >
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <svg class="w-5 h-5 text-on-surface" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+                        </div>
+                        <input
+                            type="text"
+                            x-ref="mobileSearchInput"
+                            x-model="search"
+                            @input.debounce.300ms="doSearch()"
+                            @keydown.escape="if (search.length === 0) mobileSearchOpen = false"
+                            placeholder="{{ __('Search cooks, meals, towns...') }}"
+                            class="w-full h-12 pl-11 pr-16 rounded-xl bg-surface dark:bg-surface text-on-surface-strong placeholder:text-on-surface/50 border border-outline dark:border-outline focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 text-base shadow-card"
+                            aria-label="{{ __('Search cooks, meals, towns') }}"
+                        >
+                        <div class="absolute inset-y-0 right-0 pr-4 flex items-center gap-2">
+                            <svg x-show="searching" x-cloak class="w-4 h-4 text-primary animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                            <button
+                                x-show="(search.length > 0 || mobileSearchOpen) && !searching"
+                                x-cloak
+                                @click="if (search.length > 0) { clearSearch(); } else { mobileSearchOpen = false; }"
+                                class="text-on-surface hover:text-on-surface-strong transition-colors"
+                                :aria-label="search.length > 0 ? '{{ __('Clear search') }}' : '{{ __('Close search') }}'"
+                            >
+                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -73,18 +146,20 @@
     <section class="bg-surface dark:bg-surface border-b border-outline dark:border-outline">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
             <div class="flex items-center justify-between gap-3">
-                {{-- Result Count --}}
-                <p class="text-sm text-on-surface">
+                {{-- Result Count (Fragment for Gale navigate updates) --}}
+                @fragment('result-count')
+                <p id="result-count" class="text-sm text-on-surface">
                     @if($cooks->total() > 0)
                         {{ trans_choice(':count cook found|:count cooks found', $cooks->total(), ['count' => $cooks->total()]) }}
                     @else
                         {{ __('No cooks found') }}
                     @endif
                 </p>
+                @endfragment
 
                 <div class="flex items-center gap-2">
                     {{-- Sort Dropdown --}}
-                    <div x-data="{ sortOpen: false }" class="relative" x-navigate>
+                    <div x-data="{ sortOpen: false }" class="relative">
                         <button
                             @click="sortOpen = !sortOpen"
                             class="inline-flex items-center gap-2 h-9 px-3 rounded-lg text-sm font-medium border border-outline dark:border-outline text-on-surface hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors duration-200"
@@ -217,7 +292,7 @@
 
                     {{-- Pagination --}}
                     @if($cooks->hasPages())
-                        <div class="mt-8" x-data x-navigate>
+                        <div class="mt-8">
                             <nav class="flex items-center justify-center gap-1" aria-label="{{ __('Pagination') }}">
                                 {{-- Previous --}}
                                 @if($cooks->onFirstPage())
@@ -264,29 +339,40 @@
                 @else
                     {{-- Empty State --}}
                     <div class="flex flex-col items-center justify-center py-16 sm:py-24 text-center">
-                        {{-- ChefHat icon (Lucide) --}}
+                        {{-- Search icon for search, ChefHat for no cooks --}}
                         <div class="w-20 h-20 rounded-full bg-primary-subtle dark:bg-primary-subtle flex items-center justify-center mb-6">
-                            <svg class="w-10 h-10 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21a1 1 0 0 0 1-1v-5.35c0-.457.316-.844.727-1.041a4 4 0 0 0-2.646-7.544 6 6 0 0 0-11.162 0A4 4 0 0 0 2.919 14.61c.41.196.727.583.727 1.04V20a1 1 0 0 0 1 1z"></path><path d="M6 17h12"></path></svg>
+                            @if(!empty($search))
+                                {{-- Search icon (Lucide, lg=24) --}}
+                                <svg class="w-10 h-10 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+                            @else
+                                {{-- ChefHat icon (Lucide) --}}
+                                <svg class="w-10 h-10 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21a1 1 0 0 0 1-1v-5.35c0-.457.316-.844.727-1.041a4 4 0 0 0-2.646-7.544 6 6 0 0 0-11.162 0A4 4 0 0 0 2.919 14.61c.41.196.727.583.727 1.04V20a1 1 0 0 0 1 1z"></path><path d="M6 17h12"></path></svg>
+                            @endif
                         </div>
                         <h2 class="text-xl sm:text-2xl font-semibold text-on-surface-strong mb-2">
                             @if(!empty($search))
-                                {{ __('No cooks match your search') }}
+                                {{ __('No cooks found matching your search') }}
                             @else
                                 {{ __('No cooks available yet') }}
                             @endif
                         </h2>
                         <p class="text-on-surface max-w-md text-base">
                             @if(!empty($search))
-                                {{ __('Try adjusting your search terms or browse all available cooks.') }}
+                                {{ __('No cooks found matching your search. Try different keywords.') }}
                             @else
                                 {{ __('Check back soon! Talented cooks are joining DancyMeals every day.') }}
                             @endif
                         </p>
                         @if(!empty($search))
-                            <div x-data x-navigate class="mt-6">
-                                <a href="/" x-navigate.key.discovery class="h-10 px-6 rounded-lg font-medium bg-primary hover:bg-primary-hover text-on-primary transition-all duration-200 inline-flex items-center gap-2 text-sm">
+                            <div class="mt-6">
+                                <button
+                                    @click="clearSearch()"
+                                    class="h-10 px-6 rounded-lg font-medium bg-primary hover:bg-primary-hover text-on-primary transition-all duration-200 inline-flex items-center gap-2 text-sm"
+                                >
+                                    {{-- X icon (Lucide, sm=16) --}}
+                                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
                                     {{ __('Clear search') }}
-                                </a>
+                                </button>
                             </div>
                         @endif
                     </div>

@@ -1091,5 +1091,11 @@
     ":count meal|:count meals": ":count meal|:count meals",
     "Average rating": "Average rating",
     "No ratings yet": "No ratings yet",
-    "Primary delivery area": "Primary delivery area"
+    "Primary delivery area": "Primary delivery area",
+
+    "Search cooks, meals, towns...": "Search cooks, meals, towns...",
+    "Search cooks, meals, towns": "Search cooks, meals, towns",
+    "Close search": "Close search",
+    "No cooks found matching your search": "No cooks found matching your search",
+    "No cooks found matching your search. Try different keywords.": "No cooks found matching your search. Try different keywords."
 }
