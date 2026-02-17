@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Cook\UpdateBrandInfoRequest;
 use App\Services\CoverImageService;
+use App\Services\DeliveryAreaService;
 use App\Services\SetupWizardService;
 use Illuminate\Http\Request;
 
@@ -14,6 +15,7 @@ class SetupWizardController extends Controller
     public function __construct(
         private SetupWizardService $wizardService,
         private CoverImageService $coverImageService,
+        private DeliveryAreaService $deliveryAreaService,
     ) {}
 
     /**
@@ -48,6 +50,14 @@ class SetupWizardController extends Controller
             ? $this->coverImageService->getImagesData($tenant)
             : [];
 
+        // Load delivery area data for step 3
+        $deliveryAreas = $activeStep === 3
+            ? $this->deliveryAreaService->getDeliveryAreasData($tenant)
+            : [];
+        $pickupLocations = $activeStep === 3
+            ? $this->deliveryAreaService->getPickupLocationsData($tenant)
+            : [];
+
         $viewData = [
             'tenant' => $tenant,
             'steps' => $steps,
@@ -55,6 +65,8 @@ class SetupWizardController extends Controller
             'requirements' => $requirements,
             'setupComplete' => $tenant->isSetupComplete(),
             'coverImages' => $coverImages,
+            'deliveryAreas' => $deliveryAreas,
+            'pickupLocations' => $pickupLocations,
         ];
 
         // Handle Gale navigate for step switching within the wizard
@@ -429,6 +441,433 @@ class SetupWizardController extends Controller
         }
 
         return redirect()->route('cook.setup', ['step' => 2])->with('success', __('Image deleted.'));
+    }
+
+    /**
+     * Add a town to the cook's delivery areas (Step 3).
+     *
+     * F-074: Delivery Areas Step
+     * BR-137: Town name required in EN and FR.
+     * BR-138: Town name must be unique within this cook's towns.
+     */
+    public function addTown(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if ($request->isGale()) {
+            $validated = $request->validateState([
+                'town_name_en' => ['required', 'string', 'max:255'],
+                'town_name_fr' => ['required', 'string', 'max:255'],
+            ], [
+                'town_name_en.required' => __('Town name is required in English.'),
+                'town_name_fr.required' => __('Town name is required in French.'),
+            ]);
+        } else {
+            $validated = $request->validate([
+                'town_name_en' => ['required', 'string', 'max:255'],
+                'town_name_fr' => ['required', 'string', 'max:255'],
+            ]);
+        }
+
+        $result = $this->deliveryAreaService->addTown(
+            $tenant,
+            trim($validated['town_name_en']),
+            trim($validated['town_name_fr']),
+        );
+
+        if (! $result['success']) {
+            if ($request->isGale()) {
+                return gale()->messages([
+                    'town_name_en' => $result['error'],
+                ]);
+            }
+
+            return redirect()->back()->withErrors(['town_name_en' => $result['error']]);
+        }
+
+        // Activity logging
+        activity('tenants')
+            ->performedOn($tenant)
+            ->causedBy($request->user())
+            ->withProperties([
+                'action' => 'delivery_town_added',
+                'town_id' => $result['delivery_area']->town_id,
+                'town_name' => $validated['town_name_en'],
+            ])
+            ->log('Delivery town added via setup wizard');
+
+        if ($request->isGale()) {
+            $deliveryAreas = $this->deliveryAreaService->getDeliveryAreasData($tenant);
+            $hasMinimum = $this->deliveryAreaService->hasMinimumSetup($tenant);
+
+            return gale()
+                ->state('deliveryAreas', $deliveryAreas)
+                ->state('hasMinimumSetup', $hasMinimum)
+                ->state('town_name_en', '')
+                ->state('town_name_fr', '');
+        }
+
+        return redirect()->route('cook.setup', ['step' => 3])
+            ->with('success', __('Town added successfully.'));
+    }
+
+    /**
+     * Remove a town from the cook's delivery areas (Step 3).
+     *
+     * F-074: Delivery Areas Step
+     */
+    public function removeTown(Request $request, int $deliveryAreaId): mixed
+    {
+        $tenant = tenant();
+
+        $success = $this->deliveryAreaService->removeTown($tenant, $deliveryAreaId);
+
+        if (! $success) {
+            if ($request->isGale()) {
+                return gale()->messages([
+                    'town' => __('Town not found or already removed.'),
+                ]);
+            }
+
+            return redirect()->back()->withErrors(['town' => __('Town not found or already removed.')]);
+        }
+
+        // Check if step should be un-marked
+        $hasMinimum = $this->deliveryAreaService->hasMinimumSetup($tenant);
+        if (! $hasMinimum) {
+            $completedSteps = $tenant->getSetting('setup_steps', []);
+            $completedSteps = array_values(array_filter($completedSteps, fn ($s) => $s !== 3));
+            $tenant->setSetting('setup_steps', $completedSteps);
+            $tenant->save();
+        }
+
+        // Activity logging
+        activity('tenants')
+            ->performedOn($tenant)
+            ->causedBy($request->user())
+            ->withProperties([
+                'action' => 'delivery_town_removed',
+                'delivery_area_id' => $deliveryAreaId,
+            ])
+            ->log('Delivery town removed via setup wizard');
+
+        if ($request->isGale()) {
+            $deliveryAreas = $this->deliveryAreaService->getDeliveryAreasData($tenant);
+
+            return gale()
+                ->state('deliveryAreas', $deliveryAreas)
+                ->state('hasMinimumSetup', $hasMinimum);
+        }
+
+        return redirect()->route('cook.setup', ['step' => 3])
+            ->with('success', __('Town removed.'));
+    }
+
+    /**
+     * Add a quarter to a delivery area (Step 3).
+     *
+     * F-074: Delivery Areas Step
+     * BR-139: Quarter name required in EN and FR.
+     * BR-140: Quarter name must be unique within its parent town.
+     * BR-141: Delivery fee >= 0 XAF.
+     * BR-142: Delivery fee stored as integer.
+     */
+    public function addQuarter(Request $request, int $deliveryAreaId): mixed
+    {
+        $tenant = tenant();
+
+        if ($request->isGale()) {
+            $validated = $request->validateState([
+                'quarter_name_en' => ['required', 'string', 'max:255'],
+                'quarter_name_fr' => ['required', 'string', 'max:255'],
+                'delivery_fee' => ['required', 'integer', 'min:0'],
+            ], [
+                'quarter_name_en.required' => __('Quarter name is required in English.'),
+                'quarter_name_fr.required' => __('Quarter name is required in French.'),
+                'delivery_fee.required' => __('Delivery fee is required.'),
+                'delivery_fee.integer' => __('Delivery fee must be a whole number.'),
+                'delivery_fee.min' => __('Delivery fee cannot be negative.'),
+            ]);
+        } else {
+            $validated = $request->validate([
+                'quarter_name_en' => ['required', 'string', 'max:255'],
+                'quarter_name_fr' => ['required', 'string', 'max:255'],
+                'delivery_fee' => ['required', 'integer', 'min:0'],
+            ]);
+        }
+
+        $result = $this->deliveryAreaService->addQuarter(
+            $tenant,
+            $deliveryAreaId,
+            trim($validated['quarter_name_en']),
+            trim($validated['quarter_name_fr']),
+            (int) $validated['delivery_fee'],
+        );
+
+        if (! $result['success']) {
+            if ($request->isGale()) {
+                return gale()->messages([
+                    'quarter_name_en' => $result['error'],
+                ]);
+            }
+
+            return redirect()->back()->withErrors(['quarter_name_en' => $result['error']]);
+        }
+
+        // Mark step as complete if minimum setup is met
+        $hasMinimum = $this->deliveryAreaService->hasMinimumSetup($tenant);
+        if ($hasMinimum) {
+            $this->wizardService->markStepComplete($tenant, 3);
+        }
+
+        // Activity logging
+        activity('tenants')
+            ->performedOn($tenant)
+            ->causedBy($request->user())
+            ->withProperties([
+                'action' => 'delivery_quarter_added',
+                'delivery_area_id' => $deliveryAreaId,
+                'quarter_name' => $validated['quarter_name_en'],
+                'delivery_fee' => $validated['delivery_fee'],
+            ])
+            ->log('Delivery quarter added via setup wizard');
+
+        if ($request->isGale()) {
+            $deliveryAreas = $this->deliveryAreaService->getDeliveryAreasData($tenant);
+
+            $response = gale()
+                ->state('deliveryAreas', $deliveryAreas)
+                ->state('hasMinimumSetup', $hasMinimum)
+                ->state('quarter_name_en', '')
+                ->state('quarter_name_fr', '')
+                ->state('delivery_fee', 0);
+
+            if (! empty($result['warning'])) {
+                $response->state('feeWarning', $result['warning']);
+            } else {
+                $response->state('feeWarning', '');
+            }
+
+            return $response;
+        }
+
+        return redirect()->route('cook.setup', ['step' => 3])
+            ->with('success', __('Quarter added successfully.'));
+    }
+
+    /**
+     * Remove a quarter from a delivery area (Step 3).
+     *
+     * F-074: Delivery Areas Step
+     */
+    public function removeQuarter(Request $request, int $deliveryAreaQuarterId): mixed
+    {
+        $tenant = tenant();
+
+        $success = $this->deliveryAreaService->removeQuarter($tenant, $deliveryAreaQuarterId);
+
+        if (! $success) {
+            if ($request->isGale()) {
+                return gale()->messages([
+                    'quarter' => __('Quarter not found or already removed.'),
+                ]);
+            }
+
+            return redirect()->back()->withErrors(['quarter' => __('Quarter not found or already removed.')]);
+        }
+
+        // Check if step should be un-marked
+        $hasMinimum = $this->deliveryAreaService->hasMinimumSetup($tenant);
+        if (! $hasMinimum) {
+            $completedSteps = $tenant->getSetting('setup_steps', []);
+            $completedSteps = array_values(array_filter($completedSteps, fn ($s) => $s !== 3));
+            $tenant->setSetting('setup_steps', $completedSteps);
+            $tenant->save();
+        }
+
+        // Activity logging
+        activity('tenants')
+            ->performedOn($tenant)
+            ->causedBy($request->user())
+            ->withProperties([
+                'action' => 'delivery_quarter_removed',
+                'delivery_area_quarter_id' => $deliveryAreaQuarterId,
+            ])
+            ->log('Delivery quarter removed via setup wizard');
+
+        if ($request->isGale()) {
+            $deliveryAreas = $this->deliveryAreaService->getDeliveryAreasData($tenant);
+
+            return gale()
+                ->state('deliveryAreas', $deliveryAreas)
+                ->state('hasMinimumSetup', $hasMinimum);
+        }
+
+        return redirect()->route('cook.setup', ['step' => 3])
+            ->with('success', __('Quarter removed.'));
+    }
+
+    /**
+     * Add a pickup location (Step 3).
+     *
+     * F-074: Delivery Areas Step
+     * BR-143: Pickup locations are optional.
+     */
+    public function addPickupLocation(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if ($request->isGale()) {
+            $validated = $request->validateState([
+                'pickup_name_en' => ['required', 'string', 'max:255'],
+                'pickup_name_fr' => ['required', 'string', 'max:255'],
+                'pickup_town_id' => ['required', 'integer', 'exists:towns,id'],
+                'pickup_quarter_id' => ['required', 'integer', 'exists:quarters,id'],
+                'pickup_address' => ['required', 'string', 'max:500'],
+            ], [
+                'pickup_name_en.required' => __('Location name is required in English.'),
+                'pickup_name_fr.required' => __('Location name is required in French.'),
+                'pickup_town_id.required' => __('Please select a town.'),
+                'pickup_quarter_id.required' => __('Please select a quarter.'),
+                'pickup_address.required' => __('Address is required.'),
+            ]);
+        } else {
+            $validated = $request->validate([
+                'pickup_name_en' => ['required', 'string', 'max:255'],
+                'pickup_name_fr' => ['required', 'string', 'max:255'],
+                'pickup_town_id' => ['required', 'integer', 'exists:towns,id'],
+                'pickup_quarter_id' => ['required', 'integer', 'exists:quarters,id'],
+                'pickup_address' => ['required', 'string', 'max:500'],
+            ]);
+        }
+
+        $result = $this->deliveryAreaService->addPickupLocation(
+            $tenant,
+            trim($validated['pickup_name_en']),
+            trim($validated['pickup_name_fr']),
+            (int) $validated['pickup_town_id'],
+            (int) $validated['pickup_quarter_id'],
+            trim($validated['pickup_address']),
+        );
+
+        if (! $result['success']) {
+            if ($request->isGale()) {
+                return gale()->messages([
+                    'pickup_town_id' => $result['error'],
+                ]);
+            }
+
+            return redirect()->back()->withErrors(['pickup_town_id' => $result['error']]);
+        }
+
+        // Activity logging
+        activity('tenants')
+            ->performedOn($tenant)
+            ->causedBy($request->user())
+            ->withProperties([
+                'action' => 'pickup_location_added',
+                'pickup_name' => $validated['pickup_name_en'],
+            ])
+            ->log('Pickup location added via setup wizard');
+
+        if ($request->isGale()) {
+            $pickupLocations = $this->deliveryAreaService->getPickupLocationsData($tenant);
+
+            return gale()
+                ->state('pickupLocations', $pickupLocations)
+                ->state('pickup_name_en', '')
+                ->state('pickup_name_fr', '')
+                ->state('pickup_town_id', '')
+                ->state('pickup_quarter_id', '')
+                ->state('pickup_address', '');
+        }
+
+        return redirect()->route('cook.setup', ['step' => 3])
+            ->with('success', __('Pickup location added.'));
+    }
+
+    /**
+     * Remove a pickup location (Step 3).
+     *
+     * F-074: Delivery Areas Step
+     */
+    public function removePickupLocation(Request $request, int $pickupLocationId): mixed
+    {
+        $tenant = tenant();
+
+        $success = $this->deliveryAreaService->removePickupLocation($tenant, $pickupLocationId);
+
+        if (! $success) {
+            if ($request->isGale()) {
+                return gale()->messages([
+                    'pickup' => __('Pickup location not found or already removed.'),
+                ]);
+            }
+
+            return redirect()->back()->withErrors(['pickup' => __('Pickup location not found or already removed.')]);
+        }
+
+        // Activity logging
+        activity('tenants')
+            ->performedOn($tenant)
+            ->causedBy($request->user())
+            ->withProperties([
+                'action' => 'pickup_location_removed',
+                'pickup_location_id' => $pickupLocationId,
+            ])
+            ->log('Pickup location removed via setup wizard');
+
+        if ($request->isGale()) {
+            $pickupLocations = $this->deliveryAreaService->getPickupLocationsData($tenant);
+
+            return gale()
+                ->state('pickupLocations', $pickupLocations);
+        }
+
+        return redirect()->route('cook.setup', ['step' => 3])
+            ->with('success', __('Pickup location removed.'));
+    }
+
+    /**
+     * Save delivery areas and continue to next step (Step 3).
+     *
+     * F-074: Delivery Areas Step
+     * BR-136: At least 1 town with 1 quarter and delivery fee is required.
+     */
+    public function saveDeliveryAreas(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if (! $this->deliveryAreaService->hasMinimumSetup($tenant)) {
+            if ($request->isGale()) {
+                return gale()->messages([
+                    'delivery_areas' => __('Please add at least one town with one quarter and a delivery fee before continuing.'),
+                ]);
+            }
+
+            return redirect()->back()->withErrors([
+                'delivery_areas' => __('Please add at least one town with one quarter and a delivery fee before continuing.'),
+            ]);
+        }
+
+        // Mark step 3 as complete
+        $this->wizardService->markStepComplete($tenant, 3);
+
+        // Activity logging
+        activity('tenants')
+            ->performedOn($tenant)
+            ->causedBy($request->user())
+            ->withProperties(['action' => 'delivery_areas_setup_completed'])
+            ->log('Delivery areas setup completed via wizard');
+
+        if ($request->isGale()) {
+            return gale()
+                ->redirect(url('/dashboard/setup?step=4'))
+                ->with('success', __('Delivery areas saved successfully.'));
+        }
+
+        return redirect()->route('cook.setup', ['step' => 4])
+            ->with('success', __('Delivery areas saved successfully.'));
     }
 
     /**

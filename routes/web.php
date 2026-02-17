@@ -312,6 +312,16 @@ Route::middleware('tenant.domain')->group(function () {
         Route::post('/setup/cover-images/upload', [SetupWizardController::class, 'uploadCoverImages'])->name('cook.setup.cover-images.upload');
         Route::post('/setup/cover-images/reorder', [SetupWizardController::class, 'reorderCoverImages'])->name('cook.setup.cover-images.reorder');
         Route::delete('/setup/cover-images/{mediaId}', [SetupWizardController::class, 'deleteCoverImage'])->name('cook.setup.cover-images.delete');
+
+        // Delivery areas (F-074: Delivery Areas Step)
+        Route::post('/setup/delivery-areas/add-town', [SetupWizardController::class, 'addTown'])->name('cook.setup.delivery.add-town');
+        Route::delete('/setup/delivery-areas/remove-town/{deliveryAreaId}', [SetupWizardController::class, 'removeTown'])->name('cook.setup.delivery.remove-town');
+        Route::post('/setup/delivery-areas/{deliveryAreaId}/add-quarter', [SetupWizardController::class, 'addQuarter'])->name('cook.setup.delivery.add-quarter');
+        Route::delete('/setup/delivery-areas/remove-quarter/{deliveryAreaQuarterId}', [SetupWizardController::class, 'removeQuarter'])->name('cook.setup.delivery.remove-quarter');
+        Route::post('/setup/delivery-areas/add-pickup', [SetupWizardController::class, 'addPickupLocation'])->name('cook.setup.delivery.add-pickup');
+        Route::delete('/setup/delivery-areas/remove-pickup/{pickupLocationId}', [SetupWizardController::class, 'removePickupLocation'])->name('cook.setup.delivery.remove-pickup');
+        Route::post('/setup/delivery-areas/save', [SetupWizardController::class, 'saveDeliveryAreas'])->name('cook.setup.delivery.save');
+
         Route::post('/setup/go-live', [SetupWizardController::class, 'goLive'])->name('cook.setup.go-live');
     });
 

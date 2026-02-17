@@ -64,6 +64,26 @@ class Town extends Model
     }
 
     /**
+     * Get the delivery areas referencing this town.
+     *
+     * F-074: Delivery Areas Step
+     */
+    public function deliveryAreas(): HasMany
+    {
+        return $this->hasMany(DeliveryArea::class);
+    }
+
+    /**
+     * Get the pickup locations in this town.
+     *
+     * F-074: Delivery Areas Step
+     */
+    public function pickupLocations(): HasMany
+    {
+        return $this->hasMany(PickupLocation::class);
+    }
+
+    /**
      * Scope: only active towns.
      */
     public function scopeActive(Builder $query): Builder
