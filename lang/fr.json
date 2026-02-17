@@ -1291,5 +1291,14 @@
     "Town deleted successfully.": "Ville supprimée avec succès.",
     "Cannot delete :town because it has active orders. Complete or cancel the orders first.": "Impossible de supprimer :town car il y a des commandes actives. Terminez ou annulez les commandes d'abord.",
     "and its": "et ses",
-    "Town deleted from delivery areas": "Ville supprimée des zones de livraison"
+    "Town deleted from delivery areas": "Ville supprimée des zones de livraison",
+    "Add Quarter to": "Ajouter un quartier à",
+    "Save Quarter": "Enregistrer le quartier",
+    "Free": "Gratuit",
+    "Enter 0 for free delivery to this quarter.": "Entrez 0 pour la livraison gratuite dans ce quartier.",
+    "No quarters added yet. Add a quarter to define delivery fees within this town.": "Aucun quartier ajouté. Ajoutez un quartier pour définir les frais de livraison dans cette ville.",
+    "Quarter name must not exceed 255 characters.": "Le nom du quartier ne doit pas dépasser 255 caractères.",
+    "Delivery fee must be 0 or greater.": "Les frais de livraison doivent être de 0 ou plus.",
+    "Quarter added to delivery area": "Quartier ajouté à la zone de livraison",
+    "e.g. Bonabéri": "ex. Bonabéri"
 }

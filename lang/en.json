@@ -1291,5 +1291,14 @@
     "Town deleted successfully.": "Town deleted successfully.",
     "Cannot delete :town because it has active orders. Complete or cancel the orders first.": "Cannot delete :town because it has active orders. Complete or cancel the orders first.",
     "and its": "and its",
-    "Town deleted from delivery areas": "Town deleted from delivery areas"
+    "Town deleted from delivery areas": "Town deleted from delivery areas",
+    "Add Quarter to": "Add Quarter to",
+    "Save Quarter": "Save Quarter",
+    "Free": "Free",
+    "Enter 0 for free delivery to this quarter.": "Enter 0 for free delivery to this quarter.",
+    "No quarters added yet. Add a quarter to define delivery fees within this town.": "No quarters added yet. Add a quarter to define delivery fees within this town.",
+    "Quarter name must not exceed 255 characters.": "Quarter name must not exceed 255 characters.",
+    "Delivery fee must be 0 or greater.": "Delivery fee must be 0 or greater.",
+    "Quarter added to delivery area": "Quarter added to delivery area",
+    "e.g. Bonabéri": "e.g. Bonabéri"
 }
