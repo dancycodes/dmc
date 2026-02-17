@@ -304,6 +304,10 @@ Route::middleware('tenant.domain')->group(function () {
     Route::prefix('dashboard')->middleware(['auth', 'cook.access', 'throttle:moderate'])->group(function () {
         Route::get('/', [DashboardController::class, 'cookDashboard'])->name('cook.dashboard');
 
+        // Dashboard stats refresh (F-077: Cook Dashboard Home)
+        // BR-170: Real-time updates via Gale SSE polling
+        Route::post('/stats/refresh', [DashboardController::class, 'refreshDashboardStats'])->name('cook.dashboard.refresh');
+
         // Setup wizard (F-071: Cook Setup Wizard Shell)
         // BR-113: Only accessible to cook/manager role (enforced by cook.access middleware)
         // BR-116: Accessible both before and after "Go Live"
