@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\StoreRoleRequest;
 use App\Http\Requests\Admin\UpdateRoleRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
@@ -251,19 +252,19 @@ class RoleController extends Controller
             ])
             ->log('created');
 
-        // Redirect to roles list with success toast
-        // F-056 (Permission Assignment) is not yet built, so redirect to role list
-        // When F-056 is built, this should redirect to permission assignment page
+        // Redirect to permission assignment page (F-056)
         session()->flash('toast', [
             'type' => 'success',
             'message' => __('Role ":name" created successfully. You can now assign permissions to this role.', ['name' => $nameEn]),
         ]);
 
+        $permissionsUrl = url('/vault-entry/roles/'.$role->id.'/permissions');
+
         if ($request->isGale()) {
-            return gale()->redirect(url('/vault-entry/roles'))->back('/vault-entry/roles');
+            return gale()->redirect($permissionsUrl)->back($permissionsUrl);
         }
 
-        return redirect('/vault-entry/roles');
+        return redirect($permissionsUrl);
     }
 
     /**
@@ -454,6 +455,306 @@ class RoleController extends Controller
         }
 
         return redirect('/vault-entry/roles');
+    }
+
+    /**
+     * Show the permission assignment page for a role.
+     *
+     * F-056: Permission Assignment to Roles
+     * BR-128: Super-admin role always has ALL permissions — read-only view
+     * BR-129: Admin can only assign permissions they themselves possess
+     * BR-130: Permissions the admin does not have are visible but disabled
+     * BR-134: Permissions grouped by module for organized display
+     */
+    public function permissions(Request $request, Role $role): mixed
+    {
+        $user = $request->user();
+
+        // Load all platform permissions
+        $allPermissions = Permission::query()
+            ->where('guard_name', 'web')
+            ->orderBy('name')
+            ->get();
+
+        // Get current role's permission names
+        $rolePermissionNames = $role->permissions()->pluck('name')->toArray();
+
+        // BR-129 / BR-130: Get admin's own permissions for escalation prevention
+        $isSuperAdmin = $user->hasRole('super-admin');
+        $adminPermissionNames = $isSuperAdmin
+            ? $allPermissions->pluck('name')->toArray()
+            : $user->getAllPermissions()->pluck('name')->toArray();
+
+        // BR-128: Super-admin role is always read-only
+        $isReadOnly = $role->name === 'super-admin';
+
+        // Group permissions by module
+        $groupedPermissions = $this->groupPermissionsForAssignment($allPermissions, $rolePermissionNames, $adminPermissionNames);
+
+        $data = [
+            'role' => $role,
+            'groupedPermissions' => $groupedPermissions,
+            'rolePermissionNames' => $rolePermissionNames,
+            'adminPermissionNames' => $adminPermissionNames,
+            'isReadOnly' => $isReadOnly,
+            'isSuperAdmin' => $isSuperAdmin,
+            'totalPermissions' => $allPermissions->count(),
+            'assignedCount' => count($rolePermissionNames),
+        ];
+
+        return gale()->view('admin.roles.permissions', $data, web: true);
+    }
+
+    /**
+     * Toggle a single permission on a role.
+     *
+     * F-056: Permission Assignment to Roles
+     * BR-128: Cannot modify super-admin permissions
+     * BR-129: Cannot assign permissions the admin doesn't have
+     * BR-131: Changes save immediately via Gale
+     * BR-132: Takes effect on next request
+     * BR-133: Changes logged in activity log
+     */
+    public function togglePermission(Request $request, Role $role): mixed
+    {
+        if (! $request->user()?->can('can-manage-roles')) {
+            abort(403);
+        }
+
+        $user = $request->user();
+
+        // BR-128: Cannot modify super-admin permissions
+        if ($role->name === 'super-admin') {
+            if ($request->isGale()) {
+                return gale()->state('error', __('Super-admin permissions cannot be modified.'));
+            }
+            abort(403);
+        }
+
+        // Validate the permission name
+        if ($request->isGale()) {
+            $validated = $request->validateState([
+                'permission' => ['required', 'string', 'exists:permissions,name'],
+            ]);
+        } else {
+            $validated = $request->validate([
+                'permission' => ['required', 'string', 'exists:permissions,name'],
+            ]);
+        }
+
+        $permissionName = $validated['permission'];
+
+        // BR-129: Cannot assign permissions the admin doesn't have
+        $isSuperAdmin = $user->hasRole('super-admin');
+        if (! $isSuperAdmin && ! $user->can($permissionName)) {
+            if ($request->isGale()) {
+                return gale()->state('error', __('You cannot assign permissions you do not have.'));
+            }
+            abort(403);
+        }
+
+        // Toggle the permission
+        $hasPermission = $role->hasPermissionTo($permissionName);
+
+        if ($hasPermission) {
+            $role->revokePermissionTo($permissionName);
+            $action = 'revoked';
+        } else {
+            $role->givePermissionTo($permissionName);
+            $action = 'granted';
+        }
+
+        // BR-133: Activity logging
+        activity('roles')
+            ->performedOn($role)
+            ->causedBy($user)
+            ->withProperties([
+                'permission' => $permissionName,
+                'action' => $action,
+                'ip' => $request->ip(),
+            ])
+            ->log("permission_{$action}");
+
+        // Recalculate assigned count
+        $assignedCount = $role->permissions()->count();
+
+        if ($request->isGale()) {
+            return gale()->state([
+                'assignedCount' => $assignedCount,
+                'lastToggled' => $permissionName,
+                'lastAction' => $action,
+                'error' => '',
+            ]);
+        }
+
+        session()->flash('toast', [
+            'type' => 'success',
+            'message' => $action === 'granted'
+                ? __('Permission ":name" granted.', ['name' => $permissionName])
+                : __('Permission ":name" revoked.', ['name' => $permissionName]),
+        ]);
+
+        return redirect()->back();
+    }
+
+    /**
+     * Toggle all permissions in a module for a role.
+     *
+     * F-056: Permission Assignment to Roles (Scenario 2: Bulk selecting a module)
+     * BR-128: Cannot modify super-admin permissions
+     * BR-129: Cannot assign permissions the admin doesn't have
+     * BR-131: Changes save immediately via Gale
+     * BR-133: Changes logged in activity log
+     */
+    public function toggleModule(Request $request, Role $role): mixed
+    {
+        if (! $request->user()?->can('can-manage-roles')) {
+            abort(403);
+        }
+
+        $user = $request->user();
+
+        // BR-128: Cannot modify super-admin permissions
+        if ($role->name === 'super-admin') {
+            if ($request->isGale()) {
+                return gale()->state('error', __('Super-admin permissions cannot be modified.'));
+            }
+            abort(403);
+        }
+
+        if ($request->isGale()) {
+            $validated = $request->validateState([
+                'togglePermissions' => ['required', 'array'],
+                'togglePermissions.*' => ['required', 'string', 'exists:permissions,name'],
+                'grant' => ['required', 'boolean'],
+            ]);
+        } else {
+            $validated = $request->validate([
+                'permissions' => ['required', 'array'],
+                'permissions.*' => ['required', 'string', 'exists:permissions,name'],
+                'grant' => ['required', 'boolean'],
+            ]);
+        }
+
+        $permissionNames = $validated['togglePermissions'] ?? $validated['permissions'];
+        $shouldGrant = $validated['grant'];
+
+        // BR-129: Filter out permissions the admin doesn't have (non-super-admins)
+        $isSuperAdmin = $user->hasRole('super-admin');
+        if (! $isSuperAdmin) {
+            $permissionNames = array_filter($permissionNames, fn (string $p) => $user->can($p));
+        }
+
+        $granted = [];
+        $revoked = [];
+
+        foreach ($permissionNames as $permissionName) {
+            $hasPermission = $role->hasPermissionTo($permissionName);
+
+            if ($shouldGrant && ! $hasPermission) {
+                $role->givePermissionTo($permissionName);
+                $granted[] = $permissionName;
+            } elseif (! $shouldGrant && $hasPermission) {
+                $role->revokePermissionTo($permissionName);
+                $revoked[] = $permissionName;
+            }
+        }
+
+        // BR-133: Activity logging for bulk changes
+        if (count($granted) > 0 || count($revoked) > 0) {
+            activity('roles')
+                ->performedOn($role)
+                ->causedBy($user)
+                ->withProperties([
+                    'action' => $shouldGrant ? 'module_granted' : 'module_revoked',
+                    'granted' => $granted,
+                    'revoked' => $revoked,
+                    'ip' => $request->ip(),
+                ])
+                ->log($shouldGrant ? 'permissions_granted' : 'permissions_revoked');
+        }
+
+        // Recalculate assigned count
+        $assignedCount = $role->permissions()->count();
+
+        if ($request->isGale()) {
+            return gale()->state([
+                'assignedCount' => $assignedCount,
+                'error' => '',
+            ]);
+        }
+
+        session()->flash('toast', [
+            'type' => 'success',
+            'message' => $shouldGrant
+                ? __(':count permissions granted.', ['count' => count($granted)])
+                : __(':count permissions revoked.', ['count' => count($revoked)]),
+        ]);
+
+        return redirect()->back();
+    }
+
+    /**
+     * Group all permissions for the assignment page.
+     *
+     * Returns a structured array with module name, permissions, assigned state, and admin capability.
+     *
+     * @return array<string, array{permissions: list<array{name: string, assigned: bool, canAssign: bool, verb: string}>, assignedCount: int, totalCount: int}>
+     */
+    private function groupPermissionsForAssignment(
+        \Illuminate\Support\Collection $allPermissions,
+        array $rolePermissionNames,
+        array $adminPermissionNames,
+    ): array {
+        $grouped = [];
+
+        foreach ($allPermissions as $permission) {
+            $name = $permission->name;
+            $parts = explode('-', $name);
+
+            // Remove 'can' prefix
+            if ($parts[0] === 'can') {
+                array_shift($parts);
+            }
+
+            // Extract verb and module
+            if (count($parts) >= 2) {
+                $verb = $parts[0];
+                $noun = implode(' ', array_slice($parts, 1));
+                $module = ucfirst($noun);
+            } else {
+                $verb = $parts[0] ?? $name;
+                $module = __('General');
+            }
+
+            if (! isset($grouped[$module])) {
+                $grouped[$module] = [
+                    'permissions' => [],
+                    'assignedCount' => 0,
+                    'totalCount' => 0,
+                ];
+            }
+
+            $isAssigned = in_array($name, $rolePermissionNames, true);
+            $canAssign = in_array($name, $adminPermissionNames, true);
+
+            $grouped[$module]['permissions'][] = [
+                'name' => $name,
+                'assigned' => $isAssigned,
+                'canAssign' => $canAssign,
+                'verb' => $verb,
+            ];
+
+            $grouped[$module]['totalCount']++;
+            if ($isAssigned) {
+                $grouped[$module]['assignedCount']++;
+            }
+        }
+
+        // Sort modules alphabetically
+        ksort($grouped);
+
+        return $grouped;
     }
 
     /**

@@ -240,13 +240,16 @@ Route::middleware('main.domain')->group(function () {
         Route::get('/users/{user}', [UserController::class, 'show'])->name('admin.users.show');
         Route::post('/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('admin.users.toggle-status');
 
-        // Role management (F-052, F-053, F-054, F-055)
+        // Role management (F-052, F-053, F-054, F-055, F-056)
         Route::get('/roles', [RoleController::class, 'index'])->name('admin.roles.index');
         Route::get('/roles/create', [RoleController::class, 'create'])->name('admin.roles.create');
         Route::post('/roles', [RoleController::class, 'store'])->name('admin.roles.store');
         Route::get('/roles/{role}/edit', [RoleController::class, 'edit'])->name('admin.roles.edit');
         Route::post('/roles/{role}', [RoleController::class, 'update'])->name('admin.roles.update');
         Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('admin.roles.destroy');
+        Route::get('/roles/{role}/permissions', [RoleController::class, 'permissions'])->name('admin.roles.permissions');
+        Route::post('/roles/{role}/permissions/toggle', [RoleController::class, 'togglePermission'])->name('admin.roles.permissions.toggle');
+        Route::post('/roles/{role}/permissions/toggle-module', [RoleController::class, 'toggleModule'])->name('admin.roles.permissions.toggle-module');
     });
 });
 
