@@ -150,7 +150,8 @@ describe('DeliveryAreaService removeQuarter', function () {
         $methodEnd = strpos($removeMethod, "\n    /**", 10);
         $removeMethod = substr($removeMethod, 0, $methodEnd ?: strlen($removeMethod));
 
-        expect($removeMethod)->toContain("Schema::hasTable('quarter_group_quarter')");
+        // F-090 replaced Schema::hasTable with direct DB calls since quarter_group_quarter table now exists
+        expect($removeMethod)->toContain("DB::table('quarter_group_quarter')");
         expect($removeMethod)->toContain('quarter_group_quarter');
     });
 
@@ -367,12 +368,12 @@ describe('Delete quarter edge cases', function () {
         expect($removeMethod)->toContain("Schema::hasTable('orders')");
     });
 
-    it('uses forward-compatible Schema::hasTable for quarter_group_quarter table', function () use ($projectRoot) {
+    it('removes quarter from quarter_group_quarter table directly (F-090 replaced Schema::hasTable)', function () use ($projectRoot) {
         $content = file_get_contents($projectRoot.'/app/Services/DeliveryAreaService.php');
         $removeMethod = substr($content, strpos($content, 'public function removeQuarter'));
         $methodEnd = strpos($removeMethod, "\n    /**", 10);
         $removeMethod = substr($removeMethod, 0, $methodEnd ?: strlen($removeMethod));
 
-        expect($removeMethod)->toContain("Schema::hasTable('quarter_group_quarter')");
+        expect($removeMethod)->toContain("DB::table('quarter_group_quarter')");
     });
 });
