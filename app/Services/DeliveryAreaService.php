@@ -399,6 +399,87 @@ class DeliveryAreaService
     }
 
     /**
+     * Update a quarter in a delivery area.
+     *
+     * F-088: Edit Quarter
+     * BR-250: Quarter name required in both EN and FR.
+     * BR-251: Quarter name must remain unique within the parent town (excluding current quarter).
+     * BR-252: Delivery fee required; must be >= 0 XAF.
+     * BR-253: Group assignment can be changed or removed.
+     * BR-254: When in a group, the group's fee overrides the individual fee.
+     * BR-255: Fee changes apply to new orders only.
+     *
+     * @return array{success: bool, error: string, warning: string}
+     */
+    public function updateQuarter(
+        Tenant $tenant,
+        int $deliveryAreaQuarterId,
+        string $nameEn,
+        string $nameFr,
+        int $deliveryFee,
+    ): array {
+        $daq = DeliveryAreaQuarter::query()
+            ->whereHas('deliveryArea', function ($q) use ($tenant) {
+                $q->where('tenant_id', $tenant->id);
+            })
+            ->where('id', $deliveryAreaQuarterId)
+            ->with(['quarter', 'deliveryArea'])
+            ->first();
+
+        if (! $daq) {
+            return [
+                'success' => false,
+                'error' => __('Quarter not found.'),
+                'warning' => '',
+            ];
+        }
+
+        // BR-251: Check uniqueness within the parent town (excluding current quarter)
+        $existingQuarterIds = DeliveryAreaQuarter::query()
+            ->where('delivery_area_id', $daq->delivery_area_id)
+            ->where('id', '!=', $deliveryAreaQuarterId)
+            ->pluck('quarter_id');
+
+        $duplicate = Quarter::query()
+            ->whereIn('id', $existingQuarterIds)
+            ->where(function ($q) use ($nameEn, $nameFr) {
+                $q->whereRaw('LOWER(name_en) = ?', [mb_strtolower($nameEn)])
+                    ->orWhereRaw('LOWER(name_fr) = ?', [mb_strtolower($nameFr)]);
+            })
+            ->exists();
+
+        if ($duplicate) {
+            return [
+                'success' => false,
+                'error' => __('A quarter with this name already exists in this town.'),
+                'warning' => '',
+            ];
+        }
+
+        // Update the quarter's global record (name)
+        $daq->quarter->update([
+            'name_en' => $nameEn,
+            'name_fr' => $nameFr,
+        ]);
+
+        // BR-252: Update the delivery fee on the junction record
+        $daq->update([
+            'delivery_fee' => $deliveryFee,
+        ]);
+
+        $warning = '';
+        if ($deliveryFee > self::HIGH_FEE_THRESHOLD) {
+            $warning = __('This delivery fee seems high. Please verify it is correct.');
+        }
+
+        return [
+            'success' => true,
+            'error' => '',
+            'warning' => $warning,
+        ];
+    }
+
+    /**
      * Remove a quarter from a delivery area.
      */
     public function removeQuarter(Tenant $tenant, int $deliveryAreaQuarterId): bool

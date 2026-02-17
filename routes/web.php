@@ -17,8 +17,8 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Cook\BrandProfileController;
 use App\Http\Controllers\Cook\CoverImageController;
-use App\Http\Controllers\Cook\SetupWizardController;
 use App\Http\Controllers\Cook\QuarterController;
+use App\Http\Controllers\Cook\SetupWizardController;
 use App\Http\Controllers\Cook\TownController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DiscoveryController;
@@ -358,9 +358,10 @@ Route::middleware('tenant.domain')->group(function () {
         Route::put('/locations/towns/{deliveryArea}', [TownController::class, 'update'])->name('cook.locations.towns.update');
         Route::delete('/locations/towns/{deliveryArea}', [TownController::class, 'destroy'])->name('cook.locations.towns.destroy');
 
-        // Quarter management (F-086: Add Quarter)
-        // BR-241: Only users with can-manage-locations permission
+        // Quarter management (F-086: Add Quarter, F-088: Edit Quarter)
+        // BR-241/BR-257: Only users with can-manage-locations permission
         Route::post('/locations/quarters/{deliveryArea}', [QuarterController::class, 'store'])->name('cook.locations.quarters.store');
+        Route::put('/locations/quarters/{deliveryAreaQuarter}', [QuarterController::class, 'update'])->name('cook.locations.quarters.update');
     });
 
     // Tenant-specific routes will be added by later features (F-126, etc.)
