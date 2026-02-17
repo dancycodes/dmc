@@ -1300,5 +1300,12 @@
     "Quarter name must not exceed 255 characters.": "Quarter name must not exceed 255 characters.",
     "Delivery fee must be 0 or greater.": "Delivery fee must be 0 or greater.",
     "Quarter added to delivery area": "Quarter added to delivery area",
-    "e.g. Bonabéri": "e.g. Bonabéri"
+    "e.g. Bonabéri": "e.g. Bonabéri",
+    "All quarters": "All quarters",
+    "Filter by group": "Filter by group",
+    "Edit quarter": "Edit quarter",
+    "Delete quarter": "Delete quarter",
+    "Delete this quarter?": "Delete this quarter?",
+    "Delete quarter confirmation": "Delete quarter confirmation",
+    "No quarters added yet. Add your first quarter.": "No quarters added yet. Add your first quarter."
 }

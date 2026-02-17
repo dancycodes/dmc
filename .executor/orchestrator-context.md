@@ -1,17 +1,13 @@
 # Current Orchestrator Context
 ## Last Action
-- Completed F-085 Delete Town, merged to main, tagged must-have/F-085
-- Started F-086 Add Quarter (IMPLEMENT phase)
+- Started F-087 Quarter List View, IMPLEMENT phase
 ## Active Features
-- F-086: IMPLEMENT phase (retry 0)
-## Completed
-- F-001 through F-030, F-032 through F-040, F-042 through F-056, F-059 through F-063, F-065 through F-069, F-071 through F-077, F-079 through F-085 (78 features total)
+- F-087: IMPLEMENT phase (retry 0)
+## Recently Completed
+- F-086: Add Quarter (0 retries, merged to main, tagged must-have/F-086)
 ## Next Up
-- 22 eligible features after F-086
+- 25 eligible features after F-087
 ## Recent Patterns
-- NEVER use background mode for agents
-- Use plain $action() without .then() for forms that redirect on success
-- Forward-compatible Schema::hasTable pattern for referencing future tables
-- Smoke test script: C:\Users\pc\.claude\skills\project-executor\scripts\smoke_test.py
-- Gate scripts: C:\Users\pc\.claude\skills\project-executor\scripts\
+- gale_compliance errors most common (7 total)
+- $action() without .then() pattern established
 ## Mode: sequential, max_parallel: 1

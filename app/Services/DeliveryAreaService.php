@@ -45,16 +45,39 @@ class DeliveryAreaService
                 'town_name' => $area->town->{'name_'.$locale} ?? $area->town->name_en,
                 'town_name_en' => $area->town->name_en,
                 'town_name_fr' => $area->town->name_fr,
-                'quarters' => $area->deliveryAreaQuarters->map(function (DeliveryAreaQuarter $daq) use ($locale) {
-                    return [
-                        'id' => $daq->id,
-                        'quarter_id' => $daq->quarter_id,
-                        'quarter_name' => $daq->quarter->{'name_'.$locale} ?? $daq->quarter->name_en,
-                        'quarter_name_en' => $daq->quarter->name_en,
-                        'quarter_name_fr' => $daq->quarter->name_fr,
-                        'delivery_fee' => $daq->delivery_fee,
-                    ];
-                })->values()->all(),
+                'quarters' => $area->deliveryAreaQuarters
+                    ->sortBy(fn (DeliveryAreaQuarter $daq) => mb_strtolower($daq->quarter->{'name_'.$locale} ?? $daq->quarter->name_en))
+                    ->map(function (DeliveryAreaQuarter $daq) use ($locale) {
+                        $quarterData = [
+                            'id' => $daq->id,
+                            'quarter_id' => $daq->quarter_id,
+                            'quarter_name' => $daq->quarter->{'name_'.$locale} ?? $daq->quarter->name_en,
+                            'quarter_name_en' => $daq->quarter->name_en,
+                            'quarter_name_fr' => $daq->quarter->name_fr,
+                            'delivery_fee' => $daq->delivery_fee,
+                            'group_id' => null,
+                            'group_name' => null,
+                            'group_fee' => null,
+                        ];
+
+                        // F-087: Forward-compatible quarter group data (F-090 creates the tables)
+                        if (\Illuminate\Support\Facades\Schema::hasTable('quarter_groups')) {
+                            $groupMembership = \Illuminate\Database\Eloquent\Model::resolveConnection()
+                                ->table('quarter_group_quarter')
+                                ->join('quarter_groups', 'quarter_groups.id', '=', 'quarter_group_quarter.quarter_group_id')
+                                ->where('quarter_group_quarter.quarter_id', $daq->quarter_id)
+                                ->select('quarter_groups.id', 'quarter_groups.name_'.$locale.' as group_name', 'quarter_groups.delivery_fee as group_fee')
+                                ->first();
+
+                            if ($groupMembership) {
+                                $quarterData['group_id'] = $groupMembership->id;
+                                $quarterData['group_name'] = $groupMembership->group_name;
+                                $quarterData['group_fee'] = $groupMembership->group_fee;
+                            }
+                        }
+
+                        return $quarterData;
+                    })->values()->all(),
             ];
         })->values()->all();
     }
@@ -481,6 +504,42 @@ class DeliveryAreaService
         $pickup->delete();
 
         return true;
+    }
+
+    /**
+     * Get quarter groups for a specific delivery area (town) for filter dropdown.
+     *
+     * F-087: BR-245 — Filter by group available if quarter groups exist.
+     * Forward-compatible for F-090 (Quarter Group Creation).
+     *
+     * @return array<int, array{id: int, name: string}>
+     */
+    public function getQuarterGroupsForArea(Tenant $tenant, int $deliveryAreaId): array
+    {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('quarter_groups')) {
+            return [];
+        }
+
+        $locale = app()->getLocale();
+
+        $quarterIds = DeliveryAreaQuarter::query()
+            ->where('delivery_area_id', $deliveryAreaId)
+            ->pluck('quarter_id');
+
+        if ($quarterIds->isEmpty()) {
+            return [];
+        }
+
+        $groups = \Illuminate\Database\Eloquent\Model::resolveConnection()
+            ->table('quarter_group_quarter')
+            ->join('quarter_groups', 'quarter_groups.id', '=', 'quarter_group_quarter.quarter_group_id')
+            ->whereIn('quarter_group_quarter.quarter_id', $quarterIds)
+            ->select('quarter_groups.id', 'quarter_groups.name_'.$locale.' as name')
+            ->distinct()
+            ->orderBy('name')
+            ->get();
+
+        return $groups->map(fn ($g) => ['id' => $g->id, 'name' => $g->name])->values()->all();
     }
 
     /**
