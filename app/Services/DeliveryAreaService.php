@@ -19,14 +19,21 @@ class DeliveryAreaService
     /**
      * Get all delivery areas for a tenant, eagerly loading towns and quarters.
      *
+     * F-083: BR-215 — Towns displayed in alphabetical order by name in the current locale.
+     *
      * @return array<int, array{id: int, town: array, quarters: array}>
      */
     public function getDeliveryAreasData(Tenant $tenant): array
     {
+        $locale = app()->getLocale();
+        $orderColumn = 'name_'.$locale;
+
         $deliveryAreas = DeliveryArea::query()
             ->where('tenant_id', $tenant->id)
             ->with(['town', 'deliveryAreaQuarters.quarter'])
-            ->orderBy('created_at')
+            ->join('towns', 'delivery_areas.town_id', '=', 'towns.id')
+            ->orderBy('towns.'.$orderColumn)
+            ->select('delivery_areas.*')
             ->get();
 
         return $deliveryAreas->map(function (DeliveryArea $area) {

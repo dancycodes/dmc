@@ -1409,5 +1409,17 @@
     "Add Your First Town": "Ajouter votre premi\u00e8re ville",
     "Town added to delivery areas": "Ville ajout\u00e9e aux zones de livraison",
     "quarter": "quartier",
-    "quarters": "quartiers"
+    "quarters": "quartiers",
+    "town": "ville",
+    "towns": "villes",
+    "Edit town": "Modifier la ville",
+    "Delete town": "Supprimer la ville",
+    "Delete this town?": "Supprimer cette ville ?",
+    "This will remove the town and all its quarters from your delivery areas. This action cannot be undone.": "Cela supprimera la ville et tous ses quartiers de vos zones de livraison. Cette action est irr\u00e9versible.",
+    "Manage quarters": "G\u00e9rer les quartiers",
+    "Quarters": "Quartiers",
+    "No quarters added yet.": "Aucun quartier ajout\u00e9 pour le moment.",
+    "Quarter management coming soon": "Gestion des quartiers bient\u00f4t disponible",
+    "XAF": "XAF",
+    "Delete town confirmation": "Confirmation de suppression de ville"
 }
