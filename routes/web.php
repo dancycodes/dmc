@@ -16,6 +16,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Cook\BrandProfileController;
+use App\Http\Controllers\Cook\CoverImageController;
 use App\Http\Controllers\Cook\SetupWizardController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DiscoveryController;
@@ -340,6 +341,13 @@ Route::middleware('tenant.domain')->group(function () {
         // BR-195: Only users with profile edit permission can access
         Route::get('/profile/edit', [BrandProfileController::class, 'edit'])->name('cook.profile.edit');
         Route::post('/profile/update', [BrandProfileController::class, 'update'])->name('cook.profile.update');
+
+        // Cover images management (F-081: Cook Cover Images Management)
+        // BR-197 to BR-206: Full cover images management page
+        Route::get('/profile/cover-images', [CoverImageController::class, 'index'])->name('cook.cover-images.index');
+        Route::post('/profile/cover-images/upload', [CoverImageController::class, 'upload'])->name('cook.cover-images.upload');
+        Route::post('/profile/cover-images/reorder', [CoverImageController::class, 'reorder'])->name('cook.cover-images.reorder');
+        Route::delete('/profile/cover-images/{mediaId}', [CoverImageController::class, 'destroy'])->name('cook.cover-images.destroy');
     });
 
     // Tenant-specific routes will be added by later features (F-126, etc.)
