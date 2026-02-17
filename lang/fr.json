@@ -1084,5 +1084,12 @@
     "Scroll to top": "Retour en haut",
     "Delicious home-cooked meals": "D\u00e9licieux plats faits maison",
     "New": "Nouveau",
-    "Visit": "Visiter"
+    "Visit": "Visiter",
+    "Visit :cook": "Visiter :cook",
+    "Image": "Image",
+    "Active meals": "Plats actifs",
+    ":count meal|:count meals": ":count plat|:count plats",
+    "Average rating": "Note moyenne",
+    "No ratings yet": "Pas encore de notes",
+    "Primary delivery area": "Zone de livraison principale"
 }

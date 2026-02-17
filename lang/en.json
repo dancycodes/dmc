@@ -1084,5 +1084,12 @@
     "Scroll to top": "Scroll to top",
     "Delicious home-cooked meals": "Delicious home-cooked meals",
     "New": "New",
-    "Visit": "Visit"
+    "Visit": "Visit",
+    "Visit :cook": "Visit :cook",
+    "Image": "Image",
+    "Active meals": "Active meals",
+    ":count meal|:count meals": ":count meal|:count meals",
+    "Average rating": "Average rating",
+    "No ratings yet": "No ratings yet",
+    "Primary delivery area": "Primary delivery area"
 }
