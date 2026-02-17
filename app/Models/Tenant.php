@@ -325,6 +325,18 @@ class Tenant extends Model
     }
 
     /**
+     * Get the completed setup steps for this tenant.
+     *
+     * BR-114: Step progress is persisted in settings JSON under 'setup_steps'.
+     *
+     * @return array<int>
+     */
+    public function getCompletedSetupSteps(): array
+    {
+        return (array) $this->getSetting('setup_steps', []);
+    }
+
+    /**
      * Get the tenant's selected theme preset name.
      */
     public function getThemePreset(): ?string
