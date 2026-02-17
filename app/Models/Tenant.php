@@ -314,6 +314,17 @@ class Tenant extends Model
     }
 
     /**
+     * Check if the tenant has completed its setup.
+     *
+     * BR-163: If tenant setup is incomplete, a setup completion banner is shown
+     * at the top of every dashboard page.
+     */
+    public function isSetupComplete(): bool
+    {
+        return (bool) $this->getSetting('setup_complete', false);
+    }
+
+    /**
      * Get the tenant's selected theme preset name.
      */
     public function getThemePreset(): ?string

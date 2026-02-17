@@ -83,7 +83,8 @@ test('admin dashboard route requires authentication', function () {
 });
 
 test('admin dashboard renders with admin layout for authenticated users on main domain', function () {
-    $user = User::factory()->create();
+    // Admin panel requires can-access-admin-panel permission (BR-045)
+    $user = $this->createUserWithRole('admin');
 
     $response = $this->actingAs($user)->get('http://dmc.test/vault-entry');
 
@@ -102,10 +103,13 @@ test('cook dashboard route requires authentication on tenant domain', function (
 });
 
 test('cook dashboard renders with cook layout for authenticated users on tenant domain', function () {
-    $tenant = Tenant::factory()->withSlug('cook-dash', 'Cook Dash Test')->create();
-    $user = User::factory()->create();
+    // F-076: cook.access middleware requires cook/manager role for the current tenant
+    $this->seedRolesAndPermissions();
+    $cook = User::factory()->create();
+    $cook->assignRole('cook');
+    $tenant = Tenant::factory()->withSlug('cook-dash', 'Cook Dash Test')->create(['cook_id' => $cook->id]);
 
-    $response = $this->actingAs($user)->get('http://cook-dash.dmc.test/dashboard');
+    $response = $this->actingAs($cook)->get('http://cook-dash.dmc.test/dashboard');
 
     $response->assertStatus(200)
         ->assertSee(__('Dashboard'))
@@ -122,7 +126,8 @@ test('mobile hamburger menu button exists on all public layouts', function () {
 });
 
 test('admin layout includes notification bell for authenticated users', function () {
-    $user = User::factory()->create();
+    // Admin panel requires can-access-admin-panel permission (BR-045)
+    $user = $this->createUserWithRole('admin');
 
     $response = $this->actingAs($user)->get('http://dmc.test/vault-entry');
 
