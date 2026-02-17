@@ -391,9 +391,9 @@ describe('Profile show edit links updated for F-080', function () use ($projectR
         expect($content)->not->toContain("url('/dashboard/setup?step=1')");
     });
 
-    it('still links cover images to setup wizard step 2', function () use ($viewPath) {
+    it('links cover images to dedicated management page (F-081)', function () use ($viewPath) {
         $content = file_get_contents($viewPath);
-        expect($content)->toContain("url('/dashboard/setup?step=2')");
+        expect($content)->toContain("url('/dashboard/profile/cover-images')");
     });
 });
 

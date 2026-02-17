@@ -61,7 +61,7 @@
             </h2>
             @if($canEdit)
                 <a
-                    href="{{ url('/dashboard/setup?step=2') }}"
+                    href="{{ url('/dashboard/profile/cover-images') }}"
                     class="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary-hover transition-colors duration-200"
                     title="{{ __('Edit cover images') }}"
                 >
@@ -171,7 +171,7 @@
                 </p>
                 @if($canEdit)
                     <a
-                        href="{{ url('/dashboard/setup?step=2') }}"
+                        href="{{ url('/dashboard/profile/cover-images') }}"
                         class="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary-hover transition-colors duration-200"
                     >
                         {{-- Lucide: plus (sm=16) --}}

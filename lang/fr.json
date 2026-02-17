@@ -1380,5 +1380,14 @@
     "Visit Instagram profile": "Visiter le profil Instagram",
     "Visit TikTok profile": "Visiter le profil TikTok",
     "Edit Brand Profile": "Modifier le profil de marque",
-    "Brand profile updated": "Profil de marque mis \u00e0 jour"
+    "Brand profile updated": "Profil de marque mis \u00e0 jour",
+    "Manage cover images for your store page and discovery card.": "G\u00e9rez les images de couverture pour votre page de boutique et votre carte de d\u00e9couverte.",
+    "Upload New Images": "T\u00e9l\u00e9charger de nouvelles images",
+    "Use arrows to reorder — first image is your primary photo": "Utilisez les fl\u00e8ches pour r\u00e9organiser \u2014 la premi\u00e8re image est votre photo principale",
+    "No cover images yet": "Aucune image de couverture",
+    "Upload photos of your food and kitchen to attract more customers. Your cover images appear on your store page and discovery card.": "T\u00e9l\u00e9chargez des photos de votre cuisine et de vos plats pour attirer plus de clients. Vos images de couverture apparaissent sur votre page de boutique et votre carte de d\u00e9couverte.",
+    "Maximum :count images allowed. Delete one to upload a new one.": "Maximum :count images autoris\u00e9es. Supprimez-en une pour en t\u00e9l\u00e9charger une nouvelle.",
+    "Cover images uploaded via profile management": "Images de couverture t\u00e9l\u00e9charg\u00e9es via la gestion du profil",
+    "Cover images reordered via profile management": "Images de couverture r\u00e9organis\u00e9es via la gestion du profil",
+    "Cover image deleted via profile management": "Image de couverture supprim\u00e9e via la gestion du profil"
 }

@@ -1380,5 +1380,14 @@
     "Visit Instagram profile": "Visit Instagram profile",
     "Visit TikTok profile": "Visit TikTok profile",
     "Edit Brand Profile": "Edit Brand Profile",
-    "Brand profile updated": "Brand profile updated"
+    "Brand profile updated": "Brand profile updated",
+    "Manage cover images for your store page and discovery card.": "Manage cover images for your store page and discovery card.",
+    "Upload New Images": "Upload New Images",
+    "Use arrows to reorder — first image is your primary photo": "Use arrows to reorder — first image is your primary photo",
+    "No cover images yet": "No cover images yet",
+    "Upload photos of your food and kitchen to attract more customers. Your cover images appear on your store page and discovery card.": "Upload photos of your food and kitchen to attract more customers. Your cover images appear on your store page and discovery card.",
+    "Maximum :count images allowed. Delete one to upload a new one.": "Maximum :count images allowed. Delete one to upload a new one.",
+    "Cover images uploaded via profile management": "Cover images uploaded via profile management",
+    "Cover images reordered via profile management": "Cover images reordered via profile management",
+    "Cover image deleted via profile management": "Cover image deleted via profile management"
 }
