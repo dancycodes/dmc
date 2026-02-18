@@ -8,10 +8,12 @@ use App\Models\Tenant;
 /**
  * F-098: Cook Day Schedule Creation
  * F-099: Order Time Interval Configuration
+ * F-100: Delivery/Pickup Time Interval Configuration
  *
  * Service layer handling all business logic for cook schedule management.
  * Encapsulates validation of per-day limits, position assignment,
- * schedule data retrieval, and order interval configuration.
+ * schedule data retrieval, order interval configuration, and
+ * delivery/pickup interval configuration.
  */
 class CookScheduleService
 {
@@ -267,6 +269,164 @@ class CookScheduleService
         $minutesIntoDay = ($hours * 60) + $minutes;
 
         return $minutesIntoDay - ($dayOffset * 1440);
+    }
+
+    /**
+     * Update the delivery/pickup time intervals for a schedule entry.
+     *
+     * F-100: Delivery/Pickup Time Interval Configuration
+     *
+     * BR-116: Both intervals must be on the open day (day offset 0)
+     * BR-117: Delivery start >= order interval end time
+     * BR-118: Pickup start >= order interval end time
+     * BR-119: Delivery end > delivery start
+     * BR-120: Pickup end > pickup start
+     * BR-121: At least one of delivery or pickup must be enabled (if entry is available)
+     * BR-124: Order interval must be configured before delivery/pickup
+     * BR-126: Changes logged via Spatie Activitylog
+     *
+     * @return array{success: bool, schedule?: CookSchedule, error?: string, field?: string}
+     */
+    public function updateDeliveryPickupInterval(
+        CookSchedule $schedule,
+        bool $deliveryEnabled,
+        ?string $deliveryStartTime,
+        ?string $deliveryEndTime,
+        bool $pickupEnabled,
+        ?string $pickupStartTime,
+        ?string $pickupEndTime,
+    ): array {
+        // BR-112: Only available schedule entries can have intervals
+        if (! $schedule->is_available) {
+            return [
+                'success' => false,
+                'error' => __('Delivery/pickup intervals can only be configured for available schedule entries.'),
+                'field' => 'delivery_enabled',
+            ];
+        }
+
+        // BR-124: Order interval must be configured first
+        if (! $schedule->hasOrderInterval()) {
+            return [
+                'success' => false,
+                'error' => __('The order interval must be configured before setting delivery/pickup intervals.'),
+                'field' => 'delivery_enabled',
+            ];
+        }
+
+        // BR-121: At least one must be enabled
+        if (! $deliveryEnabled && ! $pickupEnabled) {
+            return [
+                'success' => false,
+                'error' => __('At least one of delivery or pickup must be enabled.'),
+                'field' => 'delivery_enabled',
+            ];
+        }
+
+        $orderEndMinutes = $schedule->getOrderEndTimeInMinutes();
+
+        // Validate delivery interval if enabled
+        if ($deliveryEnabled) {
+            $deliveryValidation = $this->validateTimeWindow(
+                'delivery',
+                $deliveryStartTime,
+                $deliveryEndTime,
+                $orderEndMinutes,
+            );
+
+            if ($deliveryValidation !== null) {
+                return $deliveryValidation;
+            }
+        }
+
+        // Validate pickup interval if enabled
+        if ($pickupEnabled) {
+            $pickupValidation = $this->validateTimeWindow(
+                'pickup',
+                $pickupStartTime,
+                $pickupEndTime,
+                $orderEndMinutes,
+            );
+
+            if ($pickupValidation !== null) {
+                return $pickupValidation;
+            }
+        }
+
+        $schedule->update([
+            'delivery_enabled' => $deliveryEnabled,
+            'delivery_start_time' => $deliveryEnabled ? $deliveryStartTime : null,
+            'delivery_end_time' => $deliveryEnabled ? $deliveryEndTime : null,
+            'pickup_enabled' => $pickupEnabled,
+            'pickup_start_time' => $pickupEnabled ? $pickupStartTime : null,
+            'pickup_end_time' => $pickupEnabled ? $pickupEndTime : null,
+        ]);
+
+        return [
+            'success' => true,
+            'schedule' => $schedule->fresh(),
+        ];
+    }
+
+    /**
+     * Validate a delivery or pickup time window.
+     *
+     * @return array{success: bool, error: string, field: string}|null Null if valid
+     */
+    private function validateTimeWindow(
+        string $type,
+        ?string $startTime,
+        ?string $endTime,
+        ?int $orderEndMinutes,
+    ): ?array {
+        $typeLabel = $type === 'delivery' ? __('Delivery') : __('Pickup');
+
+        // Times required when enabled
+        if (empty($startTime) || empty($endTime)) {
+            return [
+                'success' => false,
+                'error' => __(':type start and end times are required when enabled.', ['type' => $typeLabel]),
+                'field' => $type.'_start_time',
+            ];
+        }
+
+        $startMinutes = $this->timeToMinutes($startTime);
+        $endMinutes = $this->timeToMinutes($endTime);
+
+        // BR-119/BR-120: End must be after start
+        if ($endMinutes <= $startMinutes) {
+            return [
+                'success' => false,
+                'error' => __(':type end time must be after the start time.', ['type' => $typeLabel]),
+                'field' => $type.'_end_time',
+            ];
+        }
+
+        // BR-117/BR-118: Start must be at or after order interval end time
+        if ($orderEndMinutes !== null && $startMinutes < $orderEndMinutes) {
+            $orderEndFormatted = date('g:i A', mktime((int) ($orderEndMinutes / 60), $orderEndMinutes % 60));
+
+            return [
+                'success' => false,
+                'error' => __(':type start time must be at or after the order interval end time (:time).', [
+                    'type' => $typeLabel,
+                    'time' => $orderEndFormatted,
+                ]),
+                'field' => $type.'_start_time',
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Convert HH:MM time string to minutes from midnight.
+     */
+    private function timeToMinutes(string $time): int
+    {
+        $parts = explode(':', $time);
+
+        return ((int) $parts[0] * 60) + (int) ($parts[1] ?? 0);
     }
 
     /**

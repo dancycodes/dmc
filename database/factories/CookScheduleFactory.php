@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
  * F-098: Cook Day Schedule Creation
+ * F-100: Delivery/Pickup Time Interval Configuration
  *
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\CookSchedule>
  */
@@ -121,5 +122,48 @@ class CookScheduleFactory extends Factory
     public function withSameDayInterval(string $startTime = '06:00', string $endTime = '10:00'): static
     {
         return $this->withOrderInterval($startTime, 0, $endTime, 0);
+    }
+
+    /**
+     * Create with delivery interval configured.
+     *
+     * F-100: Delivery/Pickup Time Interval Configuration
+     */
+    public function withDeliveryInterval(string $startTime = '11:00', string $endTime = '14:00'): static
+    {
+        return $this->state(fn () => [
+            'delivery_enabled' => true,
+            'delivery_start_time' => $startTime,
+            'delivery_end_time' => $endTime,
+        ]);
+    }
+
+    /**
+     * Create with pickup interval configured.
+     *
+     * F-100: Delivery/Pickup Time Interval Configuration
+     */
+    public function withPickupInterval(string $startTime = '10:30', string $endTime = '15:00'): static
+    {
+        return $this->state(fn () => [
+            'pickup_enabled' => true,
+            'pickup_start_time' => $startTime,
+            'pickup_end_time' => $endTime,
+        ]);
+    }
+
+    /**
+     * Create with both delivery and pickup intervals configured.
+     *
+     * F-100: Delivery/Pickup Time Interval Configuration
+     */
+    public function withBothIntervals(
+        string $deliveryStart = '11:00',
+        string $deliveryEnd = '14:00',
+        string $pickupStart = '10:30',
+        string $pickupEnd = '15:00',
+    ): static {
+        return $this->withDeliveryInterval($deliveryStart, $deliveryEnd)
+            ->withPickupInterval($pickupStart, $pickupEnd);
     }
 }
