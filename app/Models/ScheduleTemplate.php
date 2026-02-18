@@ -6,9 +6,11 @@ use App\Traits\LogsActivityTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * F-101: Create Schedule Template
+ * F-102: Schedule Template List View
  *
  * Represents a reusable schedule template with pre-configured time intervals
  * for order, delivery, and pickup. Templates save cooks time by bundling
@@ -67,6 +69,17 @@ class ScheduleTemplate extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    /**
+     * F-102: Get the cook schedules that were created from this template.
+     *
+     * BR-137: The "applied to" count reflects how many schedule entries
+     * were created from this template (tracked via template_id reference).
+     */
+    public function cookSchedules(): HasMany
+    {
+        return $this->hasMany(CookSchedule::class, 'template_id');
     }
 
     /**
