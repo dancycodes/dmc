@@ -84,27 +84,44 @@ class DeliveryAreaService
     /**
      * Get all pickup locations for a tenant.
      *
-     * @return array<int, array{id: int, name: string, town_name: string, quarter_name: string, address: string}>
+     * F-093: Pickup Location List View
+     * BR-289: List shows all pickup locations for the current tenant
+     * BR-290: Each entry displays: location name (current locale), town name, quarter name, address
+     * BR-291: Locations sorted alphabetically by name in current locale
+     *
+     * @return array<int, array{id: int, name: string, name_en: string, name_fr: string, town_name: string, quarter_name: string, address: string, town_id: int, quarter_id: int}>
      */
     public function getPickupLocationsData(Tenant $tenant): array
     {
+        $locale = app()->getLocale();
+        $nameColumn = 'name_'.$locale;
+
+        // BR-291: Sort alphabetically by name in current locale
         $locations = PickupLocation::query()
             ->where('tenant_id', $tenant->id)
             ->with(['town', 'quarter'])
-            ->orderBy('created_at')
+            ->orderBy($nameColumn)
             ->get();
 
-        $locale = app()->getLocale();
-
         return $locations->map(function (PickupLocation $loc) use ($locale) {
+            // Edge case: town or quarter was deleted — show fallback
+            $townName = $loc->town
+                ? ($loc->town->{'name_'.$locale} ?? $loc->town->name_en)
+                : __('Location unavailable');
+            $quarterName = $loc->quarter
+                ? ($loc->quarter->{'name_'.$locale} ?? $loc->quarter->name_en)
+                : __('Location unavailable');
+
             return [
                 'id' => $loc->id,
                 'name' => $loc->{'name_'.$locale} ?? $loc->name_en,
                 'name_en' => $loc->name_en,
                 'name_fr' => $loc->name_fr,
-                'town_name' => $loc->town->{'name_'.$locale} ?? $loc->town->name_en,
-                'quarter_name' => $loc->quarter->{'name_'.$locale} ?? $loc->quarter->name_en,
+                'town_name' => $townName,
+                'quarter_name' => $quarterName,
                 'address' => $loc->address,
+                'town_id' => $loc->town_id,
+                'quarter_id' => $loc->quarter_id,
             ];
         })->values()->all();
     }

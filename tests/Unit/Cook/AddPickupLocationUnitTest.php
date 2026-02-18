@@ -19,7 +19,6 @@
 use App\Http\Controllers\Cook\PickupLocationController;
 use App\Http\Requests\Cook\StorePickupLocationRequest;
 use App\Models\DeliveryArea;
-use App\Models\DeliveryAreaQuarter;
 use App\Models\PickupLocation;
 use App\Models\Quarter;
 use App\Models\Tenant;
@@ -132,7 +131,7 @@ describe('PickupLocationController', function () {
 
     it('store returns Gale redirect with success toast (BR-287)', function () use ($projectRoot) {
         $content = file_get_contents($projectRoot.'/app/Http/Controllers/Cook/PickupLocationController.php');
-        expect($content)->toContain("gale()")
+        expect($content)->toContain('gale()')
             ->and($content)->toContain("->redirect(url('/dashboard/locations/pickup'))")
             ->and($content)->toContain("->with('success'");
     });
@@ -421,7 +420,7 @@ describe('Pickup Locations blade view', function () {
 
     it('has x-sync for required state keys', function () use ($projectRoot) {
         $content = file_get_contents($projectRoot.'/resources/views/cook/locations/pickup.blade.php');
-        expect($content)->toContain("x-sync=")
+        expect($content)->toContain('x-sync=')
             ->and($content)->toContain("'pickup_name_en'")
             ->and($content)->toContain("'pickup_name_fr'")
             ->and($content)->toContain("'pickup_town_id'")
@@ -479,7 +478,8 @@ describe('Pickup Locations blade view', function () {
 
     it('has empty state for no pickup locations', function () use ($projectRoot) {
         $content = file_get_contents($projectRoot.'/resources/views/cook/locations/pickup.blade.php');
-        expect($content)->toContain("__('No pickup locations yet')");
+        // F-093 updated empty state text from "No pickup locations yet" to "No pickup locations added yet"
+        expect($content)->toContain("__('No pickup locations added yet')");
     });
 
     it('displays Free badge for pickup locations (BR-285)', function () use ($projectRoot) {
