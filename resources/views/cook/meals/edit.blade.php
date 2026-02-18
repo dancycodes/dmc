@@ -16,6 +16,8 @@
     BR-215: Only users with can-manage-meals permission
     BR-216: Edits logged via Spatie Activitylog with old and new values
     BR-217: Editing does not change status or availability
+
+    F-111: Added delete button with confirmation modal.
 --}}
 @extends('layouts.cook-dashboard')
 
@@ -23,7 +25,22 @@
 @section('page-title', __('Edit Meal'))
 
 @section('content')
-<div class="max-w-4xl mx-auto">
+<div
+    class="max-w-4xl mx-auto"
+    x-data="{
+        showDeleteModal: false,
+        confirmDelete() {
+            this.showDeleteModal = true;
+        },
+        cancelDelete() {
+            this.showDeleteModal = false;
+        },
+        executeDelete() {
+            $action('{{ url('/dashboard/meals/' . $meal->id) }}', { method: 'DELETE' });
+            this.showDeleteModal = false;
+        }
+    }"
+>
     {{-- Breadcrumb --}}
     <nav class="flex items-center gap-2 text-sm text-on-surface/60 mb-6" aria-label="{{ __('Breadcrumb') }}">
         <a href="{{ url('/dashboard') }}" class="hover:text-primary transition-colors duration-200">
@@ -53,15 +70,38 @@
         </div>
     @endif
 
-    {{-- Meal header with status badge --}}
+    {{-- Meal header with status badge and delete button --}}
     <div class="flex items-start justify-between mb-6">
         <div>
             <h2 class="text-2xl font-display font-bold text-on-surface-strong">{{ $meal->name }}</h2>
             <p class="mt-1 text-sm text-on-surface/70">{{ __('Manage your meal details, images, and settings.') }}</p>
         </div>
-        <span class="shrink-0 px-3 py-1 rounded-full text-xs font-medium {{ $meal->status === 'draft' ? 'bg-warning-subtle text-warning' : 'bg-success-subtle text-success' }}">
-            {{ $meal->status === 'draft' ? __('Draft') : __('Live') }}
-        </span>
+        <div class="flex items-center gap-3">
+            <span class="shrink-0 px-3 py-1 rounded-full text-xs font-medium {{ $meal->status === 'draft' ? 'bg-warning-subtle text-warning' : 'bg-success-subtle text-success' }}">
+                {{ $meal->status === 'draft' ? __('Draft') : __('Live') }}
+            </span>
+
+            {{-- F-111: Delete button --}}
+            @if($canDeleteInfo['can_delete'])
+                <button
+                    type="button"
+                    @click="confirmDelete()"
+                    class="p-2 rounded-lg text-on-surface/50 hover:text-danger hover:bg-danger-subtle transition-colors duration-200"
+                    title="{{ __('Delete meal') }}"
+                >
+                    {{-- Lucide: trash-2 (md=20) --}}
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                </button>
+            @else
+                <span
+                    class="p-2 rounded-lg text-on-surface/20 cursor-not-allowed"
+                    title="{{ $canDeleteInfo['reason'] ?? __('Cannot delete this meal') }}"
+                >
+                    {{-- Lucide: trash-2 (md=20) --}}
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                </span>
+            @endif
+        </div>
     </div>
 
     {{-- Basic Info Section (F-110) --}}
@@ -272,5 +312,88 @@
             {{ __('Back to Meals') }}
         </a>
     </div>
+
+    {{-- F-111: Delete Confirmation Modal --}}
+    @if($canDeleteInfo['can_delete'])
+        <div
+            x-show="showDeleteModal"
+            x-cloak
+            class="fixed inset-0 z-50 flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-label="{{ __('Delete meal') }}"
+        >
+            {{-- Backdrop --}}
+            <div
+                x-show="showDeleteModal"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0"
+                @click="cancelDelete()"
+                class="absolute inset-0 bg-black/50"
+            ></div>
+
+            {{-- Modal content --}}
+            <div
+                x-show="showDeleteModal"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0 scale-95"
+                x-transition:enter-end="opacity-100 scale-100"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100 scale-100"
+                x-transition:leave-end="opacity-0 scale-95"
+                class="relative w-full max-w-md bg-surface-alt dark:bg-surface-alt border border-outline dark:border-outline rounded-xl shadow-lg p-6"
+            >
+                {{-- Warning icon --}}
+                <div class="flex items-center justify-center w-12 h-12 rounded-full bg-danger-subtle mx-auto mb-4">
+                    <svg class="w-6 h-6 text-danger" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                </div>
+
+                <h3 class="text-lg font-semibold text-on-surface-strong text-center mb-2">
+                    {{ __('Delete Meal') }}
+                </h3>
+
+                <p class="text-sm text-on-surface/70 text-center mb-2">
+                    {{ __('Are you sure you want to delete') }}
+                    <span class="font-semibold text-on-surface-strong">{{ $meal->name }}</span>?
+                </p>
+
+                <p class="text-sm text-on-surface/70 text-center mb-1">
+                    {{ __('This will remove it from your menu.') }}
+                </p>
+
+                @if($completedOrders > 0)
+                    <p class="text-sm text-info text-center mb-4">
+                        {{ __('This meal has :count past orders. Order history will be preserved.', ['count' => $completedOrders]) }}
+                    </p>
+                @else
+                    <div class="mb-4"></div>
+                @endif
+
+                {{-- Action buttons --}}
+                <div class="flex items-center justify-end gap-3">
+                    <button
+                        type="button"
+                        @click="cancelDelete()"
+                        class="px-4 py-2 rounded-lg text-sm font-medium text-on-surface bg-surface dark:bg-surface border border-outline dark:border-outline hover:bg-surface-alt transition-colors duration-200"
+                    >
+                        {{ __('Cancel') }}
+                    </button>
+                    <button
+                        type="button"
+                        @click="executeDelete()"
+                        class="px-4 py-2 rounded-lg text-sm font-medium bg-danger text-on-danger hover:bg-danger/90 shadow-sm transition-colors duration-200 flex items-center gap-2"
+                    >
+                        {{-- Lucide: trash-2 (sm=16) --}}
+                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                        {{ __('Delete') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>
 @endsection

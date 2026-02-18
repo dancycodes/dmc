@@ -1615,5 +1615,13 @@
     "Next image": "Next image",
     "Manage your meal details, images, and settings.": "Manage your meal details, images, and settings.",
     "Basic Info": "Basic Info",
-    "Meal updated.": "Meal updated."
+    "Meal updated.": "Meal updated.",
+    "Meal deleted.": "Meal deleted.",
+    "Delete Meal": "Delete Meal",
+    "Delete meal": "Delete meal",
+    "Are you sure you want to delete": "Are you sure you want to delete",
+    "This will remove it from your menu.": "This will remove it from your menu.",
+    "This meal has :count past orders. Order history will be preserved.": "This meal has :count past orders. Order history will be preserved.",
+    "Cannot delete this meal": "Cannot delete this meal",
+    "Cannot delete — :count pending orders exist. Complete or cancel them first.": "Cannot delete — :count pending orders exist. Complete or cancel them first."
 }

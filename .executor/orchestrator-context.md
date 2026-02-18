@@ -1,11 +1,11 @@
 # Current Orchestrator Context
 ## Last Action
-- Started F-110: Meal Edit (IMPLEMENT phase)
+- Started F-111: Meal Delete (IMPLEMENT phase)
 ## Active Features
-- F-110: IMPLEMENT phase (retry 0)
+- F-111: IMPLEMENT phase (retry 0)
 ## Next Up
-- F-111, F-112, F-115, or other eligible feature
+- F-112, F-113, F-115, or other eligible feature
 ## Recent Patterns
-- Clean runs: F-096, F-106, F-108, F-109 — all 0-retry across review+test
-- 102 features done total
+- Clean runs: F-096 through F-110 — all 0-retry across review+test
+- 103 features done total
 ## Mode: sequential, max_parallel: 1

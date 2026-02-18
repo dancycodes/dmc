@@ -122,6 +122,17 @@ class Meal extends Model
     }
 
     /**
+     * Get the orders for this meal.
+     *
+     * F-111: Forward-compatible relationship for pending order checks.
+     * The orders table is created by future features (F-151+).
+     */
+    public function orders(): HasMany
+    {
+        return $this->hasMany(\App\Models\Order::class);
+    }
+
+    /**
      * Get the custom schedule entries for this meal.
      *
      * F-106: Meal Schedule Override
