@@ -398,6 +398,65 @@ class MealController extends Controller
     }
 
     /**
+     * Toggle a meal's availability between available and unavailable.
+     *
+     * F-113: Meal Availability Toggle
+     * BR-235: Availability is separate from status (draft/live)
+     * BR-236: A live + unavailable meal is visible but cannot be ordered
+     * BR-237: A live + available meal is fully orderable
+     * BR-238: A draft meal's availability takes effect only when the meal goes live
+     * BR-240: Availability toggle has immediate effect
+     * BR-241: Availability changes are logged via Spatie Activitylog
+     * BR-242: Only users with manage-meals permission
+     * BR-243: Toggling availability does not affect pending or active orders
+     */
+    public function toggleAvailability(Request $request, int $mealId, MealService $mealService): mixed
+    {
+        $user = $request->user();
+        $tenant = tenant();
+
+        // BR-242: Permission check
+        if (! $user->can('can-manage-meals')) {
+            abort(403);
+        }
+
+        $meal = $tenant->meals()->findOrFail($mealId);
+
+        // Use MealService for business logic
+        $result = $mealService->toggleAvailability($meal);
+
+        // BR-241: Activity logging
+        activity('meals')
+            ->performedOn($meal)
+            ->causedBy($user)
+            ->withProperties([
+                'action' => 'meal_availability_toggled',
+                'old_availability' => $result['old_availability'],
+                'new_availability' => $result['new_availability'],
+                'name_en' => $meal->name_en,
+                'name_fr' => $meal->name_fr,
+                'tenant_id' => $tenant->id,
+            ])
+            ->log('Meal availability changed from '.($result['old_availability'] ? 'available' : 'unavailable').' to '.($result['new_availability'] ? 'available' : 'unavailable'));
+
+        // Toast message based on new availability
+        $mealName = $meal->name;
+        $toastMessage = $result['new_availability']
+            ? __(':name is now available.', ['name' => $mealName])
+            : __(':name is now unavailable.', ['name' => $mealName]);
+
+        if ($request->isGale()) {
+            return gale()
+                ->redirect(url('/dashboard/meals/'.$meal->id.'/edit'))
+                ->back()
+                ->with('success', $toastMessage);
+        }
+
+        return redirect()->back()
+            ->with('success', $toastMessage);
+    }
+
+    /**
      * Delete a meal (soft delete).
      *
      * F-111: Meal Delete

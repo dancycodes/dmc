@@ -1631,5 +1631,13 @@
     "Publish this meal to make it visible to clients": "Publier ce repas pour le rendre visible aux clients",
     "Move this meal back to draft status": "Remettre ce repas en brouillon",
     "Publish this meal": "Publier ce repas",
-    "Move to draft": "Mettre en brouillon"
+    "Move to draft": "Mettre en brouillon",
+    "Mark Unavailable": "Marquer indisponible",
+    "Mark Available": "Marquer disponible",
+    "Mark as unavailable": "Marquer comme indisponible",
+    "Mark as available": "Marquer comme disponible",
+    "Mark this meal as temporarily unavailable": "Marquer ce repas comme temporairement indisponible",
+    "Mark this meal as available again": "Marquer ce repas comme disponible a nouveau",
+    ":name is now available.": ":name est maintenant disponible.",
+    ":name is now unavailable.": ":name est maintenant indisponible."
 }
