@@ -545,7 +545,7 @@ class DeliveryAreaService
     /**
      * Add a pickup location for the tenant.
      *
-     * @return array{success: bool, pickup: ?array, error: string}
+     * @return array{success: bool, pickup: ?array, pickup_model: ?PickupLocation, error: string}
      */
     public function addPickupLocation(
         Tenant $tenant,
@@ -565,6 +565,7 @@ class DeliveryAreaService
             return [
                 'success' => false,
                 'pickup' => null,
+                'pickup_model' => null,
                 'error' => __('Please select a town from your delivery areas.'),
             ];
         }
@@ -579,6 +580,7 @@ class DeliveryAreaService
             return [
                 'success' => false,
                 'pickup' => null,
+                'pickup_model' => null,
                 'error' => __('The selected quarter does not belong to this town.'),
             ];
         }
@@ -606,6 +608,7 @@ class DeliveryAreaService
                 'quarter_name' => $pickup->quarter->{'name_'.$locale} ?? $pickup->quarter->name_en,
                 'address' => $pickup->address,
             ],
+            'pickup_model' => $pickup,
             'error' => '',
         ];
     }
