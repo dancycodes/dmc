@@ -110,6 +110,27 @@ class Meal extends Model
     }
 
     /**
+     * Get the custom schedule entries for this meal.
+     *
+     * F-106: Meal Schedule Override
+     */
+    public function schedules(): HasMany
+    {
+        return $this->hasMany(MealSchedule::class);
+    }
+
+    /**
+     * Check if this meal has a custom schedule override.
+     *
+     * F-106: BR-162/BR-163 — Presence of MealSchedule entries
+     * determines whether the meal uses a custom schedule.
+     */
+    public function hasCustomSchedule(): bool
+    {
+        return $this->schedules()->exists();
+    }
+
+    /**
      * Scope to active meals.
      */
     public function scopeActive(Builder $query): Builder

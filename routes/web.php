@@ -21,6 +21,7 @@ use App\Http\Controllers\Cook\CoverImageController;
 use App\Http\Controllers\Cook\DeliveryFeeController;
 use App\Http\Controllers\Cook\MealController;
 use App\Http\Controllers\Cook\MealLocationOverrideController;
+use App\Http\Controllers\Cook\MealScheduleController;
 use App\Http\Controllers\Cook\PickupLocationController;
 use App\Http\Controllers\Cook\QuarterController;
 use App\Http\Controllers\Cook\QuarterGroupController;
@@ -436,6 +437,12 @@ Route::middleware('tenant.domain')->group(function () {
         // F-096: Meal-Specific Location Override
         Route::get('/meals/{meal}/locations', [MealLocationOverrideController::class, 'getData'])->name('cook.meals.locations.data');
         Route::post('/meals/{meal}/locations', [MealLocationOverrideController::class, 'update'])->name('cook.meals.locations.update');
+        // F-106: Meal Schedule Override
+        Route::get('/meals/{meal}/schedule', [MealScheduleController::class, 'getData'])->name('cook.meals.schedule.data');
+        Route::post('/meals/{meal}/schedule', [MealScheduleController::class, 'store'])->name('cook.meals.schedule.store');
+        Route::put('/meals/{meal}/schedule/{mealSchedule}/order-interval', [MealScheduleController::class, 'updateOrderInterval'])->name('cook.meals.schedule.update-order-interval');
+        Route::put('/meals/{meal}/schedule/{mealSchedule}/delivery-pickup-interval', [MealScheduleController::class, 'updateDeliveryPickupInterval'])->name('cook.meals.schedule.update-delivery-pickup-interval');
+        Route::delete('/meals/{meal}/schedule/revert', [MealScheduleController::class, 'revert'])->name('cook.meals.schedule.revert');
     });
 
     // Tenant-specific routes will be added by later features (F-126, etc.)
