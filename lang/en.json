@@ -1666,5 +1666,20 @@
     "The French name must not exceed :max characters.": "The French name must not exceed :max characters.",
     "FR": "FR",
     ":count meal|:count meals": ":count meal|:count meals",
-    ":count tag|:count tags": ":count tag|:count tags"
+    ":count tag|:count tags": ":count tag|:count tags",
+    "tags used": "tags used",
+    "No tags created yet.": "No tags created yet.",
+    "Create tags first to assign them to your meals.": "Create tags first to assign them to your meals.",
+    "Assigned tags": "Assigned tags",
+    "Remove tag": "Remove tag",
+    "No tags assigned. Select tags below.": "No tags assigned. Select tags below.",
+    "Select tags to assign...": "Select tags to assign...",
+    "Maximum tags reached": "Maximum tags reached",
+    "Search tags...": "Search tags...",
+    "No tags match your search.": "No tags match your search.",
+    "Manage Tags": "Manage Tags",
+    "Save Tags": "Save Tags",
+    "Changes are saved when you click Save Tags.": "Changes are saved when you click Save Tags.",
+    "Tags updated.": "Tags updated.",
+    "Maximum :max tags per meal.": "Maximum :max tags per meal."
 }

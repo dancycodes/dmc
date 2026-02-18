@@ -23,6 +23,7 @@ use App\Http\Controllers\Cook\MealController;
 use App\Http\Controllers\Cook\MealImageController;
 use App\Http\Controllers\Cook\MealLocationOverrideController;
 use App\Http\Controllers\Cook\MealScheduleController;
+use App\Http\Controllers\Cook\MealTagController;
 use App\Http\Controllers\Cook\PickupLocationController;
 use App\Http\Controllers\Cook\QuarterController;
 use App\Http\Controllers\Cook\QuarterGroupController;
@@ -456,6 +457,8 @@ Route::middleware('tenant.domain')->group(function () {
         Route::put('/meals/{meal}/schedule/{mealSchedule}/order-interval', [MealScheduleController::class, 'updateOrderInterval'])->name('cook.meals.schedule.update-order-interval');
         Route::put('/meals/{meal}/schedule/{mealSchedule}/delivery-pickup-interval', [MealScheduleController::class, 'updateDeliveryPickupInterval'])->name('cook.meals.schedule.update-delivery-pickup-interval');
         Route::delete('/meals/{meal}/schedule/revert', [MealScheduleController::class, 'revert'])->name('cook.meals.schedule.revert');
+        // F-114: Meal Tag Assignment
+        Route::post('/meals/{meal}/tags', [MealTagController::class, 'sync'])->name('cook.meals.tags.sync');
 
         // Tag management (F-115: Cook Tag Management)
         // BR-257: Only users with can-manage-meals permission (enforced in controller)

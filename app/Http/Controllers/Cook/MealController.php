@@ -11,6 +11,7 @@ use App\Services\MealImageService;
 use App\Services\MealLocationOverrideService;
 use App\Services\MealScheduleService;
 use App\Services\MealService;
+use App\Services\MealTagService;
 use Illuminate\Http\Request;
 
 class MealController extends Controller
@@ -167,6 +168,7 @@ class MealController extends Controller
         MealScheduleService $mealScheduleService,
         CookScheduleService $cookScheduleService,
         MealImageService $imageService,
+        MealTagService $mealTagService,
     ): mixed {
         $user = $request->user();
         $tenant = tenant();
@@ -214,6 +216,11 @@ class MealController extends Controller
         $canDeleteInfo = $mealService->canDeleteMeal($meal);
         $completedOrders = $mealService->getCompletedOrderCount($meal);
 
+        // F-114: Tag assignment data
+        $tagData = $canManageMeals
+            ? $mealTagService->getTagAssignmentData($tenant, $meal)
+            : null;
+
         return gale()->view('cook.meals.edit', [
             'meal' => $meal,
             'canManageLocations' => $canManageLocations,
@@ -225,6 +232,7 @@ class MealController extends Controller
             'mealImageCount' => $mealImageCount,
             'canDeleteInfo' => $canDeleteInfo,
             'completedOrders' => $completedOrders,
+            'tagData' => $tagData,
         ], web: true);
     }
 
