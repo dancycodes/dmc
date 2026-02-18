@@ -110,6 +110,18 @@ class Meal extends Model
     }
 
     /**
+     * Get the images for this meal, ordered by position.
+     *
+     * F-109: Meal Image Upload & Carousel
+     * BR-203: Order determines carousel sequence.
+     * BR-204: First image in order is the primary/hero image.
+     */
+    public function images(): HasMany
+    {
+        return $this->hasMany(MealImage::class)->orderBy('position');
+    }
+
+    /**
      * Get the custom schedule entries for this meal.
      *
      * F-106: Meal Schedule Override

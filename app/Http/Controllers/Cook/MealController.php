@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Cook;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cook\StoreMealRequest;
 use App\Services\CookScheduleService;
+use App\Services\MealImageService;
 use App\Services\MealLocationOverrideService;
 use App\Services\MealScheduleService;
 use App\Services\MealService;
@@ -161,6 +162,7 @@ class MealController extends Controller
         MealLocationOverrideService $overrideService,
         MealScheduleService $mealScheduleService,
         CookScheduleService $cookScheduleService,
+        MealImageService $imageService,
     ): mixed {
         $user = $request->user();
         $tenant = tenant();
@@ -199,12 +201,20 @@ class MealController extends Controller
             }
         }
 
+        // F-109: Meal image data
+        $canManageMeals = $user->can('can-manage-meals');
+        $mealImages = $imageService->getImagesData($meal);
+        $mealImageCount = $imageService->getImageCount($meal);
+
         return gale()->view('cook.meals.edit', [
             'meal' => $meal,
             'canManageLocations' => $canManageLocations,
             'locationData' => $locationData,
             'canManageSchedules' => $canManageSchedules,
             'scheduleData' => $scheduleData,
+            'canManageMeals' => $canManageMeals,
+            'mealImages' => $mealImages,
+            'mealImageCount' => $mealImageCount,
         ], web: true);
     }
 }

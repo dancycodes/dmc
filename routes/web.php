@@ -20,6 +20,7 @@ use App\Http\Controllers\Cook\CookScheduleController;
 use App\Http\Controllers\Cook\CoverImageController;
 use App\Http\Controllers\Cook\DeliveryFeeController;
 use App\Http\Controllers\Cook\MealController;
+use App\Http\Controllers\Cook\MealImageController;
 use App\Http\Controllers\Cook\MealLocationOverrideController;
 use App\Http\Controllers\Cook\MealScheduleController;
 use App\Http\Controllers\Cook\PickupLocationController;
@@ -434,6 +435,10 @@ Route::middleware('tenant.domain')->group(function () {
         Route::get('/meals/create', [MealController::class, 'create'])->name('cook.meals.create');
         Route::post('/meals', [MealController::class, 'store'])->name('cook.meals.store');
         Route::get('/meals/{meal}/edit', [MealController::class, 'edit'])->name('cook.meals.edit');
+        // F-109: Meal Image Upload & Carousel
+        Route::post('/meals/{meal}/images/upload', [MealImageController::class, 'upload'])->name('cook.meals.images.upload');
+        Route::post('/meals/{meal}/images/reorder', [MealImageController::class, 'reorder'])->name('cook.meals.images.reorder');
+        Route::delete('/meals/{meal}/images/{image}', [MealImageController::class, 'destroy'])->name('cook.meals.images.destroy');
         // F-096: Meal-Specific Location Override
         Route::get('/meals/{meal}/locations', [MealLocationOverrideController::class, 'getData'])->name('cook.meals.locations.data');
         Route::post('/meals/{meal}/locations', [MealLocationOverrideController::class, 'update'])->name('cook.meals.locations.update');

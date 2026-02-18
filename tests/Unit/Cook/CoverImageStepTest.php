@@ -186,13 +186,13 @@ describe('validation constants alignment', function () {
 describe('cover image routes', function () {
     test('blade view file exists', function () {
         $projectRoot = dirname(__DIR__, 3);
-        $viewPath = $projectRoot . '/resources/views/cook/setup/steps/cover-images.blade.php';
+        $viewPath = $projectRoot.'/resources/views/cook/setup/steps/cover-images.blade.php';
         expect(file_exists($viewPath))->toBeTrue();
     });
 
     test('service file exists', function () {
         $projectRoot = dirname(__DIR__, 3);
-        $servicePath = $projectRoot . '/app/Services/CoverImageService.php';
+        $servicePath = $projectRoot.'/app/Services/CoverImageService.php';
         expect(file_exists($servicePath))->toBeTrue();
     });
 });
@@ -204,7 +204,7 @@ describe('cover image routes', function () {
 describe('translation keys for cover images', function () {
     test('english translation file contains cover image strings', function () {
         $projectRoot = dirname(__DIR__, 3);
-        $enJson = json_decode(file_get_contents($projectRoot . '/lang/en.json'), true);
+        $enJson = json_decode(file_get_contents($projectRoot.'/lang/en.json'), true);
 
         expect($enJson)->toHaveKey('Add attractive photos to showcase your food and kitchen.');
         expect($enJson)->toHaveKey('Maximum :count images allowed.');
@@ -218,7 +218,7 @@ describe('translation keys for cover images', function () {
 
     test('french translation file contains cover image strings', function () {
         $projectRoot = dirname(__DIR__, 3);
-        $frJson = json_decode(file_get_contents($projectRoot . '/lang/fr.json'), true);
+        $frJson = json_decode(file_get_contents($projectRoot.'/lang/fr.json'), true);
 
         expect($frJson)->toHaveKey('Add attractive photos to showcase your food and kitchen.');
         expect($frJson)->toHaveKey('Maximum :count images allowed.');
@@ -232,7 +232,7 @@ describe('translation keys for cover images', function () {
 
     test('french translations are not empty', function () {
         $projectRoot = dirname(__DIR__, 3);
-        $frJson = json_decode(file_get_contents($projectRoot . '/lang/fr.json'), true);
+        $frJson = json_decode(file_get_contents($projectRoot.'/lang/fr.json'), true);
 
         expect($frJson['Add attractive photos to showcase your food and kitchen.'])->not->toBeEmpty();
         expect($frJson['Maximum :count images allowed.'])->not->toBeEmpty();
