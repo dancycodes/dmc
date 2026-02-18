@@ -17,6 +17,7 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Cook\BrandProfileController;
 use App\Http\Controllers\Cook\CoverImageController;
+use App\Http\Controllers\Cook\DeliveryFeeController;
 use App\Http\Controllers\Cook\QuarterController;
 use App\Http\Controllers\Cook\QuarterGroupController;
 use App\Http\Controllers\Cook\SetupWizardController;
@@ -367,6 +368,13 @@ Route::middleware('tenant.domain')->group(function () {
 
         // Quarter group management (F-090: Quarter Group Creation)
         Route::post('/locations/groups', [QuarterGroupController::class, 'store'])->name('cook.locations.groups.store');
+
+        // Delivery fee configuration (F-091: Delivery Fee Configuration)
+        // BR-278: Accessible from the Locations section of the dashboard
+        // BR-280: Only users with can-manage-locations permission
+        Route::get('/locations/delivery-fees', [DeliveryFeeController::class, 'index'])->name('cook.locations.delivery-fees');
+        Route::put('/locations/delivery-fees/quarter/{deliveryAreaQuarter}', [DeliveryFeeController::class, 'updateQuarterFee'])->name('cook.locations.delivery-fees.quarter.update');
+        Route::put('/locations/delivery-fees/group/{group}', [DeliveryFeeController::class, 'updateGroupFee'])->name('cook.locations.delivery-fees.group.update');
     });
 
     // Tenant-specific routes will be added by later features (F-126, etc.)

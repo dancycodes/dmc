@@ -770,6 +770,181 @@ class DeliveryAreaService
     }
 
     /**
+     * Update the delivery fee for an individual quarter.
+     *
+     * F-091: Delivery Fee Configuration
+     * BR-273: Delivery fee must be >= 0 XAF
+     * BR-276: Fee changes apply to new orders only
+     * BR-277: Fees are stored as integers in XAF
+     *
+     * @return array{success: bool, error: string, warning: string}
+     */
+    public function updateQuarterFee(Tenant $tenant, int $deliveryAreaQuarterId, int $fee): array
+    {
+        $daq = DeliveryAreaQuarter::query()
+            ->whereHas('deliveryArea', function ($q) use ($tenant) {
+                $q->where('tenant_id', $tenant->id);
+            })
+            ->where('id', $deliveryAreaQuarterId)
+            ->first();
+
+        if (! $daq) {
+            return [
+                'success' => false,
+                'error' => __('Quarter not found.'),
+                'warning' => '',
+            ];
+        }
+
+        $daq->update([
+            'delivery_fee' => $fee,
+        ]);
+
+        $warning = '';
+        if ($fee > self::HIGH_FEE_THRESHOLD) {
+            $warning = __('This delivery fee seems high. Please verify it is correct.');
+        }
+
+        return [
+            'success' => true,
+            'error' => '',
+            'warning' => $warning,
+        ];
+    }
+
+    /**
+     * Update the delivery fee for a quarter group.
+     *
+     * F-091: Delivery Fee Configuration
+     * BR-273: Delivery fee must be >= 0 XAF
+     * BR-275: Group fee overrides individual quarter fees for all quarters in the group
+     * BR-276: Fee changes apply to new orders only
+     * BR-277: Fees are stored as integers in XAF
+     *
+     * @return array{success: bool, error: string, warning: string}
+     */
+    public function updateGroupFee(Tenant $tenant, int $groupId, int $fee): array
+    {
+        $group = QuarterGroup::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('id', $groupId)
+            ->first();
+
+        if (! $group) {
+            return [
+                'success' => false,
+                'error' => __('Quarter group not found.'),
+                'warning' => '',
+            ];
+        }
+
+        $group->update([
+            'delivery_fee' => $fee,
+        ]);
+
+        $warning = '';
+        if ($fee > self::HIGH_FEE_THRESHOLD) {
+            $warning = __('This delivery fee seems high. Please verify it is correct.');
+        }
+
+        return [
+            'success' => true,
+            'error' => '',
+            'warning' => $warning,
+        ];
+    }
+
+    /**
+     * Get delivery fee summary data for the centralized fee configuration view.
+     *
+     * F-091: Delivery Fee Configuration
+     * Returns all quarters organized by town with fee and group information.
+     *
+     * @return array{areas: array, groups: array, summary: array}
+     */
+    public function getDeliveryFeeSummary(Tenant $tenant): array
+    {
+        $locale = app()->getLocale();
+        $orderColumn = 'name_'.$locale;
+
+        $deliveryAreas = DeliveryArea::query()
+            ->where('tenant_id', $tenant->id)
+            ->with(['town', 'deliveryAreaQuarters.quarter'])
+            ->join('towns', 'delivery_areas.town_id', '=', 'towns.id')
+            ->orderBy('towns.'.$orderColumn)
+            ->select('delivery_areas.*')
+            ->get();
+
+        $totalQuarters = 0;
+        $freeDeliveryCount = 0;
+        $groupedCount = 0;
+
+        $areas = $deliveryAreas->map(function (DeliveryArea $area) use ($locale, &$totalQuarters, &$freeDeliveryCount, &$groupedCount) {
+            $quarters = $area->deliveryAreaQuarters
+                ->sortBy(fn (DeliveryAreaQuarter $daq) => mb_strtolower($daq->quarter->{'name_'.$locale} ?? $daq->quarter->name_en))
+                ->map(function (DeliveryAreaQuarter $daq) use ($locale, &$totalQuarters, &$freeDeliveryCount, &$groupedCount) {
+                    $totalQuarters++;
+
+                    $group = QuarterGroup::query()
+                        ->whereHas('quarters', function ($q) use ($daq) {
+                            $q->where('quarters.id', $daq->quarter_id);
+                        })
+                        ->first();
+
+                    $isGrouped = $group !== null;
+                    $effectiveFee = $isGrouped ? $group->delivery_fee : $daq->delivery_fee;
+
+                    if ($effectiveFee === 0) {
+                        $freeDeliveryCount++;
+                    }
+                    if ($isGrouped) {
+                        $groupedCount++;
+                    }
+
+                    return [
+                        'id' => $daq->id,
+                        'quarter_id' => $daq->quarter_id,
+                        'quarter_name' => $daq->quarter->{'name_'.$locale} ?? $daq->quarter->name_en,
+                        'delivery_fee' => $daq->delivery_fee,
+                        'group_id' => $group?->id,
+                        'group_name' => $group?->name,
+                        'group_fee' => $group?->delivery_fee,
+                        'effective_fee' => $effectiveFee,
+                        'is_grouped' => $isGrouped,
+                    ];
+                })->values()->all();
+
+            return [
+                'id' => $area->id,
+                'town_name' => $area->town->{'name_'.$locale} ?? $area->town->name_en,
+                'quarters' => $quarters,
+            ];
+        })->values()->all();
+
+        $groups = QuarterGroup::query()
+            ->where('tenant_id', $tenant->id)
+            ->withCount('quarters')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (QuarterGroup $group) => [
+                'id' => $group->id,
+                'name' => $group->name,
+                'delivery_fee' => $group->delivery_fee,
+                'quarter_count' => $group->quarters_count,
+            ])->values()->all();
+
+        return [
+            'areas' => $areas,
+            'groups' => $groups,
+            'summary' => [
+                'total_quarters' => $totalQuarters,
+                'free_delivery_count' => $freeDeliveryCount,
+                'grouped_count' => $groupedCount,
+            ],
+        ];
+    }
+
+    /**
      * Get all available quarters for a tenant (for group assignment multi-select).
      *
      * Returns quarters grouped by town, with current group assignment info.

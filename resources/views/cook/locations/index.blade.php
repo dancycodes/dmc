@@ -214,20 +214,31 @@
         }"
         x-sync="['name_en', 'name_fr', 'edit_name_en', 'edit_name_fr', 'quarter_name_en', 'quarter_name_fr', 'quarter_delivery_fee', 'edit_quarter_name_en', 'edit_quarter_name_fr', 'edit_quarter_delivery_fee', 'group_name', 'group_delivery_fee', 'group_quarter_ids']"
     >
-        {{-- Header with Add Town button --}}
+        {{-- Header with Add Town button + Delivery Fees link (F-091) --}}
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div>
                 <h2 class="text-xl font-semibold text-on-surface-strong">{{ __('Delivery Towns') }}</h2>
                 <p class="text-sm text-on-surface mt-1">{{ __('Manage the towns and areas where you offer delivery.') }}</p>
             </div>
-            <button
-                x-on:click="showAddTownForm = !showAddTownForm; if (showAddTownForm) { $nextTick(() => $refs.nameEnInput.focus()) }"
-                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-on-primary text-sm font-medium hover:bg-primary-hover transition-colors duration-200 shadow-sm self-start sm:self-auto"
-            >
-                {{-- Lucide: plus --}}
-                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
-                <span x-text="showAddTownForm ? '{{ __('Cancel') }}' : '{{ __('Add Town') }}'"></span>
-            </button>
+            <div class="flex items-center gap-2 self-start sm:self-auto">
+                {{-- F-091: Delivery Fees link (BR-278) --}}
+                <a
+                    href="{{ url('/dashboard/locations/delivery-fees') }}"
+                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-outline text-sm font-medium text-on-surface hover:bg-surface-alt hover:text-primary transition-colors duration-200"
+                >
+                    {{-- Lucide: receipt (sm=16) --}}
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"></path><path d="M14 8H8"></path><path d="M16 12H8"></path><path d="M13 16H8"></path></svg>
+                    {{ __('Delivery Fees') }}
+                </a>
+                <button
+                    x-on:click="showAddTownForm = !showAddTownForm; if (showAddTownForm) { $nextTick(() => $refs.nameEnInput.focus()) }"
+                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-on-primary text-sm font-medium hover:bg-primary-hover transition-colors duration-200 shadow-sm"
+                >
+                    {{-- Lucide: plus --}}
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+                    <span x-text="showAddTownForm ? '{{ __('Cancel') }}' : '{{ __('Add Town') }}'"></span>
+                </button>
+            </div>
         </div>
 
         {{-- Add Town Form (Inline Expandable) --}}
