@@ -6,8 +6,9 @@
 
     F-111: Added delete button with confirmation modal.
     F-112: Added inline status toggle button (Draft/Live).
+    F-113: Added inline availability toggle button (Available/Unavailable).
 
-    Provides basic listing, "Add Meal" button, delete action, and status toggle.
+    Provides basic listing, "Add Meal" button, delete action, status toggle, and availability toggle.
 --}}
 @extends('layouts.cook-dashboard')
 
@@ -125,9 +126,17 @@
                                 </span>
                             @endif
                         </div>
-                        <span class="shrink-0 px-2 py-0.5 rounded-full text-xs font-medium {{ $meal->status === 'draft' ? 'bg-warning-subtle text-warning' : 'bg-success-subtle text-success' }}">
-                            {{ $meal->status === 'draft' ? __('Draft') : __('Live') }}
-                        </span>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            {{-- F-113: Availability badge --}}
+                            @if(!$meal->is_available)
+                                <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-danger-subtle text-danger">
+                                    {{ __('Unavailable') }}
+                                </span>
+                            @endif
+                            <span class="px-2 py-0.5 rounded-full text-xs font-medium {{ $meal->status === 'draft' ? 'bg-warning-subtle text-warning' : 'bg-success-subtle text-success' }}">
+                                {{ $meal->status === 'draft' ? __('Draft') : __('Live') }}
+                            </span>
+                        </div>
                     </div>
                     @if($meal->description)
                         <p class="text-sm text-on-surface/70 line-clamp-2 mb-3">{{ $meal->description }}</p>
@@ -135,6 +144,27 @@
                     <div class="flex items-center justify-between pt-3 border-t border-outline dark:border-outline">
                         <span class="text-xs text-on-surface/50">{{ $meal->created_at->diffForHumans() }}</span>
                         <div class="flex items-center gap-3">
+                            {{-- F-113: Inline availability toggle --}}
+                            @if($meal->is_available)
+                                <button
+                                    type="button"
+                                    @click="$action('{{ url('/dashboard/meals/' . $meal->id . '/toggle-availability') }}', { method: 'PATCH' })"
+                                    class="text-xs font-medium text-danger hover:text-danger/80 transition-colors duration-200"
+                                    title="{{ __('Mark as unavailable') }}"
+                                >
+                                    {{ __('Mark Unavailable') }}
+                                </button>
+                            @else
+                                <button
+                                    type="button"
+                                    @click="$action('{{ url('/dashboard/meals/' . $meal->id . '/toggle-availability') }}', { method: 'PATCH' })"
+                                    class="text-xs font-medium text-success hover:text-success/80 transition-colors duration-200"
+                                    title="{{ __('Mark as available') }}"
+                                >
+                                    {{ __('Mark Available') }}
+                                </button>
+                            @endif
+
                             {{-- F-112: Inline status toggle --}}
                             @if($meal->isDraft())
                                 <button

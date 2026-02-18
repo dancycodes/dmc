@@ -1631,5 +1631,13 @@
     "Publish this meal to make it visible to clients": "Publish this meal to make it visible to clients",
     "Move this meal back to draft status": "Move this meal back to draft status",
     "Publish this meal": "Publish this meal",
-    "Move to draft": "Move to draft"
+    "Move to draft": "Move to draft",
+    "Mark Unavailable": "Mark Unavailable",
+    "Mark Available": "Mark Available",
+    "Mark as unavailable": "Mark as unavailable",
+    "Mark as available": "Mark as available",
+    "Mark this meal as temporarily unavailable": "Mark this meal as temporarily unavailable",
+    "Mark this meal as available again": "Mark this meal as available again",
+    ":name is now available.": ":name is now available.",
+    ":name is now unavailable.": ":name is now unavailable."
 }

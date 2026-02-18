@@ -19,6 +19,7 @@
 
     F-111: Added delete button with confirmation modal.
     F-112: Added status toggle button (Draft/Live).
+    F-113: Added availability toggle button (Available/Unavailable).
 --}}
 @extends('layouts.cook-dashboard')
 
@@ -116,6 +117,38 @@
                     <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.855z"></path><path d="m15 5 3 3"></path></svg>
                     {{ __('Unpublish') }}
                 </button>
+            @endif
+
+            {{-- F-113: Availability toggle --}}
+            @if($meal->is_available)
+                <button
+                    type="button"
+                    @click="$action('{{ url('/dashboard/meals/' . $meal->id . '/toggle-availability') }}', { method: 'PATCH' })"
+                    class="px-3 py-1.5 rounded-lg text-xs font-medium bg-danger-subtle text-danger border border-danger/30 hover:bg-danger/10 transition-colors duration-200 flex items-center gap-1.5"
+                    title="{{ __('Mark this meal as temporarily unavailable') }}"
+                >
+                    {{-- Lucide: circle-slash (xs=14) --}}
+                    <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+                    {{ __('Mark Unavailable') }}
+                </button>
+            @else
+                <button
+                    type="button"
+                    @click="$action('{{ url('/dashboard/meals/' . $meal->id . '/toggle-availability') }}', { method: 'PATCH' })"
+                    class="px-3 py-1.5 rounded-lg text-xs font-medium bg-success text-on-success hover:bg-success/90 shadow-sm transition-colors duration-200 flex items-center gap-1.5"
+                    title="{{ __('Mark this meal as available again') }}"
+                >
+                    {{-- Lucide: circle-check (xs=14) --}}
+                    <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>
+                    {{ __('Mark Available') }}
+                </button>
+            @endif
+
+            {{-- F-113: Availability badge --}}
+            @if(!$meal->is_available)
+                <span class="shrink-0 px-3 py-1 rounded-full text-xs font-medium bg-danger-subtle text-danger">
+                    {{ __('Unavailable') }}
+                </span>
             @endif
 
             <span class="shrink-0 px-3 py-1 rounded-full text-xs font-medium {{ $meal->status === 'draft' ? 'bg-warning-subtle text-warning' : 'bg-success-subtle text-success' }}">

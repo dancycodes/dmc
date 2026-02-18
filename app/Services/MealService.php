@@ -304,6 +304,31 @@ class MealService
     }
 
     /**
+     * Toggle meal availability between available and unavailable.
+     *
+     * F-113: Meal Availability Toggle
+     * BR-235: Availability is separate from status (draft/live)
+     * BR-240: Availability toggle has immediate effect
+     * BR-243: Toggling availability does not affect pending or active orders
+     *
+     * @return array{success: bool, meal: Meal, old_availability: bool, new_availability: bool}
+     */
+    public function toggleAvailability(Meal $meal): array
+    {
+        $oldAvailability = $meal->is_available;
+        $newAvailability = ! $oldAvailability;
+
+        $meal->update(['is_available' => $newAvailability]);
+
+        return [
+            'success' => true,
+            'meal' => $meal,
+            'old_availability' => $oldAvailability,
+            'new_availability' => $newAvailability,
+        ];
+    }
+
+    /**
      * Get the count of completed orders for a meal (for confirmation dialog context).
      *
      * Forward-compatible: returns 0 if orders table does not exist.
