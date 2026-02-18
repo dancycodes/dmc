@@ -3,8 +3,9 @@
     ----------------
     F-092: Add Pickup Location
     F-093: Pickup Location List View
+    F-094: Edit Pickup Location
 
-    Allows the cook to view existing pickup locations and add new ones.
+    Allows the cook to view existing pickup locations, add new ones, and edit existing ones.
     Each pickup location is scoped to the tenant and references a town and quarter
     from the cook's delivery areas.
 
@@ -25,6 +26,14 @@
     BR-292: Empty state shown when no pickup locations exist
     BR-293: List updates via Gale when locations are added, edited, or removed
     BR-294: Edit and delete actions require location management permission
+
+    F-094 Business Rules:
+    BR-295: Location name required in both English and French
+    BR-296: Town and quarter selection required
+    BR-297: Address/description required; max 500 characters
+    BR-298: Save via Gale; list updates without page reload
+    BR-299: Changes apply to new orders; existing orders retain original data
+    BR-300: Edit action requires location management permission
 --}}
 @extends('layouts.cook-dashboard')
 
@@ -99,15 +108,51 @@
             pickup_address: '',
             deliveryAreas: @js($deliveryAreas),
 
+            /* F-094: Edit form state (edit_ prefixed to avoid conflicts with add form) */
+            editingId: {{ isset($editingPickup) ? $editingPickup['id'] : 'null' }},
+            edit_name_en: '{{ isset($editingPickup) ? addslashes($editingPickup['name_en']) : '' }}',
+            edit_name_fr: '{{ isset($editingPickup) ? addslashes($editingPickup['name_fr']) : '' }}',
+            edit_town_id: '{{ isset($editingPickup) ? $editingPickup['town_id'] : '' }}',
+            edit_quarter_id: '{{ isset($editingPickup) ? $editingPickup['quarter_id'] : '' }}',
+            edit_address: '{{ isset($editingPickup) ? addslashes($editingPickup['address']) : '' }}',
+
             /* F-093/F-095: Delete confirmation state */
             confirmDeleteId: null,
             confirmDeleteName: '',
 
-            /* Get quarters for selected town from delivery areas data */
+            /* Get quarters for selected town from delivery areas data (add form) */
             getQuartersForTown() {
                 if (!this.pickup_town_id) return [];
                 let area = this.deliveryAreas.find(a => String(a.town_id) === String(this.pickup_town_id));
                 return area ? area.quarters : [];
+            },
+
+            /* F-094: Get quarters for selected town in edit form */
+            getEditQuartersForTown() {
+                if (!this.edit_town_id) return [];
+                let area = this.deliveryAreas.find(a => String(a.town_id) === String(this.edit_town_id));
+                return area ? area.quarters : [];
+            },
+
+            /* F-094: Start editing a pickup location */
+            startEdit(id, nameEn, nameFr, townId, quarterId, address) {
+                this.editingId = id;
+                this.edit_name_en = nameEn;
+                this.edit_name_fr = nameFr;
+                this.edit_town_id = String(townId);
+                this.edit_quarter_id = String(quarterId);
+                this.edit_address = address;
+                this.showAddForm = false;
+            },
+
+            /* F-094: Cancel editing */
+            cancelEdit() {
+                this.editingId = null;
+                this.edit_name_en = '';
+                this.edit_name_fr = '';
+                this.edit_town_id = '';
+                this.edit_quarter_id = '';
+                this.edit_address = '';
             },
 
             /* Reset form fields */
@@ -120,9 +165,14 @@
                 this.showAddForm = false;
             },
 
-            /* Character count for address */
+            /* Character count for address (add form) */
             get addressCharCount() {
                 return this.pickup_address.length;
+            },
+
+            /* F-094: Character count for edit address */
+            get editAddressCharCount() {
+                return this.edit_address.length;
             },
 
             /* F-095: Cancel delete confirmation */
@@ -140,7 +190,7 @@
                 this.cancelDelete();
             }
         }"
-        x-sync="['pickup_name_en', 'pickup_name_fr', 'pickup_town_id', 'pickup_quarter_id', 'pickup_address']"
+        x-sync="['pickup_name_en', 'pickup_name_fr', 'pickup_town_id', 'pickup_quarter_id', 'pickup_address', 'edit_name_en', 'edit_name_fr', 'edit_town_id', 'edit_quarter_id', 'edit_address']"
     >
         {{-- Section Header with Add Button --}}
         <div class="flex items-center justify-between mb-6">
@@ -156,7 +206,7 @@
             </div>
             @if(count($deliveryAreas) > 0)
                 <button
-                    x-show="!showAddForm"
+                    x-show="!showAddForm && editingId === null"
                     @click="showAddForm = true"
                     type="button"
                     class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-primary text-on-primary rounded-lg hover:bg-primary-hover transition-colors duration-200 shadow-card"
@@ -346,78 +396,229 @@
 
             <div class="space-y-3">
                 @foreach($pickupLocations as $location)
-                    <div class="p-4 rounded-xl border border-outline bg-surface-alt dark:bg-surface-alt shadow-card hover:shadow-md transition-shadow duration-200 group">
-                        <div class="flex items-start gap-3">
-                            {{-- Pin Icon --}}
-                            <div class="w-9 h-9 rounded-full bg-secondary-subtle flex items-center justify-center shrink-0 mt-0.5">
-                                {{-- Lucide: map-pin --}}
-                                <svg class="w-4 h-4 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                {{-- BR-290: Location name as primary text --}}
-                                <h4 class="text-sm font-semibold text-on-surface-strong">
-                                    {{ $location['name'] }}
-                                </h4>
-                                {{-- BR-290: Town and quarter as secondary text --}}
-                                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
-                                    <span class="text-xs text-on-surface/60 flex items-center gap-1">
-                                        {{-- Lucide: building-2 --}}
-                                        <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg>
-                                        {{ $location['town_name'] }}
-                                    </span>
-                                    <span class="text-xs text-on-surface/60 flex items-center gap-1">
-                                        {{-- Lucide: navigation --}}
-                                        <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>
-                                        {{ $location['quarter_name'] }}
-                                    </span>
+                    <div class="rounded-xl border border-outline bg-surface-alt dark:bg-surface-alt shadow-card hover:shadow-md transition-shadow duration-200 group">
+                        {{-- Display mode: show location card --}}
+                        <div
+                            x-show="editingId !== {{ $location['id'] }}"
+                            class="p-4"
+                        >
+                            <div class="flex items-start gap-3">
+                                {{-- Pin Icon --}}
+                                <div class="w-9 h-9 rounded-full bg-secondary-subtle flex items-center justify-center shrink-0 mt-0.5">
+                                    {{-- Lucide: map-pin --}}
+                                    <svg class="w-4 h-4 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                                 </div>
-                                {{-- BR-290: Address as detail text (truncated with expand on hover/click for long addresses) --}}
-                                <p
-                                    class="text-xs text-on-surface/50 mt-2 leading-relaxed"
-                                    @if(mb_strlen($location['address']) > 100)
-                                        title="{{ $location['address'] }}"
-                                    @endif
-                                >
-                                    @if(mb_strlen($location['address']) > 100)
-                                        {{ mb_substr($location['address'], 0, 100) }}...
-                                    @else
-                                        {{ $location['address'] }}
-                                    @endif
-                                </p>
-                            </div>
-                            <div class="flex items-center gap-2 shrink-0">
-                                {{-- Free badge (BR-285) --}}
-                                <span class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-success-subtle text-success">
-                                    {{-- Lucide: tag --}}
-                                    <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"></path><path d="M7 7h.01"></path></svg>
-                                    {{ __('Free') }}
-                                </span>
-
-                                {{-- BR-294: Edit and Delete action buttons (require permission) --}}
-                                @can('can-manage-locations')
-                                    <div class="flex items-center gap-1 ml-1">
-                                        {{-- Edit button (stub for F-094) --}}
-                                        <a
-                                            href="{{ url('/dashboard/locations/pickup/' . $location['id'] . '/edit') }}"
-                                            class="p-1.5 rounded-lg text-on-surface/40 hover:text-primary hover:bg-primary-subtle transition-colors duration-200"
-                                            title="{{ __('Edit') }}"
-                                            x-navigate
-                                        >
-                                            {{-- Lucide: pencil --}}
-                                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg>
-                                        </a>
-                                        {{-- Delete button (stub for F-095) --}}
-                                        <button
-                                            type="button"
-                                            @click="confirmDeleteId = {{ $location['id'] }}; confirmDeleteName = '{{ addslashes($location['name']) }}'"
-                                            class="p-1.5 rounded-lg text-on-surface/40 hover:text-danger hover:bg-danger-subtle transition-colors duration-200"
-                                            title="{{ __('Delete') }}"
-                                        >
-                                            {{-- Lucide: trash-2 --}}
-                                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" x2="10" y1="11" y2="17"></line><line x1="14" x2="14" y1="11" y2="17"></line></svg>
-                                        </button>
+                                <div class="flex-1 min-w-0">
+                                    {{-- BR-290: Location name as primary text --}}
+                                    <h4 class="text-sm font-semibold text-on-surface-strong">
+                                        {{ $location['name'] }}
+                                    </h4>
+                                    {{-- BR-290: Town and quarter as secondary text --}}
+                                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                                        <span class="text-xs text-on-surface/60 flex items-center gap-1">
+                                            {{-- Lucide: building-2 --}}
+                                            <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg>
+                                            {{ $location['town_name'] }}
+                                        </span>
+                                        <span class="text-xs text-on-surface/60 flex items-center gap-1">
+                                            {{-- Lucide: navigation --}}
+                                            <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>
+                                            {{ $location['quarter_name'] }}
+                                        </span>
                                     </div>
-                                @endcan
+                                    {{-- BR-290: Address as detail text (truncated with expand on hover/click for long addresses) --}}
+                                    <p
+                                        class="text-xs text-on-surface/50 mt-2 leading-relaxed"
+                                        @if(mb_strlen($location['address']) > 100)
+                                            title="{{ $location['address'] }}"
+                                        @endif
+                                    >
+                                        @if(mb_strlen($location['address']) > 100)
+                                            {{ mb_substr($location['address'], 0, 100) }}...
+                                        @else
+                                            {{ $location['address'] }}
+                                        @endif
+                                    </p>
+                                </div>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    {{-- Free badge (BR-285) --}}
+                                    <span class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-success-subtle text-success">
+                                        {{-- Lucide: tag --}}
+                                        <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"></path><path d="M7 7h.01"></path></svg>
+                                        {{ __('Free') }}
+                                    </span>
+
+                                    {{-- BR-294/BR-300: Edit and Delete action buttons (require permission) --}}
+                                    @can('can-manage-locations')
+                                        <div class="flex items-center gap-1 ml-1">
+                                            {{-- F-094: Edit button --}}
+                                            <button
+                                                type="button"
+                                                @click="startEdit({{ $location['id'] }}, '{{ addslashes($location['name_en']) }}', '{{ addslashes($location['name_fr']) }}', {{ $location['town_id'] }}, {{ $location['quarter_id'] }}, '{{ addslashes($location['address']) }}')"
+                                                class="p-1.5 rounded-lg text-on-surface/40 hover:text-primary hover:bg-primary-subtle transition-colors duration-200"
+                                                title="{{ __('Edit') }}"
+                                            >
+                                                {{-- Lucide: pencil --}}
+                                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg>
+                                            </button>
+                                            {{-- Delete button (stub for F-095) --}}
+                                            <button
+                                                type="button"
+                                                @click="confirmDeleteId = {{ $location['id'] }}; confirmDeleteName = '{{ addslashes($location['name']) }}'"
+                                                class="p-1.5 rounded-lg text-on-surface/40 hover:text-danger hover:bg-danger-subtle transition-colors duration-200"
+                                                title="{{ __('Delete') }}"
+                                            >
+                                                {{-- Lucide: trash-2 --}}
+                                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" x2="10" y1="11" y2="17"></line><line x1="14" x2="14" y1="11" y2="17"></line></svg>
+                                            </button>
+                                        </div>
+                                    @endcan
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- F-094: Inline Edit Form --}}
+                        <div
+                            x-show="editingId === {{ $location['id'] }}"
+                            x-cloak
+                            x-transition:enter="transition ease-out duration-200"
+                            x-transition:enter-start="opacity-0"
+                            x-transition:enter-end="opacity-100"
+                            class="p-5 border-l-4 border-primary"
+                        >
+                            <h3 class="text-base font-semibold text-on-surface-strong mb-4 flex items-center gap-2">
+                                {{-- Lucide: pencil --}}
+                                <svg class="w-5 h-5 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg>
+                                {{ __('Edit Pickup Location') }}
+                            </h3>
+
+                            {{-- Name Fields (BR-295) --}}
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-on-surface mb-1.5">
+                                        {{ __('Location Name (English)') }} <span class="text-danger">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        x-model="edit_name_en"
+                                        x-name="edit_name_en"
+                                        placeholder="{{ __('e.g., My Kitchen') }}"
+                                        maxlength="255"
+                                        class="w-full px-3 py-2.5 rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface-strong text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors duration-200"
+                                    >
+                                    <p x-message="edit_name_en" class="mt-1 text-xs text-danger"></p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-on-surface mb-1.5">
+                                        {{ __('Location Name (French)') }} <span class="text-danger">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        x-model="edit_name_fr"
+                                        x-name="edit_name_fr"
+                                        placeholder="{{ __('e.g., Ma Cuisine') }}"
+                                        maxlength="255"
+                                        class="w-full px-3 py-2.5 rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface-strong text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors duration-200"
+                                    >
+                                    <p x-message="edit_name_fr" class="mt-1 text-xs text-danger"></p>
+                                </div>
+                            </div>
+
+                            {{-- Town and Quarter Dropdowns (Cascading) (BR-296) --}}
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-on-surface mb-1.5">
+                                        {{ __('Town') }} <span class="text-danger">*</span>
+                                    </label>
+                                    <select
+                                        x-model="edit_town_id"
+                                        x-name="edit_town_id"
+                                        @change="edit_quarter_id = ''"
+                                        class="w-full px-3 py-2.5 rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface-strong text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors duration-200"
+                                    >
+                                        <option value="">{{ __('Select a town...') }}</option>
+                                        <template x-for="area in deliveryAreas" :key="area.id">
+                                            <option :value="area.town_id" x-text="area.town_name"></option>
+                                        </template>
+                                    </select>
+                                    <p x-message="edit_town_id" class="mt-1 text-xs text-danger"></p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-on-surface mb-1.5">
+                                        {{ __('Quarter') }} <span class="text-danger">*</span>
+                                    </label>
+                                    <select
+                                        x-model="edit_quarter_id"
+                                        x-name="edit_quarter_id"
+                                        :disabled="!edit_town_id"
+                                        class="w-full px-3 py-2.5 rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface-strong text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <option value="">{{ __('Select a quarter...') }}</option>
+                                        <template x-for="q in getEditQuartersForTown()" :key="q.quarter_id">
+                                            <option :value="q.quarter_id" x-text="q.quarter_name"></option>
+                                        </template>
+                                    </select>
+                                    <p x-message="edit_quarter_id" class="mt-1 text-xs text-danger"></p>
+
+                                    {{-- No quarters available message --}}
+                                    <p
+                                        x-show="edit_town_id && getEditQuartersForTown().length === 0"
+                                        x-cloak
+                                        class="mt-1 text-xs text-warning"
+                                    >
+                                        {{ __('No quarters available for this town. Add quarters first.') }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {{-- Address Field (BR-297) --}}
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-on-surface mb-1.5">
+                                    {{ __('Address / Directions') }} <span class="text-danger">*</span>
+                                </label>
+                                <textarea
+                                    x-model="edit_address"
+                                    x-name="edit_address"
+                                    rows="3"
+                                    maxlength="500"
+                                    placeholder="{{ __('Near [landmark], [street name]') }}"
+                                    class="w-full px-3 py-2.5 rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface-strong text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors duration-200 resize-none"
+                                ></textarea>
+                                <div class="flex items-center justify-between mt-1">
+                                    <p x-message="edit_address" class="text-xs text-danger"></p>
+                                    <span
+                                        class="text-xs"
+                                        :class="editAddressCharCount > 450 ? 'text-warning' : 'text-on-surface/40'"
+                                        x-text="editAddressCharCount + ' / 500'"
+                                    ></span>
+                                </div>
+                            </div>
+
+                            {{-- Action Buttons --}}
+                            <div class="flex items-center gap-3 justify-end">
+                                <button
+                                    @click="cancelEdit()"
+                                    type="button"
+                                    class="px-4 py-2 text-sm font-medium text-on-surface hover:text-on-surface-strong hover:bg-surface-alt rounded-lg transition-colors duration-200"
+                                >
+                                    {{ __('Cancel') }}
+                                </button>
+                                <button
+                                    @click="$action('{{ url('/dashboard/locations/pickup') }}/' + editingId, { method: 'PUT' })"
+                                    type="button"
+                                    :disabled="$fetching() || !edit_name_en.trim() || !edit_name_fr.trim() || !edit_town_id || !edit_quarter_id || !edit_address.trim()"
+                                    class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-primary text-on-primary rounded-lg hover:bg-primary-hover transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-card"
+                                >
+                                    <span x-show="!$fetching()">
+                                        {{-- Lucide: check --}}
+                                        <svg class="w-4 h-4 inline-block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+                                        {{ __('Save') }}
+                                    </span>
+                                    <span x-show="$fetching()" x-cloak>
+                                        <svg class="w-4 h-4 inline-block animate-spin" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+                                        {{ __('Saving...') }}
+                                    </span>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -444,7 +645,7 @@
             </div>
         @endif
 
-        {{-- Delete Confirmation Modal (F-095 stub — wired for future feature) --}}
+        {{-- Delete Confirmation Modal (F-095 stub -- wired for future feature) --}}
         @can('can-manage-locations')
             <div
                 x-show="confirmDeleteId !== null"

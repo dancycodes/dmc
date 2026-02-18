@@ -1390,5 +1390,9 @@
     "Group fee updated successfully. All member quarters now use this fee.": "Frais de groupe mis à jour avec succès. Tous les quartiers du groupe utilisent désormais ce frais.",
     "Quarter group not found.": "Groupe de quartiers introuvable.",
     "Quarter delivery fee updated": "Frais de livraison du quartier mis à jour",
-    "Quarter group delivery fee updated": "Frais de livraison du groupe de quartiers mis à jour"
+    "Quarter group delivery fee updated": "Frais de livraison du groupe de quartiers mis à jour",
+    "Edit Pickup Location": "Modifier le lieu de retrait",
+    "Pickup location updated successfully.": "Lieu de retrait mis \u00e0 jour avec succ\u00e8s.",
+    "Pickup location not found.": "Lieu de retrait introuvable.",
+    "Pickup location added successfully.": "Lieu de retrait ajout\u00e9 avec succ\u00e8s."
 }

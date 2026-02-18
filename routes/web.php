@@ -381,6 +381,8 @@ Route::middleware('tenant.domain')->group(function () {
         // BR-288: Only users with can-manage-locations permission
         Route::get('/locations/pickup', [PickupLocationController::class, 'index'])->name('cook.locations.pickup.index');
         Route::post('/locations/pickup', [PickupLocationController::class, 'store'])->name('cook.locations.pickup.store');
+        Route::get('/locations/pickup/{pickupLocation}/edit', [PickupLocationController::class, 'edit'])->name('cook.locations.pickup.edit');
+        Route::put('/locations/pickup/{pickupLocation}', [PickupLocationController::class, 'update'])->name('cook.locations.pickup.update');
     });
 
     // Tenant-specific routes will be added by later features (F-126, etc.)
