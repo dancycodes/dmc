@@ -317,8 +317,8 @@ test('service removes pickup location', function () {
         'Behind Hotel',
     );
 
-    $success = $this->service->removePickupLocation($tenant, $pickupResult['pickup']['id']);
-    expect($success)->toBeTrue();
+    $result = $this->service->removePickupLocation($tenant, $pickupResult['pickup']['id']);
+    expect($result['success'])->toBeTrue();
     expect(PickupLocation::where('tenant_id', $tenant->id)->count())->toBe(0);
 });
 

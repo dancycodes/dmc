@@ -1394,5 +1394,8 @@
     "Edit Pickup Location": "Edit Pickup Location",
     "Pickup location updated successfully.": "Pickup location updated successfully.",
     "Pickup location not found.": "Pickup location not found.",
-    "Pickup location added successfully.": "Pickup location added successfully."
+    "Pickup location added successfully.": "Pickup location added successfully.",
+    "Pickup location deleted successfully.": "Pickup location deleted successfully.",
+    "Clients will no longer be able to pick up from this location.": "Clients will no longer be able to pick up from this location.",
+    "{1} Cannot delete :location because it has :count active order for pickup.|[2,*] Cannot delete :location because it has :count active orders for pickup.": "{1} Cannot delete :location because it has :count active order for pickup.|[2,*] Cannot delete :location because it has :count active orders for pickup."
 }

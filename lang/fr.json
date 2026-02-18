@@ -1394,5 +1394,8 @@
     "Edit Pickup Location": "Modifier le lieu de retrait",
     "Pickup location updated successfully.": "Lieu de retrait mis \u00e0 jour avec succ\u00e8s.",
     "Pickup location not found.": "Lieu de retrait introuvable.",
-    "Pickup location added successfully.": "Lieu de retrait ajout\u00e9 avec succ\u00e8s."
+    "Pickup location added successfully.": "Lieu de retrait ajout\u00e9 avec succ\u00e8s.",
+    "Pickup location deleted successfully.": "Lieu de retrait supprim\u00e9 avec succ\u00e8s.",
+    "Clients will no longer be able to pick up from this location.": "Les clients ne pourront plus r\u00e9cup\u00e9rer leurs commandes \u00e0 cet endroit.",
+    "{1} Cannot delete :location because it has :count active order for pickup.|[2,*] Cannot delete :location because it has :count active orders for pickup.": "{1} Impossible de supprimer :location car il a :count commande active en retrait.|[2,*] Impossible de supprimer :location car il a :count commandes actives en retrait."
 }
