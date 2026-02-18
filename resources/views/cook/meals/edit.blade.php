@@ -20,6 +20,7 @@
     F-111: Added delete button with confirmation modal.
     F-112: Added status toggle button (Draft/Live).
     F-113: Added availability toggle button (Available/Unavailable).
+    F-114: Added tag assignment section.
 --}}
 @extends('layouts.cook-dashboard')
 
@@ -361,18 +362,19 @@
         </div>
     @endif
 
+    {{-- F-114: Tag Assignment Section --}}
+    @if($canManageMeals && $tagData)
+        <div class="mt-6">
+            @include('cook.meals._tag-assignment')
+        </div>
+    @endif
+
     {{-- Placeholder sections for future features --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+    <div class="mt-6">
         {{-- Components section (F-118) --}}
         <div class="bg-surface-alt dark:bg-surface-alt border border-outline dark:border-outline rounded-xl shadow-card p-6 opacity-60">
             <h3 class="text-base font-semibold text-on-surface-strong mb-2">{{ __('Components') }}</h3>
             <p class="text-sm text-on-surface/70">{{ __('Meal components will be available soon.') }}</p>
-        </div>
-
-        {{-- Tags section (F-114) --}}
-        <div class="bg-surface-alt dark:bg-surface-alt border border-outline dark:border-outline rounded-xl shadow-card p-6 opacity-60">
-            <h3 class="text-base font-semibold text-on-surface-strong mb-2">{{ __('Tags') }}</h3>
-            <p class="text-sm text-on-surface/70">{{ __('Tag assignment will be available soon.') }}</p>
         </div>
     </div>
 

@@ -1666,5 +1666,20 @@
     "The French name must not exceed :max characters.": "Le nom francais ne doit pas depasser :max caracteres.",
     "FR": "FR",
     ":count meal|:count meals": ":count repas|:count repas",
-    ":count tag|:count tags": ":count etiquette|:count etiquettes"
+    ":count tag|:count tags": ":count etiquette|:count etiquettes",
+    "tags used": "etiquettes utilisees",
+    "No tags created yet.": "Aucune etiquette creee pour le moment.",
+    "Create tags first to assign them to your meals.": "Creez d'abord des etiquettes pour les attribuer a vos repas.",
+    "Assigned tags": "Etiquettes attribuees",
+    "Remove tag": "Supprimer l'etiquette",
+    "No tags assigned. Select tags below.": "Aucune etiquette attribuee. Selectionnez des etiquettes ci-dessous.",
+    "Select tags to assign...": "Selectionner des etiquettes...",
+    "Maximum tags reached": "Nombre maximum d'etiquettes atteint",
+    "Search tags...": "Rechercher des etiquettes...",
+    "No tags match your search.": "Aucune etiquette ne correspond a votre recherche.",
+    "Manage Tags": "Gerer les etiquettes",
+    "Save Tags": "Enregistrer les etiquettes",
+    "Changes are saved when you click Save Tags.": "Les modifications sont enregistrees lorsque vous cliquez sur Enregistrer les etiquettes.",
+    "Tags updated.": "Etiquettes mises a jour.",
+    "Maximum :max tags per meal.": "Maximum :max etiquettes par repas."
 }
