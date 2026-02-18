@@ -19,6 +19,7 @@ use App\Http\Controllers\Cook\BrandProfileController;
 use App\Http\Controllers\Cook\CookScheduleController;
 use App\Http\Controllers\Cook\CoverImageController;
 use App\Http\Controllers\Cook\DeliveryFeeController;
+use App\Http\Controllers\Cook\MealController;
 use App\Http\Controllers\Cook\PickupLocationController;
 use App\Http\Controllers\Cook\QuarterController;
 use App\Http\Controllers\Cook\QuarterGroupController;
@@ -424,6 +425,13 @@ Route::middleware('tenant.domain')->group(function () {
         // F-105: Schedule Template Application to Days
         Route::get('/schedule/templates/{scheduleTemplate}/apply', [ScheduleTemplateController::class, 'showApply'])->name('cook.schedule-templates.show-apply');
         Route::post('/schedule/templates/{scheduleTemplate}/apply', [ScheduleTemplateController::class, 'apply'])->name('cook.schedule-templates.apply');
+
+        // Meal management (F-108: Meal Creation Form, F-110: Meal Edit, F-116: Meal List)
+        // BR-194: Only users with can-manage-meals permission (enforced in controller)
+        Route::get('/meals', [MealController::class, 'index'])->name('cook.meals.index');
+        Route::get('/meals/create', [MealController::class, 'create'])->name('cook.meals.create');
+        Route::post('/meals', [MealController::class, 'store'])->name('cook.meals.store');
+        Route::get('/meals/{meal}/edit', [MealController::class, 'edit'])->name('cook.meals.edit');
     });
 
     // Tenant-specific routes will be added by later features (F-126, etc.)

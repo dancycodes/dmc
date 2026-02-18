@@ -130,8 +130,8 @@ test('meal casts is_active to boolean', function () {
 
 test('meal active scope filters correctly', function () {
     $tenant = Tenant::factory()->create();
-    Meal::factory()->create(['tenant_id' => $tenant->id, 'is_active' => true]);
-    Meal::factory()->create(['tenant_id' => $tenant->id, 'is_active' => false]);
+    Meal::factory()->create(['tenant_id' => $tenant->id, 'is_active' => true, 'name_en' => 'Active Meal EN', 'name_fr' => 'Active Meal FR']);
+    Meal::factory()->create(['tenant_id' => $tenant->id, 'is_active' => false, 'name_en' => 'Inactive Meal EN', 'name_fr' => 'Inactive Meal FR']);
 
     expect(Meal::query()->active()->count())->toBe(1);
 });
@@ -193,7 +193,8 @@ test('meal components cascade delete with meal', function () {
 
     expect(MealComponent::where('meal_id', $meal->id)->count())->toBe(3);
 
-    $meal->delete();
+    // F-108: Meal now uses SoftDeletes, so forceDelete() is needed to trigger FK cascade
+    $meal->forceDelete();
 
     expect(MealComponent::where('meal_id', $meal->id)->count())->toBe(0);
 });
