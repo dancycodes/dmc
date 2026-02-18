@@ -2,12 +2,13 @@
     Pickup Locations
     ----------------
     F-092: Add Pickup Location
-    F-093: Pickup Location List View (stub for future feature)
+    F-093: Pickup Location List View
 
     Allows the cook to view existing pickup locations and add new ones.
     Each pickup location is scoped to the tenant and references a town and quarter
     from the cook's delivery areas.
 
+    F-092 Business Rules:
     BR-281: Location name is required in both English and French
     BR-282: Town selection is required (from cook's existing towns)
     BR-283: Quarter selection is required (from quarters within the selected town)
@@ -16,6 +17,14 @@
     BR-286: Pickup location is scoped to the current tenant
     BR-287: Save via Gale; location appears in list without page reload
     BR-288: Only users with location management permission can add pickup locations
+
+    F-093 Business Rules:
+    BR-289: List shows all pickup locations for the current tenant
+    BR-290: Each entry displays: location name (current locale), town name, quarter name, address
+    BR-291: Locations sorted alphabetically by name in current locale
+    BR-292: Empty state shown when no pickup locations exist
+    BR-293: List updates via Gale when locations are added, edited, or removed
+    BR-294: Edit and delete actions require location management permission
 --}}
 @extends('layouts.cook-dashboard')
 
@@ -90,6 +99,10 @@
             pickup_address: '',
             deliveryAreas: @js($deliveryAreas),
 
+            /* F-093/F-095: Delete confirmation state */
+            confirmDeleteId: null,
+            confirmDeleteName: '',
+
             /* Get quarters for selected town from delivery areas data */
             getQuartersForTown() {
                 if (!this.pickup_town_id) return [];
@@ -110,6 +123,21 @@
             /* Character count for address */
             get addressCharCount() {
                 return this.pickup_address.length;
+            },
+
+            /* F-095: Cancel delete confirmation */
+            cancelDelete() {
+                this.confirmDeleteId = null;
+                this.confirmDeleteName = '';
+            },
+
+            /* F-095: Execute delete (stub for future feature) */
+            executeDelete() {
+                if (!this.confirmDeleteId) return;
+                $action('{{ url('/dashboard/locations/pickup') }}/' + this.confirmDeleteId, {
+                    method: 'DELETE'
+                });
+                this.cancelDelete();
             }
         }"
         x-sync="['pickup_name_en', 'pickup_name_fr', 'pickup_town_id', 'pickup_quarter_id', 'pickup_address']"
@@ -309,11 +337,16 @@
             </div>
         </div>
 
-        {{-- Pickup Locations List --}}
+        {{-- Pickup Locations List (BR-289, BR-290, BR-291) --}}
         @if(count($pickupLocations) > 0)
+            {{-- Location count summary --}}
+            <p class="text-sm text-on-surface/60 mb-3">
+                {{ trans_choice('{1} :count pickup location|[2,*] :count pickup locations', count($pickupLocations), ['count' => count($pickupLocations)]) }}
+            </p>
+
             <div class="space-y-3">
                 @foreach($pickupLocations as $location)
-                    <div class="p-4 rounded-xl border border-outline bg-surface-alt dark:bg-surface-alt shadow-card hover:shadow-md transition-shadow duration-200">
+                    <div class="p-4 rounded-xl border border-outline bg-surface-alt dark:bg-surface-alt shadow-card hover:shadow-md transition-shadow duration-200 group">
                         <div class="flex items-start gap-3">
                             {{-- Pin Icon --}}
                             <div class="w-9 h-9 rounded-full bg-secondary-subtle flex items-center justify-center shrink-0 mt-0.5">
@@ -321,9 +354,11 @@
                                 <svg class="w-4 h-4 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                             </div>
                             <div class="flex-1 min-w-0">
+                                {{-- BR-290: Location name as primary text --}}
                                 <h4 class="text-sm font-semibold text-on-surface-strong">
                                     {{ $location['name'] }}
                                 </h4>
+                                {{-- BR-290: Town and quarter as secondary text --}}
                                 <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
                                     <span class="text-xs text-on-surface/60 flex items-center gap-1">
                                         {{-- Lucide: building-2 --}}
@@ -336,29 +371,67 @@
                                         {{ $location['quarter_name'] }}
                                     </span>
                                 </div>
-                                <p class="text-xs text-on-surface/50 mt-2 leading-relaxed">
-                                    {{ $location['address'] }}
+                                {{-- BR-290: Address as detail text (truncated with expand on hover/click for long addresses) --}}
+                                <p
+                                    class="text-xs text-on-surface/50 mt-2 leading-relaxed"
+                                    @if(mb_strlen($location['address']) > 100)
+                                        title="{{ $location['address'] }}"
+                                    @endif
+                                >
+                                    @if(mb_strlen($location['address']) > 100)
+                                        {{ mb_substr($location['address'], 0, 100) }}...
+                                    @else
+                                        {{ $location['address'] }}
+                                    @endif
                                 </p>
                             </div>
-                            {{-- Free badge (BR-285) --}}
-                            <span class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-success-subtle text-success shrink-0">
-                                {{-- Lucide: tag --}}
-                                <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"></path><path d="M7 7h.01"></path></svg>
-                                {{ __('Free') }}
-                            </span>
+                            <div class="flex items-center gap-2 shrink-0">
+                                {{-- Free badge (BR-285) --}}
+                                <span class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-success-subtle text-success">
+                                    {{-- Lucide: tag --}}
+                                    <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"></path><path d="M7 7h.01"></path></svg>
+                                    {{ __('Free') }}
+                                </span>
+
+                                {{-- BR-294: Edit and Delete action buttons (require permission) --}}
+                                @can('can-manage-locations')
+                                    <div class="flex items-center gap-1 ml-1">
+                                        {{-- Edit button (stub for F-094) --}}
+                                        <a
+                                            href="{{ url('/dashboard/locations/pickup/' . $location['id'] . '/edit') }}"
+                                            class="p-1.5 rounded-lg text-on-surface/40 hover:text-primary hover:bg-primary-subtle transition-colors duration-200"
+                                            title="{{ __('Edit') }}"
+                                            x-navigate
+                                        >
+                                            {{-- Lucide: pencil --}}
+                                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg>
+                                        </a>
+                                        {{-- Delete button (stub for F-095) --}}
+                                        <button
+                                            type="button"
+                                            @click="confirmDeleteId = {{ $location['id'] }}; confirmDeleteName = '{{ addslashes($location['name']) }}'"
+                                            class="p-1.5 rounded-lg text-on-surface/40 hover:text-danger hover:bg-danger-subtle transition-colors duration-200"
+                                            title="{{ __('Delete') }}"
+                                        >
+                                            {{-- Lucide: trash-2 --}}
+                                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" x2="10" y1="11" y2="17"></line><line x1="14" x2="14" y1="11" y2="17"></line></svg>
+                                        </button>
+                                    </div>
+                                @endcan
+                            </div>
                         </div>
                     </div>
                 @endforeach
             </div>
         @elseif(count($deliveryAreas) > 0)
-            {{-- Empty State --}}
+            {{-- Empty State (BR-292) --}}
             <div class="p-8 rounded-xl border border-outline bg-surface-alt text-center">
                 <div class="w-14 h-14 rounded-full bg-primary-subtle flex items-center justify-center mx-auto mb-4">
                     {{-- Lucide: map-pin --}}
                     <svg class="w-7 h-7 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                 </div>
-                <h3 class="text-base font-semibold text-on-surface-strong mb-1">{{ __('No pickup locations yet') }}</h3>
-                <p class="text-sm text-on-surface/60 mb-4">{{ __('Add pickup locations so clients can collect their orders from you directly.') }}</p>
+                <h3 class="text-base font-semibold text-on-surface-strong mb-1">{{ __('No pickup locations added yet') }}</h3>
+                <p class="text-sm text-on-surface/60 mb-4">{{ __('Add a pickup location so clients can collect their orders.') }}</p>
                 <button
                     @click="showAddForm = true"
                     type="button"
@@ -366,10 +439,72 @@
                 >
                     {{-- Lucide: plus --}}
                     <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
-                    {{ __('Add your first pickup location') }}
+                    {{ __('Add Pickup Location') }}
                 </button>
             </div>
         @endif
+
+        {{-- Delete Confirmation Modal (F-095 stub — wired for future feature) --}}
+        @can('can-manage-locations')
+            <div
+                x-show="confirmDeleteId !== null"
+                x-cloak
+                class="fixed inset-0 z-50 flex items-center justify-center p-4"
+                role="dialog"
+                aria-modal="true"
+                :aria-label="'{{ __('Delete pickup location') }}'"
+            >
+                {{-- Backdrop --}}
+                <div
+                    class="fixed inset-0 bg-black/50 dark:bg-black/70"
+                    @click="cancelDelete()"
+                ></div>
+                {{-- Modal Content --}}
+                <div
+                    x-show="confirmDeleteId !== null"
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="opacity-0 scale-95"
+                    x-transition:enter-end="opacity-100 scale-100"
+                    x-transition:leave="transition ease-in duration-150"
+                    x-transition:leave-start="opacity-100 scale-100"
+                    x-transition:leave-end="opacity-0 scale-95"
+                    class="relative w-full max-w-md rounded-xl border border-outline bg-surface p-6 shadow-lg"
+                >
+                    <div class="flex items-start gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-full bg-danger-subtle flex items-center justify-center shrink-0">
+                            {{-- Lucide: alert-triangle --}}
+                            <svg class="w-5 h-5 text-danger" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-semibold text-on-surface-strong">{{ __('Delete Pickup Location') }}</h3>
+                            <p class="text-sm text-on-surface/60 mt-1">
+                                {{ __('Are you sure you want to delete') }}
+                                <span class="font-medium text-on-surface-strong" x-text="confirmDeleteName"></span>?
+                                {{ __('This action cannot be undone.') }}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-end gap-3">
+                        <button
+                            @click="cancelDelete()"
+                            type="button"
+                            class="px-4 py-2 text-sm font-medium text-on-surface hover:text-on-surface-strong hover:bg-surface-alt rounded-lg transition-colors duration-200"
+                        >
+                            {{ __('Cancel') }}
+                        </button>
+                        <button
+                            @click="executeDelete()"
+                            type="button"
+                            class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-danger text-on-danger rounded-lg hover:bg-danger/90 transition-colors duration-200 shadow-card"
+                        >
+                            {{-- Lucide: trash-2 --}}
+                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" x2="10" y1="11" y2="17"></line><line x1="14" x2="14" y1="11" y2="17"></line></svg>
+                            {{ __('Delete') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        @endcan
 
         {{-- Back to Locations link --}}
         <div class="mt-6">
