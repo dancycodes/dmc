@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Cook;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cook\StoreMealRequest;
+use App\Http\Requests\Cook\UpdateMealRequest;
 use App\Services\CookScheduleService;
 use App\Services\MealImageService;
 use App\Services\MealLocationOverrideService;
@@ -149,12 +150,13 @@ class MealController extends Controller
     }
 
     /**
-     * Show the meal edit form (stub for F-110).
+     * Show the meal edit form.
      *
-     * F-110: Meal Edit — placeholder route.
+     * F-110: Meal Edit.
      * F-096: Includes location override data.
      * F-106: Includes schedule override data.
-     * BR-194: Only users with can-manage-meals permission.
+     * F-109: Includes meal image data.
+     * BR-215: Only users with can-manage-meals permission.
      */
     public function edit(
         Request $request,
@@ -216,5 +218,105 @@ class MealController extends Controller
             'mealImages' => $mealImages,
             'mealImageCount' => $mealImageCount,
         ], web: true);
+    }
+
+    /**
+     * Update a meal's basic info.
+     *
+     * F-110: Meal Edit
+     * BR-210: Meal name required in both EN and FR
+     * BR-211: Meal description required in both EN and FR
+     * BR-212: Meal name unique within tenant per language
+     * BR-213: Name max 150 characters per language
+     * BR-214: Description max 2000 characters per language
+     * BR-215: Only users with can-manage-meals permission
+     * BR-216: Edits logged via Spatie Activitylog with old and new values
+     * BR-217: Editing does not change status or availability
+     */
+    public function update(Request $request, int $mealId, MealService $mealService): mixed
+    {
+        $user = $request->user();
+        $tenant = tenant();
+
+        // BR-215: Permission check
+        if (! $user->can('can-manage-meals')) {
+            abort(403);
+        }
+
+        $meal = $tenant->meals()->findOrFail($mealId);
+
+        // Dual Gale/HTTP validation pattern
+        if ($request->isGale()) {
+            $validated = $request->validateState([
+                'name_en' => ['required', 'string', 'max:150'],
+                'name_fr' => ['required', 'string', 'max:150'],
+                'description_en' => ['required', 'string', 'max:2000'],
+                'description_fr' => ['required', 'string', 'max:2000'],
+            ], [
+                'name_en.required' => __('Meal name is required in English.'),
+                'name_en.max' => __('Meal name must not exceed :max characters.'),
+                'name_fr.required' => __('Meal name is required in French.'),
+                'name_fr.max' => __('Meal name must not exceed :max characters.'),
+                'description_en.required' => __('Meal description is required in English.'),
+                'description_en.max' => __('Meal description must not exceed :max characters.'),
+                'description_fr.required' => __('Meal description is required in French.'),
+                'description_fr.max' => __('Meal description must not exceed :max characters.'),
+            ]);
+        } else {
+            $formRequest = app(UpdateMealRequest::class);
+            $validated = $formRequest->validated();
+        }
+
+        // Use MealService for business logic (BR-212 uniqueness + BR-217 no status change)
+        $result = $mealService->updateMeal($meal, $validated);
+
+        if (! $result['success']) {
+            // BR-212: Uniqueness violation
+            $field = $result['field'] ?? 'name_en';
+
+            if ($request->isGale()) {
+                return gale()->messages([
+                    $field => $result['error'],
+                ]);
+            }
+
+            return redirect()->back()
+                ->withErrors([$field => $result['error']])
+                ->withInput();
+        }
+
+        // BR-216: Activity logging with old and new values
+        $changes = $result['changes'] ?? [];
+        if (! empty($changes)) {
+            $oldValues = [];
+            $newValues = [];
+
+            foreach ($changes as $field => $change) {
+                $oldValues[$field] = $change['old'];
+                $newValues[$field] = $change['new'];
+            }
+
+            activity('meals')
+                ->performedOn($meal)
+                ->causedBy($user)
+                ->withProperties([
+                    'action' => 'meal_updated',
+                    'old' => $oldValues,
+                    'new' => $newValues,
+                    'tenant_id' => $tenant->id,
+                ])
+                ->log('Meal updated');
+        }
+
+        $redirectUrl = url('/dashboard/meals/'.$meal->id.'/edit');
+
+        if ($request->isGale()) {
+            return gale()
+                ->redirect($redirectUrl)
+                ->with('success', __('Meal updated.'));
+        }
+
+        return redirect($redirectUrl)
+            ->with('success', __('Meal updated.'));
     }
 }

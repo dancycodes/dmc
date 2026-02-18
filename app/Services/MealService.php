@@ -64,6 +64,79 @@ class MealService
     }
 
     /**
+     * Update a meal's basic info (name and description).
+     *
+     * BR-210: Meal name required in both EN and FR.
+     * BR-211: Meal description required in both EN and FR.
+     * BR-212: Meal name unique within tenant per language.
+     * BR-213: Name max 150 characters per language.
+     * BR-214: Description max 2000 characters per language.
+     * BR-217: Editing does not change the meal's status or availability.
+     *
+     * @param  array{name_en: string, name_fr: string, description_en: string, description_fr: string}  $data
+     * @return array{success: bool, meal?: Meal, error?: string, field?: string, changes?: array<string, array{old: string, new: string}>}
+     */
+    public function updateMeal(Meal $meal, array $data): array
+    {
+        $nameEn = trim($data['name_en']);
+        $nameFr = trim($data['name_fr']);
+        $descriptionEn = trim($data['description_en']);
+        $descriptionFr = trim($data['description_fr']);
+
+        // BR-212: Check uniqueness per language, excluding current meal
+        $uniquenessCheck = $this->checkNameUniqueness(
+            $meal->tenant,
+            $nameEn,
+            $nameFr,
+            $meal->id,
+        );
+
+        if (! $uniquenessCheck['unique']) {
+            return [
+                'success' => false,
+                'error' => $uniquenessCheck['error'],
+                'field' => $uniquenessCheck['field'],
+            ];
+        }
+
+        // Strip HTML tags from description (XSS prevention)
+        $descriptionEn = strip_tags($descriptionEn);
+        $descriptionFr = strip_tags($descriptionFr);
+
+        // Track changes for activity logging (BR-216)
+        $changes = [];
+        $fields = [
+            'name_en' => $nameEn,
+            'name_fr' => $nameFr,
+            'description_en' => $descriptionEn,
+            'description_fr' => $descriptionFr,
+        ];
+
+        foreach ($fields as $field => $newValue) {
+            $oldValue = $meal->{$field} ?? '';
+            if ($oldValue !== $newValue) {
+                $changes[$field] = ['old' => $oldValue, 'new' => $newValue];
+            }
+        }
+
+        // Only update if there are actual changes
+        if (! empty($changes)) {
+            $meal->update([
+                'name_en' => $nameEn,
+                'name_fr' => $nameFr,
+                'description_en' => $descriptionEn,
+                'description_fr' => $descriptionFr,
+            ]);
+        }
+
+        return [
+            'success' => true,
+            'meal' => $meal,
+            'changes' => $changes,
+        ];
+    }
+
+    /**
      * Check meal name uniqueness within a tenant.
      *
      * BR-189: Checked per language, case-insensitive.

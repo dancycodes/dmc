@@ -435,6 +435,7 @@ Route::middleware('tenant.domain')->group(function () {
         Route::get('/meals/create', [MealController::class, 'create'])->name('cook.meals.create');
         Route::post('/meals', [MealController::class, 'store'])->name('cook.meals.store');
         Route::get('/meals/{meal}/edit', [MealController::class, 'edit'])->name('cook.meals.edit');
+        Route::put('/meals/{meal}', [MealController::class, 'update'])->name('cook.meals.update');
         // F-109: Meal Image Upload & Carousel
         Route::post('/meals/{meal}/images/upload', [MealImageController::class, 'upload'])->name('cook.meals.images.upload');
         Route::post('/meals/{meal}/images/reorder', [MealImageController::class, 'reorder'])->name('cook.meals.images.reorder');

@@ -1612,5 +1612,8 @@
     "Image must be 2MB or smaller.": "Image must be 2MB or smaller.",
     "images": "images",
     "Previous image": "Previous image",
-    "Next image": "Next image"
+    "Next image": "Next image",
+    "Manage your meal details, images, and settings.": "Manage your meal details, images, and settings.",
+    "Basic Info": "Basic Info",
+    "Meal updated.": "Meal updated."
 }
