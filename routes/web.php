@@ -28,6 +28,7 @@ use App\Http\Controllers\Cook\QuarterController;
 use App\Http\Controllers\Cook\QuarterGroupController;
 use App\Http\Controllers\Cook\ScheduleTemplateController;
 use App\Http\Controllers\Cook\SetupWizardController;
+use App\Http\Controllers\Cook\TagController;
 use App\Http\Controllers\Cook\TownController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DiscoveryController;
@@ -455,6 +456,13 @@ Route::middleware('tenant.domain')->group(function () {
         Route::put('/meals/{meal}/schedule/{mealSchedule}/order-interval', [MealScheduleController::class, 'updateOrderInterval'])->name('cook.meals.schedule.update-order-interval');
         Route::put('/meals/{meal}/schedule/{mealSchedule}/delivery-pickup-interval', [MealScheduleController::class, 'updateDeliveryPickupInterval'])->name('cook.meals.schedule.update-delivery-pickup-interval');
         Route::delete('/meals/{meal}/schedule/revert', [MealScheduleController::class, 'revert'])->name('cook.meals.schedule.revert');
+
+        // Tag management (F-115: Cook Tag Management)
+        // BR-257: Only users with can-manage-meals permission (enforced in controller)
+        Route::get('/tags', [TagController::class, 'index'])->name('cook.tags.index');
+        Route::post('/tags', [TagController::class, 'store'])->name('cook.tags.store');
+        Route::put('/tags/{tag}', [TagController::class, 'update'])->name('cook.tags.update');
+        Route::delete('/tags/{tag}', [TagController::class, 'destroy'])->name('cook.tags.destroy');
     });
 
     // Tenant-specific routes will be added by later features (F-126, etc.)
