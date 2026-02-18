@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Cook;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cook\StoreMealRequest;
+use App\Services\MealLocationOverrideService;
 use App\Services\MealService;
 use Illuminate\Http\Request;
 
@@ -148,9 +149,10 @@ class MealController extends Controller
      * Show the meal edit form (stub for F-110).
      *
      * F-110: Meal Edit — placeholder route.
+     * F-096: Includes location override data.
      * BR-194: Only users with can-manage-meals permission.
      */
-    public function edit(Request $request, int $mealId): mixed
+    public function edit(Request $request, int $mealId, MealLocationOverrideService $overrideService): mixed
     {
         $user = $request->user();
         $tenant = tenant();
@@ -162,8 +164,16 @@ class MealController extends Controller
 
         $meal = $tenant->meals()->findOrFail($mealId);
 
+        // F-096: Location override data
+        $canManageLocations = $user->can('can-manage-delivery-areas');
+        $locationData = $canManageLocations
+            ? $overrideService->getLocationOverrideData($tenant, $meal)
+            : null;
+
         return gale()->view('cook.meals.edit', [
             'meal' => $meal,
+            'canManageLocations' => $canManageLocations,
+            'locationData' => $locationData,
         ], web: true);
     }
 }

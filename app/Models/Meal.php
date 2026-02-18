@@ -63,6 +63,7 @@ class Meal extends Model
         'is_available',
         'estimated_prep_time',
         'position',
+        'has_custom_locations',
     ];
 
     /**
@@ -78,6 +79,7 @@ class Meal extends Model
             'is_available' => 'boolean',
             'estimated_prep_time' => 'integer',
             'position' => 'integer',
+            'has_custom_locations' => 'boolean',
         ];
     }
 
@@ -95,6 +97,16 @@ class Meal extends Model
     public function components(): HasMany
     {
         return $this->hasMany(MealComponent::class);
+    }
+
+    /**
+     * Get the location overrides for this meal.
+     *
+     * F-096: Meal-Specific Location Override
+     */
+    public function locationOverrides(): HasMany
+    {
+        return $this->hasMany(MealLocationOverride::class);
     }
 
     /**
