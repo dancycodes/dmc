@@ -86,6 +86,11 @@
         @include('cook.meals._location-override')
     @endif
 
+    {{-- F-106: Schedule Override Section --}}
+    @if($canManageSchedules && $scheduleData)
+        @include('cook.meals._schedule-override')
+    @endif
+
     {{-- Placeholder sections for future features --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
         {{-- Images section (F-109) --}}
@@ -104,12 +109,6 @@
         <div class="bg-surface-alt dark:bg-surface-alt border border-outline dark:border-outline rounded-xl shadow-card p-6 opacity-60">
             <h3 class="text-base font-semibold text-on-surface-strong mb-2">{{ __('Tags') }}</h3>
             <p class="text-sm text-on-surface/70">{{ __('Tag assignment will be available soon.') }}</p>
-        </div>
-
-        {{-- Schedule section (F-106) --}}
-        <div class="bg-surface-alt dark:bg-surface-alt border border-outline dark:border-outline rounded-xl shadow-card p-6 opacity-60">
-            <h3 class="text-base font-semibold text-on-surface-strong mb-2">{{ __('Schedule') }}</h3>
-            <p class="text-sm text-on-surface/70">{{ __('Schedule overrides will be available soon.') }}</p>
         </div>
     </div>
 

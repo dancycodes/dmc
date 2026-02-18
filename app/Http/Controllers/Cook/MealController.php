@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Cook;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cook\StoreMealRequest;
+use App\Services\CookScheduleService;
 use App\Services\MealLocationOverrideService;
+use App\Services\MealScheduleService;
 use App\Services\MealService;
 use Illuminate\Http\Request;
 
@@ -150,10 +152,16 @@ class MealController extends Controller
      *
      * F-110: Meal Edit — placeholder route.
      * F-096: Includes location override data.
+     * F-106: Includes schedule override data.
      * BR-194: Only users with can-manage-meals permission.
      */
-    public function edit(Request $request, int $mealId, MealLocationOverrideService $overrideService): mixed
-    {
+    public function edit(
+        Request $request,
+        int $mealId,
+        MealLocationOverrideService $overrideService,
+        MealScheduleService $mealScheduleService,
+        CookScheduleService $cookScheduleService,
+    ): mixed {
         $user = $request->user();
         $tenant = tenant();
 
@@ -170,10 +178,33 @@ class MealController extends Controller
             ? $overrideService->getLocationOverrideData($tenant, $meal)
             : null;
 
+        // F-106: Schedule override data
+        $canManageSchedules = $user->can('can-manage-schedules');
+        $scheduleData = null;
+        if ($canManageSchedules) {
+            $hasCustomSchedule = $mealScheduleService->hasCustomSchedule($meal);
+            $scheduleData = [
+                'hasCustomSchedule' => $hasCustomSchedule,
+                'daysOfWeek' => \App\Models\MealSchedule::DAYS_OF_WEEK,
+                'dayLabels' => \App\Models\MealSchedule::DAY_LABELS,
+                'maxPerDay' => \App\Models\MealSchedule::MAX_ENTRIES_PER_DAY,
+            ];
+
+            if ($hasCustomSchedule) {
+                $scheduleData['schedulesByDay'] = $mealScheduleService->getSchedulesByDay($meal);
+                $scheduleData['summary'] = $mealScheduleService->getScheduleSummary($meal);
+            } else {
+                $scheduleData['cookSchedulesByDay'] = $cookScheduleService->getSchedulesByDay($tenant);
+                $scheduleData['cookSummary'] = $cookScheduleService->getScheduleSummary($tenant);
+            }
+        }
+
         return gale()->view('cook.meals.edit', [
             'meal' => $meal,
             'canManageLocations' => $canManageLocations,
             'locationData' => $locationData,
+            'canManageSchedules' => $canManageSchedules,
+            'scheduleData' => $scheduleData,
         ], web: true);
     }
 }
