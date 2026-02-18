@@ -631,6 +631,86 @@ class DeliveryAreaService
     }
 
     /**
+     * Update an existing pickup location.
+     *
+     * F-094: Edit Pickup Location
+     * BR-295: Location name required in both English and French
+     * BR-296: Town and quarter selection required
+     * BR-297: Address/description required; max 500 characters
+     * BR-298: Save via Gale; list updates without page reload
+     * BR-299: Changes apply to new orders; existing orders retain original data
+     * BR-300: Edit action requires location management permission
+     *
+     * @return array{success: bool, pickup_model: ?PickupLocation, error: string}
+     */
+    public function updatePickupLocation(
+        Tenant $tenant,
+        int $pickupLocationId,
+        string $nameEn,
+        string $nameFr,
+        int $townId,
+        int $quarterId,
+        string $address,
+    ): array {
+        $pickup = PickupLocation::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('id', $pickupLocationId)
+            ->first();
+
+        if (! $pickup) {
+            return [
+                'success' => false,
+                'pickup_model' => null,
+                'error' => __('Pickup location not found.'),
+            ];
+        }
+
+        // Verify the town belongs to the cook's delivery areas
+        $deliveryArea = DeliveryArea::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('town_id', $townId)
+            ->first();
+
+        if (! $deliveryArea) {
+            return [
+                'success' => false,
+                'pickup_model' => null,
+                'error' => __('Please select a town from your delivery areas.'),
+            ];
+        }
+
+        // Verify the quarter belongs to this town
+        $quarter = Quarter::query()
+            ->where('id', $quarterId)
+            ->where('town_id', $townId)
+            ->first();
+
+        if (! $quarter) {
+            return [
+                'success' => false,
+                'pickup_model' => null,
+                'error' => __('The selected quarter does not belong to this town.'),
+            ];
+        }
+
+        $pickup->update([
+            'name_en' => $nameEn,
+            'name_fr' => $nameFr,
+            'town_id' => $townId,
+            'quarter_id' => $quarterId,
+            'address' => $address,
+        ]);
+
+        $pickup->load(['town', 'quarter']);
+
+        return [
+            'success' => true,
+            'pickup_model' => $pickup,
+            'error' => '',
+        ];
+    }
+
+    /**
      * Remove a pickup location.
      */
     public function removePickupLocation(Tenant $tenant, int $pickupLocationId): bool

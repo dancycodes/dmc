@@ -1390,5 +1390,9 @@
     "Group fee updated successfully. All member quarters now use this fee.": "Group fee updated successfully. All member quarters now use this fee.",
     "Quarter group not found.": "Quarter group not found.",
     "Quarter delivery fee updated": "Quarter delivery fee updated",
-    "Quarter group delivery fee updated": "Quarter group delivery fee updated"
+    "Quarter group delivery fee updated": "Quarter group delivery fee updated",
+    "Edit Pickup Location": "Edit Pickup Location",
+    "Pickup location updated successfully.": "Pickup location updated successfully.",
+    "Pickup location not found.": "Pickup location not found.",
+    "Pickup location added successfully.": "Pickup location added successfully."
 }

@@ -1,12 +1,11 @@
 # Current Orchestrator Context
 ## Last Action
-- Started F-093 Pickup Location List View, IMPLEMENT phase
+- Completed F-093: Pickup Location List View (0 retries)
+- Merged to main, tagged must-have/F-093
 ## Active Features
-- F-093: IMPLEMENT phase (retry 0)
-## Recently Completed
-- F-092: Add Pickup Location (0 retries)
-- F-091: Delivery Fee Configuration (0 retries)
-- F-090: Quarter Group Creation (1 impl retry)
+- None
 ## Next Up
-- 22 eligible features after F-093
+- F-094: Edit Pickup Location (eligible, precedence F-093 met)
+## Recent Patterns
+- Clean runs continuing, 0 retries
 ## Mode: sequential, max_parallel: 1

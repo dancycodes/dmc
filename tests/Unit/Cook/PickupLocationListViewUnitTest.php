@@ -394,7 +394,7 @@ describe('Pickup Locations Blade Template', function () use ($projectRoot) {
     it('contains edit button with pencil icon (BR-294)', function () use ($projectRoot) {
         $content = file_get_contents($projectRoot.'/resources/views/cook/locations/pickup.blade.php');
         expect($content)->toContain("__('Edit')");
-        expect($content)->toContain('/edit');
+        expect($content)->toContain('startEdit(');
     });
 
     it('contains delete button with trash icon (BR-294)', function () use ($projectRoot) {
