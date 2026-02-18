@@ -80,6 +80,12 @@ describe('CookSchedule Model', function () {
             'order_start_day_offset',
             'order_end_time',
             'order_end_day_offset',
+            'delivery_enabled',
+            'delivery_start_time',
+            'delivery_end_time',
+            'pickup_enabled',
+            'pickup_start_time',
+            'pickup_end_time',
         ]);
     });
 

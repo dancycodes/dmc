@@ -407,6 +407,8 @@ Route::middleware('tenant.domain')->group(function () {
         Route::post('/schedule', [CookScheduleController::class, 'store'])->name('cook.schedule.store');
         // F-099: Order Time Interval Configuration
         Route::put('/schedule/{cookSchedule}/order-interval', [CookScheduleController::class, 'updateOrderInterval'])->name('cook.schedule.update-order-interval');
+        // F-100: Delivery/Pickup Time Interval Configuration
+        Route::put('/schedule/{cookSchedule}/delivery-pickup-interval', [CookScheduleController::class, 'updateDeliveryPickupInterval'])->name('cook.schedule.update-delivery-pickup-interval');
     });
 
     // Tenant-specific routes will be added by later features (F-126, etc.)

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * F-098: Cook Day Schedule Creation
  * F-099: Order Time Interval Configuration
+ * F-100: Delivery/Pickup Time Interval Configuration
  *
  * Represents a schedule entry for a specific day of the week within a tenant.
  * Multiple entries can exist per day (e.g., Lunch slot, Dinner slot) up to
@@ -19,6 +20,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Order interval fields define when clients can place orders relative to the
  * schedule's open day (order_start_time, order_start_day_offset,
  * order_end_time, order_end_day_offset).
+ *
+ * Delivery/pickup interval fields define when delivery and pickup are available
+ * on the open day. Both must start at or after the order interval end time.
  */
 class CookSchedule extends Model
 {
@@ -45,6 +49,12 @@ class CookSchedule extends Model
         'order_start_day_offset',
         'order_end_time',
         'order_end_day_offset',
+        'delivery_enabled',
+        'delivery_start_time',
+        'delivery_end_time',
+        'pickup_enabled',
+        'pickup_start_time',
+        'pickup_end_time',
     ];
 
     /**
@@ -104,6 +114,8 @@ class CookSchedule extends Model
             'position' => 'integer',
             'order_start_day_offset' => 'integer',
             'order_end_day_offset' => 'integer',
+            'delivery_enabled' => 'boolean',
+            'pickup_enabled' => 'boolean',
         ];
     }
 
@@ -262,5 +274,94 @@ class CookSchedule extends Model
         }
 
         return $options;
+    }
+
+    /**
+     * Check if this schedule entry has a delivery interval configured.
+     *
+     * F-100: Delivery/Pickup Time Interval Configuration
+     */
+    public function hasDeliveryInterval(): bool
+    {
+        return $this->delivery_enabled
+            && $this->delivery_start_time !== null
+            && $this->delivery_end_time !== null;
+    }
+
+    /**
+     * Check if this schedule entry has a pickup interval configured.
+     *
+     * F-100: Delivery/Pickup Time Interval Configuration
+     */
+    public function hasPickupInterval(): bool
+    {
+        return $this->pickup_enabled
+            && $this->pickup_start_time !== null
+            && $this->pickup_end_time !== null;
+    }
+
+    /**
+     * Get a human-readable summary of the delivery interval.
+     *
+     * F-100: BR-116 — delivery is always on the open day (no day offset).
+     */
+    public function getDeliveryIntervalSummaryAttribute(): ?string
+    {
+        if (! $this->hasDeliveryInterval()) {
+            return null;
+        }
+
+        $startTime = $this->formatTime($this->delivery_start_time);
+        $endTime = $this->formatTime($this->delivery_end_time);
+
+        return __(':startTime to :endTime', [
+            'startTime' => $startTime,
+            'endTime' => $endTime,
+        ]);
+    }
+
+    /**
+     * Get a human-readable summary of the pickup interval.
+     *
+     * F-100: BR-116 — pickup is always on the open day (no day offset).
+     */
+    public function getPickupIntervalSummaryAttribute(): ?string
+    {
+        if (! $this->hasPickupInterval()) {
+            return null;
+        }
+
+        $startTime = $this->formatTime($this->pickup_start_time);
+        $endTime = $this->formatTime($this->pickup_end_time);
+
+        return __(':startTime to :endTime', [
+            'startTime' => $startTime,
+            'endTime' => $endTime,
+        ]);
+    }
+
+    /**
+     * Get the order interval end time in minutes from midnight.
+     *
+     * F-100: BR-117/BR-118 — delivery/pickup start must be at or after
+     * order interval end. This returns the end time on the open day.
+     * If order_end_day_offset > 0, the order ends before the open day,
+     * so any time on the open day is valid (returns 0 = midnight).
+     */
+    public function getOrderEndTimeInMinutes(): ?int
+    {
+        if (! $this->hasOrderInterval()) {
+            return null;
+        }
+
+        // If order ends before the open day (offset > 0), any time on open day is valid
+        if ($this->order_end_day_offset > 0) {
+            return 0;
+        }
+
+        // Order ends on the same day — parse the time
+        $parts = explode(':', $this->order_end_time);
+
+        return ((int) $parts[0] * 60) + (int) ($parts[1] ?? 0);
     }
 }
