@@ -1491,5 +1491,22 @@
     "End Time": "Heure de fin",
     "No intervals": "Pas d'intervalles",
     "No time intervals for unavailable entries": "Pas d'intervalles de temps pour les entrées indisponibles",
-    "Orders": "Commandes"
+    "Orders": "Commandes",
+    "Schedule Templates": "Modèles d'horaire",
+    "Create Template": "Créer un modèle",
+    "Create reusable schedule templates to quickly configure multiple days.": "Créez des modèles d'horaire réutilisables pour configurer rapidement plusieurs jours.",
+    "Back to Schedule": "Retour à l'horaire",
+    "Template Name": "Nom du modèle",
+    "e.g., Lunch Service, Dinner Service": "ex. Service déjeuner, Service dîner",
+    "Must be unique within your templates.": "Doit être unique parmi vos modèles.",
+    "Order Interval": "Intervalle de commande",
+    "When clients can place orders relative to the open day.": "Quand les clients peuvent passer des commandes par rapport au jour d'ouverture.",
+    "Template Summary": "Résumé du modèle",
+    "Not set": "Non défini",
+    "Creating...": "Création...",
+    "Template name is required.": "Le nom du modèle est requis.",
+    "Template name must not exceed 100 characters.": "Le nom du modèle ne doit pas dépasser 100 caractères.",
+    "A template with this name already exists.": "Un modèle avec ce nom existe déjà.",
+    "Schedule template created successfully.": "Modèle d'horaire créé avec succès.",
+    "Existing Templates": "Modèles existants"
 }
