@@ -92,4 +92,34 @@ class CookScheduleFactory extends Factory
             'label' => null,
         ]);
     }
+
+    /**
+     * Create with an order interval configured.
+     *
+     * F-099: Order Time Interval Configuration
+     */
+    public function withOrderInterval(
+        string $startTime = '18:00',
+        int $startDayOffset = 1,
+        string $endTime = '08:00',
+        int $endDayOffset = 0,
+    ): static {
+        return $this->state(fn () => [
+            'is_available' => true,
+            'order_start_time' => $startTime,
+            'order_start_day_offset' => $startDayOffset,
+            'order_end_time' => $endTime,
+            'order_end_day_offset' => $endDayOffset,
+        ]);
+    }
+
+    /**
+     * Create a same-day order interval.
+     *
+     * F-099: Order Time Interval Configuration
+     */
+    public function withSameDayInterval(string $startTime = '06:00', string $endTime = '10:00'): static
+    {
+        return $this->withOrderInterval($startTime, 0, $endTime, 0);
+    }
 }

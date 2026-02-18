@@ -9,11 +9,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * F-098: Cook Day Schedule Creation
+ * F-099: Order Time Interval Configuration
  *
  * Represents a schedule entry for a specific day of the week within a tenant.
  * Multiple entries can exist per day (e.g., Lunch slot, Dinner slot) up to
  * a configurable maximum (default 3). Each entry can be marked as available
  * or unavailable and serves as the foundation for time interval configuration.
+ *
+ * Order interval fields define when clients can place orders relative to the
+ * schedule's open day (order_start_time, order_start_day_offset,
+ * order_end_time, order_end_day_offset).
  */
 class CookSchedule extends Model
 {
@@ -36,12 +41,26 @@ class CookSchedule extends Model
         'is_available',
         'label',
         'position',
+        'order_start_time',
+        'order_start_day_offset',
+        'order_end_time',
+        'order_end_day_offset',
     ];
 
     /**
      * BR-100: Maximum schedule entries per day (configurable, default 3).
      */
     public const MAX_ENTRIES_PER_DAY = 3;
+
+    /**
+     * BR-110: Maximum day offset for order start (7 days before the open day).
+     */
+    public const MAX_START_DAY_OFFSET = 7;
+
+    /**
+     * BR-111: Maximum day offset for order end (1 day before the open day).
+     */
+    public const MAX_END_DAY_OFFSET = 1;
 
     /**
      * Valid days of the week.
@@ -83,6 +102,8 @@ class CookSchedule extends Model
         return [
             'is_available' => 'boolean',
             'position' => 'integer',
+            'order_start_day_offset' => 'integer',
+            'order_end_day_offset' => 'integer',
         ];
     }
 
@@ -146,5 +167,100 @@ class CookSchedule extends Model
     public function scopeAvailable($query)
     {
         return $query->where('is_available', true);
+    }
+
+    /**
+     * Check if this schedule entry has an order interval configured.
+     */
+    public function hasOrderInterval(): bool
+    {
+        return $this->order_start_time !== null && $this->order_end_time !== null;
+    }
+
+    /**
+     * Get a human-readable summary of the order interval.
+     *
+     * Examples:
+     * - "6:00 PM day before to 8:00 AM same day"
+     * - "12:00 PM 2 days before to 6:00 PM day before"
+     * - "6:00 AM same day to 10:00 AM same day"
+     */
+    public function getOrderIntervalSummaryAttribute(): ?string
+    {
+        if (! $this->hasOrderInterval()) {
+            return null;
+        }
+
+        $startTime = $this->formatTime($this->order_start_time);
+        $endTime = $this->formatTime($this->order_end_time);
+        $startOffset = $this->formatDayOffset($this->order_start_day_offset);
+        $endOffset = $this->formatDayOffset($this->order_end_day_offset);
+
+        return __(':startTime :startOffset to :endTime :endOffset', [
+            'startTime' => $startTime,
+            'startOffset' => $startOffset,
+            'endTime' => $endTime,
+            'endOffset' => $endOffset,
+        ]);
+    }
+
+    /**
+     * Format a time value for display (12-hour format with AM/PM).
+     */
+    private function formatTime(string $time): string
+    {
+        return date('g:i A', strtotime($time));
+    }
+
+    /**
+     * Format a day offset for display.
+     *
+     * @return string Human-readable day offset label
+     */
+    public static function formatDayOffset(int $offset): string
+    {
+        if ($offset === 0) {
+            return __('same day');
+        }
+
+        if ($offset === 1) {
+            return __('day before');
+        }
+
+        return __(':count days before', ['count' => $offset]);
+    }
+
+    /**
+     * Get the day offset options for the start time.
+     *
+     * BR-106/BR-110: 0 (same day) through 7 (7 days before)
+     *
+     * @return array<int, string>
+     */
+    public static function getStartDayOffsetOptions(): array
+    {
+        $options = [];
+        for ($i = 0; $i <= self::MAX_START_DAY_OFFSET; $i++) {
+            $options[$i] = self::formatDayOffset($i);
+        }
+
+        return $options;
+    }
+
+    /**
+     * Get the day offset options for the end time.
+     *
+     * BR-107/BR-111: 0 (same day) or 1 (day before)
+     *
+     * @return array<int, string>
+     */
+    public static function getEndDayOffsetOptions(): array
+    {
+        $options = [];
+        for ($i = 0; $i <= self::MAX_END_DAY_OFFSET; $i++) {
+            $options[$i] = self::formatDayOffset($i);
+        }
+
+        return $options;
     }
 }

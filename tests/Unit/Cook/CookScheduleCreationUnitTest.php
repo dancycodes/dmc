@@ -76,6 +76,10 @@ describe('CookSchedule Model', function () {
             'is_available',
             'label',
             'position',
+            'order_start_time',
+            'order_start_day_offset',
+            'order_end_time',
+            'order_end_day_offset',
         ]);
     });
 
