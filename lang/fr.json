@@ -1513,5 +1513,10 @@
     "Applied": "Appliqué",
     ":count day|:count days": ":count jour|:count jours",
     "Apply to Days": "Appliquer aux jours",
-    "Apply": "Appliquer"
+    "Apply": "Appliquer",
+    "Edit Template": "Modifier le modèle",
+    "Modify the schedule template settings.": "Modifier les paramètres du modèle de planning.",
+    "Back to Templates": "Retour aux modèles",
+    "Changes will not affect schedules already using this template. Re-apply to update them.": "Les modifications n'affecteront pas les plannings utilisant déjà ce modèle. Réappliquez pour les mettre à jour.",
+    "Schedule template updated successfully.": "Modèle de planning mis à jour avec succès."
 }

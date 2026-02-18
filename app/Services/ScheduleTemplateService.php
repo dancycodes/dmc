@@ -139,6 +139,131 @@ class ScheduleTemplateService
     }
 
     /**
+     * F-103: Update an existing schedule template.
+     *
+     * BR-140: All validation rules from F-099 and F-100 apply to template edits
+     * BR-141: Template name must remain unique within the tenant
+     * BR-142: Editing a template does NOT propagate changes to day schedules
+     *
+     * @return array{success: bool, template?: ScheduleTemplate, error?: string, field?: string}
+     */
+    public function updateTemplate(
+        ScheduleTemplate $template,
+        string $name,
+        string $orderStartTime,
+        int $orderStartDayOffset,
+        string $orderEndTime,
+        int $orderEndDayOffset,
+        bool $deliveryEnabled,
+        ?string $deliveryStartTime,
+        ?string $deliveryEndTime,
+        bool $pickupEnabled,
+        ?string $pickupStartTime,
+        ?string $pickupEndTime,
+    ): array {
+        $name = trim($name);
+
+        // BR-141: Check name uniqueness within tenant (case-insensitive), excluding current template
+        $exists = ScheduleTemplate::query()
+            ->forTenant($template->tenant_id)
+            ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
+            ->where('id', '!=', $template->id)
+            ->exists();
+
+        if ($exists) {
+            return [
+                'success' => false,
+                'error' => __('A template with this name already exists.'),
+                'field' => 'name',
+            ];
+        }
+
+        // BR-140/BR-108: Validate order interval chronological order
+        if (! $this->cookScheduleService->isIntervalChronologicallyValid(
+            $orderStartTime,
+            $orderStartDayOffset,
+            $orderEndTime,
+            $orderEndDayOffset,
+        )) {
+            return [
+                'success' => false,
+                'error' => __('The order interval end must be after the start. Please adjust the times or day offsets.'),
+                'field' => 'order_start_time',
+            ];
+        }
+
+        // BR-130: At least one of delivery or pickup must be enabled
+        if (! $deliveryEnabled && ! $pickupEnabled) {
+            return [
+                'success' => false,
+                'error' => __('At least one of delivery or pickup must be enabled.'),
+                'field' => 'delivery_enabled',
+            ];
+        }
+
+        // Calculate order end time in minutes for delivery/pickup validation
+        $orderEndMinutes = $this->getOrderEndTimeInMinutes($orderEndTime, $orderEndDayOffset);
+
+        // Validate delivery interval if enabled
+        if ($deliveryEnabled) {
+            $deliveryValidation = $this->validateTimeWindow(
+                'delivery',
+                $deliveryStartTime,
+                $deliveryEndTime,
+                $orderEndMinutes,
+            );
+
+            if ($deliveryValidation !== null) {
+                return $deliveryValidation;
+            }
+        }
+
+        // Validate pickup interval if enabled
+        if ($pickupEnabled) {
+            $pickupValidation = $this->validateTimeWindow(
+                'pickup',
+                $pickupStartTime,
+                $pickupEndTime,
+                $orderEndMinutes,
+            );
+
+            if ($pickupValidation !== null) {
+                return $pickupValidation;
+            }
+        }
+
+        // BR-142: Update the template only — day schedules remain untouched
+        $template->update([
+            'name' => $name,
+            'order_start_time' => $orderStartTime,
+            'order_start_day_offset' => $orderStartDayOffset,
+            'order_end_time' => $orderEndTime,
+            'order_end_day_offset' => $orderEndDayOffset,
+            'delivery_enabled' => $deliveryEnabled,
+            'delivery_start_time' => $deliveryEnabled ? $deliveryStartTime : null,
+            'delivery_end_time' => $deliveryEnabled ? $deliveryEndTime : null,
+            'pickup_enabled' => $pickupEnabled,
+            'pickup_start_time' => $pickupEnabled ? $pickupStartTime : null,
+            'pickup_end_time' => $pickupEnabled ? $pickupEndTime : null,
+        ]);
+
+        return [
+            'success' => true,
+            'template' => $template->fresh(),
+        ];
+    }
+
+    /**
+     * Find a template by ID for a specific tenant.
+     */
+    public function findTemplateForTenant(Tenant $tenant, int $templateId): ?ScheduleTemplate
+    {
+        return ScheduleTemplate::query()
+            ->forTenant($tenant->id)
+            ->find($templateId);
+    }
+
+    /**
      * Get all templates for a tenant, ordered by name.
      *
      * @return \Illuminate\Database\Eloquent\Collection<int, ScheduleTemplate>
