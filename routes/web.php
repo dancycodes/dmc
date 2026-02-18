@@ -18,6 +18,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Cook\BrandProfileController;
 use App\Http\Controllers\Cook\CoverImageController;
 use App\Http\Controllers\Cook\DeliveryFeeController;
+use App\Http\Controllers\Cook\PickupLocationController;
 use App\Http\Controllers\Cook\QuarterController;
 use App\Http\Controllers\Cook\QuarterGroupController;
 use App\Http\Controllers\Cook\SetupWizardController;
@@ -375,6 +376,11 @@ Route::middleware('tenant.domain')->group(function () {
         Route::get('/locations/delivery-fees', [DeliveryFeeController::class, 'index'])->name('cook.locations.delivery-fees');
         Route::put('/locations/delivery-fees/quarter/{deliveryAreaQuarter}', [DeliveryFeeController::class, 'updateQuarterFee'])->name('cook.locations.delivery-fees.quarter.update');
         Route::put('/locations/delivery-fees/group/{group}', [DeliveryFeeController::class, 'updateGroupFee'])->name('cook.locations.delivery-fees.group.update');
+
+        // Pickup location management (F-092: Add Pickup Location)
+        // BR-288: Only users with can-manage-locations permission
+        Route::get('/locations/pickup', [PickupLocationController::class, 'index'])->name('cook.locations.pickup.index');
+        Route::post('/locations/pickup', [PickupLocationController::class, 'store'])->name('cook.locations.pickup.store');
     });
 
     // Tenant-specific routes will be added by later features (F-126, etc.)

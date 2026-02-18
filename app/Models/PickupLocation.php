@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Traits\HasTranslatable;
+use App\Traits\LogsActivityTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class PickupLocation extends Model
 {
     /** @use HasFactory<\Database\Factories\PickupLocationFactory> */
-    use HasFactory, HasTranslatable;
+    use HasFactory, HasTranslatable, LogsActivityTrait;
 
     /**
      * The table associated with the model.
