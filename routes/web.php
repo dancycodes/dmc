@@ -19,6 +19,7 @@ use App\Http\Controllers\Cook\BrandProfileController;
 use App\Http\Controllers\Cook\CookScheduleController;
 use App\Http\Controllers\Cook\CoverImageController;
 use App\Http\Controllers\Cook\DeliveryFeeController;
+use App\Http\Controllers\Cook\MealComponentController;
 use App\Http\Controllers\Cook\MealController;
 use App\Http\Controllers\Cook\MealImageController;
 use App\Http\Controllers\Cook\MealLocationOverrideController;
@@ -459,6 +460,8 @@ Route::middleware('tenant.domain')->group(function () {
         Route::delete('/meals/{meal}/schedule/revert', [MealScheduleController::class, 'revert'])->name('cook.meals.schedule.revert');
         // F-114: Meal Tag Assignment
         Route::post('/meals/{meal}/tags', [MealTagController::class, 'sync'])->name('cook.meals.tags.sync');
+        // F-118: Meal Component Creation
+        Route::post('/meals/{meal}/components', [MealComponentController::class, 'store'])->name('cook.meals.components.store');
 
         // Tag management (F-115: Cook Tag Management)
         // BR-257: Only users with can-manage-meals permission (enforced in controller)
