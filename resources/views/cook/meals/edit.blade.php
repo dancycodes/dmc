@@ -369,14 +369,12 @@
         </div>
     @endif
 
-    {{-- Placeholder sections for future features --}}
-    <div class="mt-6">
-        {{-- Components section (F-118) --}}
-        <div class="bg-surface-alt dark:bg-surface-alt border border-outline dark:border-outline rounded-xl shadow-card p-6 opacity-60">
-            <h3 class="text-base font-semibold text-on-surface-strong mb-2">{{ __('Components') }}</h3>
-            <p class="text-sm text-on-surface/70">{{ __('Meal components will be available soon.') }}</p>
+    {{-- F-118: Meal Components Section --}}
+    @if($canManageMeals && $componentData)
+        <div class="mt-6">
+            @include('cook.meals._components')
         </div>
-    </div>
+    @endif
 
     {{-- Back to meals --}}
     <div class="mt-6 flex items-center">

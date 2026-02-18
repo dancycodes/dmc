@@ -7,6 +7,7 @@ use App\Http\Requests\Cook\StoreMealRequest;
 use App\Http\Requests\Cook\UpdateMealRequest;
 use App\Models\Meal;
 use App\Services\CookScheduleService;
+use App\Services\MealComponentService;
 use App\Services\MealImageService;
 use App\Services\MealLocationOverrideService;
 use App\Services\MealScheduleService;
@@ -196,6 +197,7 @@ class MealController extends Controller
         CookScheduleService $cookScheduleService,
         MealImageService $imageService,
         MealTagService $mealTagService,
+        MealComponentService $componentService,
     ): mixed {
         $user = $request->user();
         $tenant = tenant();
@@ -248,6 +250,14 @@ class MealController extends Controller
             ? $mealTagService->getTagAssignmentData($tenant, $meal)
             : null;
 
+        // F-118: Meal component data
+        $componentData = $canManageMeals
+            ? $componentService->getComponentsData($meal)
+            : null;
+        $availableUnits = $canManageMeals
+            ? $componentService->getAvailableUnitsWithLabels($tenant)
+            : [];
+
         return gale()->view('cook.meals.edit', [
             'meal' => $meal,
             'canManageLocations' => $canManageLocations,
@@ -260,6 +270,8 @@ class MealController extends Controller
             'canDeleteInfo' => $canDeleteInfo,
             'completedOrders' => $completedOrders,
             'tagData' => $tagData,
+            'componentData' => $componentData,
+            'availableUnits' => $availableUnits,
         ], web: true);
     }
 
