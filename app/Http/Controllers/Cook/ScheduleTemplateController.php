@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 
 /**
  * F-101: Create Schedule Template
+ * F-102: Schedule Template List View
  *
  * Manages schedule templates for cooks. Templates are reusable
  * configurations that bundle order, delivery, and pickup intervals
@@ -17,6 +18,31 @@ use Illuminate\Http\Request;
  */
 class ScheduleTemplateController extends Controller
 {
+    /**
+     * F-102: Display the list of schedule templates.
+     *
+     * BR-136: Tenant-scoped — only shows templates belonging to the current tenant
+     * BR-137: Shows "applied to" count via withCount('cookSchedules')
+     * BR-138: Only users with can-manage-schedules permission
+     * BR-139: Alphabetical order by name
+     */
+    public function index(Request $request, ScheduleTemplateService $templateService): mixed
+    {
+        $user = $request->user();
+        $tenant = tenant();
+
+        // BR-138: Permission check
+        if (! $user->can('can-manage-schedules')) {
+            abort(403);
+        }
+
+        $templates = $templateService->getTemplatesWithAppliedCount($tenant);
+
+        return gale()->view('cook.schedule.templates.index', [
+            'templates' => $templates,
+        ], web: true);
+    }
+
     /**
      * Show the template creation form.
      *

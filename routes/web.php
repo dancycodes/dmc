@@ -411,8 +411,9 @@ Route::middleware('tenant.domain')->group(function () {
         // F-100: Delivery/Pickup Time Interval Configuration
         Route::put('/schedule/{cookSchedule}/delivery-pickup-interval', [CookScheduleController::class, 'updateDeliveryPickupInterval'])->name('cook.schedule.update-delivery-pickup-interval');
 
-        // Schedule templates (F-101: Create Schedule Template)
-        // BR-133: Only users with can-manage-schedules permission (enforced in controller)
+        // Schedule templates (F-101, F-102, F-103, F-104, F-105)
+        // BR-133/BR-138: Only users with can-manage-schedules permission (enforced in controller)
+        Route::get('/schedule/templates', [ScheduleTemplateController::class, 'index'])->name('cook.schedule-templates.index');
         Route::get('/schedule/templates/create', [ScheduleTemplateController::class, 'create'])->name('cook.schedule-templates.create');
         Route::post('/schedule/templates', [ScheduleTemplateController::class, 'store'])->name('cook.schedule-templates.store');
     });

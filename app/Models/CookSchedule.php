@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * F-098: Cook Day Schedule Creation
  * F-099: Order Time Interval Configuration
  * F-100: Delivery/Pickup Time Interval Configuration
+ * F-102: Schedule Template List View (template_id reference)
  *
  * Represents a schedule entry for a specific day of the week within a tenant.
  * Multiple entries can exist per day (e.g., Lunch slot, Dinner slot) up to
@@ -55,6 +56,7 @@ class CookSchedule extends Model
         'pickup_enabled',
         'pickup_start_time',
         'pickup_end_time',
+        'template_id',
     ];
 
     /**
@@ -125,6 +127,18 @@ class CookSchedule extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    /**
+     * F-102: Get the schedule template this entry was created from.
+     *
+     * BR-137: Tracks which template was used to create this schedule entry.
+     * Set by F-105 (Template Application to Days). Nullable — most entries
+     * are created manually without a template.
+     */
+    public function template(): BelongsTo
+    {
+        return $this->belongsTo(ScheduleTemplate::class, 'template_id');
     }
 
     /**

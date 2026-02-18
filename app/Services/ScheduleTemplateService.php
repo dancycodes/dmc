@@ -7,6 +7,7 @@ use App\Models\Tenant;
 
 /**
  * F-101: Create Schedule Template
+ * F-102: Schedule Template List View
  *
  * Service layer handling all business logic for schedule template management.
  * Reuses interval validation logic from CookScheduleService for consistency.
@@ -146,6 +147,24 @@ class ScheduleTemplateService
     {
         return ScheduleTemplate::query()
             ->forTenant($tenant->id)
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
+     * F-102: Get all templates for a tenant with applied-to count.
+     *
+     * BR-137: The "applied to" count reflects how many schedule entries
+     * were created from this template (tracked via template_id reference).
+     * BR-139: Templates listed in alphabetical order by name.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, ScheduleTemplate>
+     */
+    public function getTemplatesWithAppliedCount(Tenant $tenant): \Illuminate\Database\Eloquent\Collection
+    {
+        return ScheduleTemplate::query()
+            ->forTenant($tenant->id)
+            ->withCount('cookSchedules')
             ->orderBy('name')
             ->get();
     }
