@@ -1518,5 +1518,10 @@
     "Modify the schedule template settings.": "Modify the schedule template settings.",
     "Back to Templates": "Back to Templates",
     "Changes will not affect schedules already using this template. Re-apply to update them.": "Changes will not affect schedules already using this template. Re-apply to update them.",
-    "Schedule template updated successfully.": "Schedule template updated successfully."
+    "Schedule template updated successfully.": "Schedule template updated successfully.",
+    "Delete Template": "Delete Template",
+    "Delete template": "Delete template",
+    "Schedule template \":name\" deleted successfully.": "Schedule template \":name\" deleted successfully.",
+    "This template was applied to": "This template was applied to",
+    "day schedule(s). Those schedules will keep their current settings.": "day schedule(s). Those schedules will keep their current settings."
 }

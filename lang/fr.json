@@ -1518,5 +1518,10 @@
     "Modify the schedule template settings.": "Modifier les paramètres du modèle de planning.",
     "Back to Templates": "Retour aux modèles",
     "Changes will not affect schedules already using this template. Re-apply to update them.": "Les modifications n'affecteront pas les plannings utilisant déjà ce modèle. Réappliquez pour les mettre à jour.",
-    "Schedule template updated successfully.": "Modèle de planning mis à jour avec succès."
+    "Schedule template updated successfully.": "Modèle de planning mis à jour avec succès.",
+    "Delete Template": "Supprimer le modèle",
+    "Delete template": "Supprimer le modèle",
+    "Schedule template \":name\" deleted successfully.": "Modèle de planning \":name\" supprimé avec succès.",
+    "This template was applied to": "Ce modèle a été appliqué à",
+    "day schedule(s). Those schedules will keep their current settings.": "planning(s) de jour. Ces plannings conserveront leurs paramètres actuels."
 }

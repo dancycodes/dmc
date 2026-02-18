@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
  * F-101: Create Schedule Template
  * F-102: Schedule Template List View
  * F-103: Edit Schedule Template
+ * F-104: Delete Schedule Template
  *
  * Manages schedule templates for cooks. Templates are reusable
  * configurations that bundle order, delivery, and pickup intervals
@@ -362,5 +363,53 @@ class ScheduleTemplateController extends Controller
 
         return redirect()->route('cook.schedule-templates.index')
             ->with('success', __('Schedule template updated successfully.'));
+    }
+
+    /**
+     * F-104: Delete a schedule template.
+     *
+     * BR-146: Deleting does NOT affect day schedules (values were copied, not linked)
+     * BR-147: Confirmation handled client-side via Alpine.js modal
+     * BR-149: Hard delete
+     * BR-150: Logged via Spatie Activitylog
+     * BR-151: Only users with can-manage-schedules permission
+     * BR-152: template_id on affected CookSchedule entries set to null (via DB FK constraint)
+     */
+    public function destroy(Request $request, ScheduleTemplate $scheduleTemplate, ScheduleTemplateService $templateService): mixed
+    {
+        $user = $request->user();
+        $tenant = tenant();
+
+        // BR-151: Permission check
+        if (! $user->can('can-manage-schedules')) {
+            abort(403);
+        }
+
+        // Ensure template belongs to current tenant
+        if ($scheduleTemplate->tenant_id !== $tenant->id) {
+            abort(404);
+        }
+
+        $result = $templateService->deleteTemplate($scheduleTemplate);
+
+        // BR-150: Activity logging
+        activity('schedule_templates')
+            ->causedBy($user)
+            ->withProperties([
+                'action' => 'template_deleted',
+                'name' => $result['template_name'],
+                'applied_count' => $result['applied_count'],
+                'tenant_id' => $tenant->id,
+            ])
+            ->log('Schedule template deleted');
+
+        if ($request->isGale()) {
+            return gale()
+                ->redirect(url('/dashboard/schedule/templates'))
+                ->with('success', __('Schedule template ":name" deleted successfully.', ['name' => $result['template_name']]));
+        }
+
+        return redirect()->route('cook.schedule-templates.index')
+            ->with('success', __('Schedule template ":name" deleted successfully.', ['name' => $result['template_name']]));
     }
 }
