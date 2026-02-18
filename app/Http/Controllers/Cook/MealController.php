@@ -161,6 +161,7 @@ class MealController extends Controller
     public function edit(
         Request $request,
         int $mealId,
+        MealService $mealService,
         MealLocationOverrideService $overrideService,
         MealScheduleService $mealScheduleService,
         CookScheduleService $cookScheduleService,
@@ -208,6 +209,10 @@ class MealController extends Controller
         $mealImages = $imageService->getImagesData($meal);
         $mealImageCount = $imageService->getImageCount($meal);
 
+        // F-111: Delete eligibility data
+        $canDeleteInfo = $mealService->canDeleteMeal($meal);
+        $completedOrders = $mealService->getCompletedOrderCount($meal);
+
         return gale()->view('cook.meals.edit', [
             'meal' => $meal,
             'canManageLocations' => $canManageLocations,
@@ -217,6 +222,8 @@ class MealController extends Controller
             'canManageMeals' => $canManageMeals,
             'mealImages' => $mealImages,
             'mealImageCount' => $mealImageCount,
+            'canDeleteInfo' => $canDeleteInfo,
+            'completedOrders' => $completedOrders,
         ], web: true);
     }
 
@@ -318,5 +325,69 @@ class MealController extends Controller
 
         return redirect($redirectUrl)
             ->with('success', __('Meal updated.'));
+    }
+
+    /**
+     * Delete a meal (soft delete).
+     *
+     * F-111: Meal Delete
+     * BR-218: Soft-deleted (preserved with deleted_at timestamp)
+     * BR-219: Cannot delete with pending/active orders
+     * BR-220: Immediately hidden from tenant landing page
+     * BR-221: Removed from cook's meal list
+     * BR-224: Confirmation dialog shown before deletion (frontend)
+     * BR-225: Deletion logged via Spatie Activitylog
+     * BR-226: Only users with manage-meals permission
+     */
+    public function destroy(Request $request, int $mealId, MealService $mealService): mixed
+    {
+        $user = $request->user();
+        $tenant = tenant();
+
+        // BR-226: Permission check
+        if (! $user->can('can-manage-meals')) {
+            abort(403);
+        }
+
+        $meal = $tenant->meals()->findOrFail($mealId);
+
+        // Use MealService for business logic
+        $result = $mealService->deleteMeal($meal);
+
+        if (! $result['success']) {
+            // BR-219: Pending orders exist
+            if ($request->isGale()) {
+                return gale()
+                    ->redirect(url('/dashboard/meals'))
+                    ->back()
+                    ->with('error', $result['error']);
+            }
+
+            return redirect()->back()
+                ->with('error', $result['error']);
+        }
+
+        // BR-225: Activity logging
+        activity('meals')
+            ->performedOn($meal)
+            ->causedBy($user)
+            ->withProperties([
+                'action' => 'meal_deleted',
+                'name_en' => $meal->name_en,
+                'name_fr' => $meal->name_fr,
+                'status' => $meal->status,
+                'tenant_id' => $tenant->id,
+            ])
+            ->log('Meal deleted');
+
+        // Redirect to meal list with success toast
+        if ($request->isGale()) {
+            return gale()
+                ->redirect(url('/dashboard/meals'))
+                ->with('success', __('Meal deleted.'));
+        }
+
+        return redirect(url('/dashboard/meals'))
+            ->with('success', __('Meal deleted.'));
     }
 }

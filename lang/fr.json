@@ -1615,5 +1615,13 @@
     "Next image": "Image suivante",
     "Manage your meal details, images, and settings.": "Gerez les details, images et parametres de votre repas.",
     "Basic Info": "Informations de base",
-    "Meal updated.": "Repas mis a jour."
+    "Meal updated.": "Repas mis a jour.",
+    "Meal deleted.": "Repas supprime.",
+    "Delete Meal": "Supprimer le repas",
+    "Delete meal": "Supprimer le repas",
+    "Are you sure you want to delete": "Etes-vous sur de vouloir supprimer",
+    "This will remove it from your menu.": "Cela le retirera de votre menu.",
+    "This meal has :count past orders. Order history will be preserved.": "Ce repas a :count commandes passees. L'historique des commandes sera conserve.",
+    "Cannot delete this meal": "Impossible de supprimer ce repas",
+    "Cannot delete — :count pending orders exist. Complete or cancel them first.": "Impossible de supprimer — :count commandes en cours existent. Completez-les ou annulez-les d'abord."
 }
