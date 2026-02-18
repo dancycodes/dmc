@@ -52,11 +52,12 @@ class MealFactory extends Factory
     {
         $name = fake()->randomElement(self::MEAL_NAMES);
         $description = fake()->randomElement(self::DESCRIPTIONS);
+        $suffix = ' ' . fake()->unique()->numerify('###');
 
         return [
             'tenant_id' => Tenant::factory(),
-            'name_en' => $name['en'],
-            'name_fr' => $name['fr'],
+            'name_en' => $name['en'] . $suffix,
+            'name_fr' => $name['fr'] . $suffix,
             'description_en' => $description['en'],
             'description_fr' => $description['fr'],
             'price' => fake()->randomElement([500, 1000, 1500, 2000, 2500, 3000, 3500, 5000]),

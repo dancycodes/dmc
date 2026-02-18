@@ -1,0 +1,81 @@
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Cook\MealCreationUnitTest[39m
+  [32;1m✓[39;22m[90m [39m[90mit has the correct fillable attributes[39m[90m                                                                      [39m [90m1.93s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit has correct casts[39m[90m                                                                                        [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit has status constants[39m[90m                                                                                     [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit uses soft deletes[39m[90m                                                                                        [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit has HasTranslatable trait[39m[90m                                                                                [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit has LogsActivityTrait[39m[90m                                                                                    [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit belongs to a tenant[39m[90m                                                                                      [39m [90m0.20s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit has many components relationship[39m[90m                                                                         [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit can check if meal is draft[39m[90m                                                                               [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit can check if meal is live[39m[90m                                                                                [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit scopes to draft meals[39m[90m                                                                                    [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit scopes to live meals[39m[90m                                                                                     [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit scopes to available meals[39m[90m                                                                                [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit scopes to meals for a specific tenant[39m[90m                                                                    [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit calculates next position for tenant[39m[90m                                                                      [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit creates a meal with factory defaults[39m[90m                                                                     [39m [90m0.16s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit has a live factory state[39m[90m                                                                                 [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit has a draft factory state[39m[90m                                                                                [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit has an unavailable factory state[39m[90m                                                                         [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit has a positioned factory state[39m[90m                                                                           [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit has a prep time factory state[39m[90m                                                                            [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit creates a meal successfully[39m[90m                                                                              [39m [90m0.25s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit BR-190: creates meal with draft status by default[39m[90m                                                        [39m [90m0.16s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit BR-191: creates meal with available status by default[39m[90m                                                    [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit BR-189: rejects duplicate English meal name within tenant[39m[90m                                                [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit BR-189: rejects duplicate French meal name within tenant[39m[90m                                                 [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit BR-189: name uniqueness is case-insensitive[39m[90m                                                              [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit BR-193: allows same meal name in different tenants[39m[90m                                                       [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit trims whitespace from meal names and descriptions[39m[90m                                                        [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit strips HTML tags from descriptions for XSS prevention[39m[90m                                                    [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit assigns auto-incrementing position for new meals[39m[90m                                                         [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit accepts meal name with special characters[39m[90m                                                                [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit accepts name at exactly 150 characters[39m[90m                                                                   [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit StoreMealRequest authorizes users with can-manage-meals permission[39m[90m                                       [39m [90m0.47s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit StoreMealRequest validates all required fields[39m[90m                                                           [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit StoreMealRequest has localized validation messages[39m[90m                                                       [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit checkNameUniqueness can exclude a specific meal ID[39m[90m                                                       [39m [90m0.14s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Cook\ScheduleMealStepTest[39m
+  [32;1m✓[39;22m[90m [39m[90mschedule belongs to tenant[39m[90m                                                                                  [39m [90m0.19s[39m  
+  [32;1m✓[39;22m[90m [39m[90mschedule has day label accessor[39m[90m                                                                             [39m [90m0.16s[39m  
+  [32;1m✓[39;22m[90m [39m[90mschedule casts day_of_week to integer[39m[90m                                                                       [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mschedule casts is_available to boolean[39m[90m                                                                      [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mschedule has correct day constants[39m[90m                                                                          [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90mschedule day labels cover all days[39m[90m                                                                          [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90mschedule enforces unique tenant day constraint[39m[90m                                                              [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mschedule allows same day for different tenants[39m[90m                                                              [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mmeal belongs to tenant[39m[90m                                                                                      [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mmeal has many components[39m[90m                                                                                    [39m [90m0.17s[39m  
+  [32;1m✓[39;22m[90m [39m[90mmeal casts price to integer[39m[90m                                                                                 [39m [90m0.26s[39m  
+  [32;1m✓[39;22m[90m [39m[90mmeal casts is_active to boolean[39m[90m                                                                             [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mmeal active scope filters correctly[39m[90m                                                                         [39m [90m0.16s[39m  
+  [32;1m✓[39;22m[90m [39m[90mmeal defaults to is_active true[39m[90m                                                                             [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mmeal has translatable name[39m[90m                                                                                  [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mmeal component belongs to meal[39m[90m                                                                              [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mmeal component has translatable name[39m[90m                                                                        [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mmeal component allows null description[39m[90m                                                                      [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mmeal components cascade delete with meal[39m[90m                                                                    [39m [90m0.16s[39m  
+  [32;1m✓[39;22m[90m [39m[90mhas active meal returns true when meal with component exists[39m[90m                                                [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mhas active meal returns false when no meals exist[39m[90m                                                           [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mhas active meal returns false when meal is inactive[39m[90m                                                         [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mhas active meal returns false when meal has no components[39m[90m                                                   [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mget schedule data returns all 7 days[39m[90m                                                                        [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mget schedule data pre-fills existing schedule[39m[90m                                                               [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mget meals data returns meals with components[39m[90m                                                                [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mget meals data returns empty array when no meals[39m[90m                                                            [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant has meals relationship[39m[90m                                                                               [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant has schedules relationship[39m[90m                                                                           [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mstep 4 marked complete when active meal with component exists[39m[90m                                               [39m [90m0.16s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcan go live with brand info delivery area and active meal[39m[90m                                                   [39m [90m0.45s[39m  
+  [32;1m✓[39;22m[90m [39m[90mschedule factory creates valid schedule[39m[90m                                                                     [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mmeal factory creates valid meal[39m[90m                                                                             [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mmeal component factory creates valid component[39m[90m                                                              [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mmeal factory inactive state works[39m[90m                                                                           [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mschedule factory unavailable state works[39m[90m                                                                    [39m [90m0.15s[39m  
+
+  [90mTests:[39m    [32;1m73 passed[39;22m[90m (184 assertions)[39m
+  [90mDuration:[39m [39m13.58s[39m
+
