@@ -1623,5 +1623,13 @@
     "This will remove it from your menu.": "This will remove it from your menu.",
     "This meal has :count past orders. Order history will be preserved.": "This meal has :count past orders. Order history will be preserved.",
     "Cannot delete this meal": "Cannot delete this meal",
-    "Cannot delete — :count pending orders exist. Complete or cancel them first.": "Cannot delete — :count pending orders exist. Complete or cancel them first."
+    "Cannot delete — :count pending orders exist. Complete or cancel them first.": "Cannot delete — :count pending orders exist. Complete or cancel them first.",
+    "Unpublish": "Unpublish",
+    ":name is now live.": ":name is now live.",
+    ":name is now in draft.": ":name is now in draft.",
+    "Add at least one component before going live.": "Add at least one component before going live.",
+    "Publish this meal to make it visible to clients": "Publish this meal to make it visible to clients",
+    "Move this meal back to draft status": "Move this meal back to draft status",
+    "Publish this meal": "Publish this meal",
+    "Move to draft": "Move to draft"
 }

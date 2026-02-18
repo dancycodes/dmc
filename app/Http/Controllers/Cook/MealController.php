@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Cook;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cook\StoreMealRequest;
 use App\Http\Requests\Cook\UpdateMealRequest;
+use App\Models\Meal;
 use App\Services\CookScheduleService;
 use App\Services\MealImageService;
 use App\Services\MealLocationOverrideService;
@@ -325,6 +326,75 @@ class MealController extends Controller
 
         return redirect($redirectUrl)
             ->with('success', __('Meal updated.'));
+    }
+
+    /**
+     * Toggle a meal's status between draft and live.
+     *
+     * F-112: Meal Status Toggle (Draft/Live)
+     * BR-227: A meal must have at least one component to go live
+     * BR-231: Status toggle has immediate effect
+     * BR-232: Status change is logged via Spatie Activitylog
+     * BR-233: Only users with manage-meals permission
+     * BR-234: Status enum values: draft, live
+     */
+    public function toggleStatus(Request $request, int $mealId, MealService $mealService): mixed
+    {
+        $user = $request->user();
+        $tenant = tenant();
+
+        // BR-233: Permission check
+        if (! $user->can('can-manage-meals')) {
+            abort(403);
+        }
+
+        $meal = $tenant->meals()->findOrFail($mealId);
+
+        // Use MealService for business logic
+        $result = $mealService->toggleStatus($meal);
+
+        if (! $result['success']) {
+            // BR-227: No components — block going live
+            if ($request->isGale()) {
+                return gale()
+                    ->redirect(url('/dashboard/meals/'.$meal->id.'/edit'))
+                    ->back()
+                    ->with('error', $result['error']);
+            }
+
+            return redirect()->back()
+                ->with('error', $result['error']);
+        }
+
+        // BR-232: Activity logging
+        activity('meals')
+            ->performedOn($meal)
+            ->causedBy($user)
+            ->withProperties([
+                'action' => 'meal_status_toggled',
+                'old_status' => $result['old_status'],
+                'new_status' => $result['new_status'],
+                'name_en' => $meal->name_en,
+                'name_fr' => $meal->name_fr,
+                'tenant_id' => $tenant->id,
+            ])
+            ->log('Meal status changed from '.$result['old_status'].' to '.$result['new_status']);
+
+        // Toast message based on new status
+        $mealName = $meal->name;
+        $toastMessage = $result['new_status'] === Meal::STATUS_LIVE
+            ? __(':name is now live.', ['name' => $mealName])
+            : __(':name is now in draft.', ['name' => $mealName]);
+
+        if ($request->isGale()) {
+            return gale()
+                ->redirect(url('/dashboard/meals/'.$meal->id.'/edit'))
+                ->back()
+                ->with('success', $toastMessage);
+        }
+
+        return redirect()->back()
+            ->with('success', $toastMessage);
     }
 
     /**

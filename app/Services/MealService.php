@@ -265,6 +265,45 @@ class MealService
     }
 
     /**
+     * Toggle meal status between draft and live.
+     *
+     * F-112: Meal Status Toggle (Draft/Live)
+     * BR-227: A meal must have at least one meal component to go live.
+     * BR-231: Status toggle has immediate effect.
+     * BR-234: Status enum values: draft, live.
+     *
+     * @return array{success: bool, meal?: Meal, old_status?: string, new_status?: string, error?: string}
+     */
+    public function toggleStatus(Meal $meal): array
+    {
+        $oldStatus = $meal->status;
+
+        if ($meal->isDraft()) {
+            // BR-227: Check for at least one component before going live
+            $componentCount = $meal->components()->count();
+
+            if ($componentCount === 0) {
+                return [
+                    'success' => false,
+                    'error' => __('Add at least one component before going live.'),
+                ];
+            }
+
+            $meal->update(['status' => Meal::STATUS_LIVE]);
+        } else {
+            // BR-230: Toggling to draft does not affect pending orders
+            $meal->update(['status' => Meal::STATUS_DRAFT]);
+        }
+
+        return [
+            'success' => true,
+            'meal' => $meal,
+            'old_status' => $oldStatus,
+            'new_status' => $meal->status,
+        ];
+    }
+
+    /**
      * Get the count of completed orders for a meal (for confirmation dialog context).
      *
      * Forward-compatible: returns 0 if orders table does not exist.
