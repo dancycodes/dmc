@@ -388,7 +388,8 @@ describe('blade view', function () use ($projectRoot) {
     it('has delete action button for each template', function () use ($projectRoot) {
         $viewContent = file_get_contents($projectRoot.'/resources/views/cook/schedule/templates/index.blade.php');
 
-        expect($viewContent)->toContain("/delete')")
+        // F-104: Delete now uses Alpine.js confirmDelete modal instead of anchor link
+        expect($viewContent)->toContain('confirmDelete(')
             ->and($viewContent)->toContain("__('Delete')");
     });
 

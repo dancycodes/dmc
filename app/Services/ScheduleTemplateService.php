@@ -295,6 +295,38 @@ class ScheduleTemplateService
     }
 
     /**
+     * F-104: Delete a schedule template.
+     *
+     * BR-146: Deleting a template does NOT affect day schedules (values were copied)
+     * BR-149: Hard delete (not soft delete)
+     * BR-152: template_id on CookSchedule is nullified via DB constraint (nullOnDelete)
+     *
+     * @return array{success: bool, applied_count: int, template_name: string}
+     */
+    public function deleteTemplate(ScheduleTemplate $template): array
+    {
+        $templateName = $template->name;
+        $appliedCount = $template->cookSchedules()->count();
+
+        // BR-149: Hard delete — DB FK constraint handles BR-152 (nullOnDelete)
+        $template->delete();
+
+        return [
+            'success' => true,
+            'applied_count' => $appliedCount,
+            'template_name' => $templateName,
+        ];
+    }
+
+    /**
+     * F-104: Get the applied-to count for a template (for confirmation dialog).
+     */
+    public function getAppliedCount(ScheduleTemplate $template): int
+    {
+        return $template->cookSchedules()->count();
+    }
+
+    /**
      * Get template count for a tenant.
      */
     public function getTemplateCount(Tenant $tenant): int

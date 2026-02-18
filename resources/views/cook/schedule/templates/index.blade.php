@@ -2,6 +2,7 @@
     Schedule Template List View
     ---------------------------
     F-102: Schedule Template List View
+    F-104: Delete Schedule Template
 
     Displays all schedule templates created by the cook within their tenant.
     Each template shows its name, order/delivery/pickup window summaries,
@@ -12,12 +13,15 @@
     BR-137: "Applied to" count reflects how many schedule entries reference this template
     BR-138: Only users with manage-schedules permission can view
     BR-139: Alphabetical order by name
+    BR-147: Confirmation dialog before deletion
+    BR-148: Confirmation includes applied-to count if > 0
 
     UI/UX Notes:
     - Card-based layout on mobile, table layout on desktop
     - Action buttons: Edit (pencil), Delete (trash), Apply (calendar)
     - Empty state with illustration and CTA
     - All navigation via Gale (no page reloads)
+    - Delete uses Alpine.js confirmation modal with $action DELETE
 --}}
 @extends('layouts.cook-dashboard')
 
@@ -25,7 +29,32 @@
 @section('page-title', __('Schedule Templates'))
 
 @section('content')
-<div class="max-w-5xl mx-auto" x-data>
+<div class="max-w-5xl mx-auto" x-data="{
+    deleteTemplateId: null,
+    deleteTemplateName: '',
+    deleteTemplateAppliedCount: 0,
+    showDeleteModal: false,
+
+    confirmDelete(id, name, appliedCount) {
+        this.deleteTemplateId = id;
+        this.deleteTemplateName = name;
+        this.deleteTemplateAppliedCount = appliedCount;
+        this.showDeleteModal = true;
+    },
+
+    cancelDelete() {
+        this.showDeleteModal = false;
+        this.deleteTemplateId = null;
+        this.deleteTemplateName = '';
+        this.deleteTemplateAppliedCount = 0;
+    },
+
+    executeDelete() {
+        if (!this.deleteTemplateId) return;
+        $action('/dashboard/schedule/templates/' + this.deleteTemplateId, { method: 'DELETE' });
+        this.showDeleteModal = false;
+    }
+}">
     {{-- Breadcrumb --}}
     <nav class="flex items-center gap-2 text-sm text-on-surface/60 mb-6" aria-label="{{ __('Breadcrumb') }}">
         <a href="{{ url('/dashboard') }}" class="hover:text-primary transition-colors duration-200">
@@ -198,13 +227,14 @@
                                     </a>
 
                                     {{-- Delete (F-104) --}}
-                                    <a
-                                        href="{{ url('/dashboard/schedule/templates/' . $template->id . '/delete') }}"
+                                    <button
+                                        type="button"
+                                        x-on:click="confirmDelete({{ $template->id }}, '{{ addslashes($template->name) }}', {{ $template->cook_schedules_count }})"
                                         class="p-2 rounded-lg text-on-surface/60 hover:text-danger hover:bg-danger-subtle transition-colors duration-200"
                                         title="{{ __('Delete') }}"
                                     >
                                         <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" x2="10" y1="11" y2="17"></line><line x1="14" x2="14" y1="11" y2="17"></line></svg>
-                                    </a>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -292,17 +322,96 @@
                             <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>
                             {{ __('Apply') }}
                         </a>
-                        <a
-                            href="{{ url('/dashboard/schedule/templates/' . $template->id . '/delete') }}"
+                        <button
+                            type="button"
+                            x-on:click="confirmDelete({{ $template->id }}, '{{ addslashes($template->name) }}', {{ $template->cook_schedules_count }})"
                             class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-danger hover:bg-danger-subtle border border-outline transition-colors duration-200"
                         >
                             <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" x2="10" y1="11" y2="17"></line><line x1="14" x2="14" y1="11" y2="17"></line></svg>
                             {{ __('Delete') }}
-                        </a>
+                        </button>
                     </div>
                 </div>
             @endforeach
         </div>
     @endif
+
+    {{-- F-104: Delete Confirmation Modal --}}
+    {{-- BR-147: Confirmation dialog before deletion --}}
+    {{-- BR-148: Shows applied-to count when > 0 --}}
+    <div
+        x-show="showDeleteModal"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        role="dialog"
+        aria-modal="true"
+        x-cloak
+    >
+        {{-- Backdrop --}}
+        <div class="absolute inset-0 bg-black/50 dark:bg-black/70" x-on:click="cancelDelete()"></div>
+
+        {{-- Modal Content --}}
+        <div
+            x-show="showDeleteModal"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
+            class="relative bg-surface-alt dark:bg-surface-alt rounded-xl border border-outline dark:border-outline shadow-dropdown max-w-md w-full p-6"
+            x-on:keydown.escape.window="cancelDelete()"
+        >
+            {{-- Warning Icon --}}
+            <div class="flex justify-center mb-4">
+                <div class="w-12 h-12 rounded-full bg-danger-subtle flex items-center justify-center">
+                    <svg class="w-6 h-6 text-danger" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" x2="10" y1="11" y2="17"></line><line x1="14" x2="14" y1="11" y2="17"></line></svg>
+                </div>
+            </div>
+
+            {{-- Title --}}
+            <h3 class="text-lg font-semibold text-on-surface-strong text-center mb-2">
+                {{ __('Delete Template') }}
+            </h3>
+
+            {{-- Confirmation message with template name --}}
+            <p class="text-sm text-on-surface/70 text-center mb-2">
+                {{ __('Delete template') }} "<span class="font-medium text-on-surface-strong" x-text="deleteTemplateName"></span>"? {{ __('This cannot be undone.') }}
+            </p>
+
+            {{-- Applied-to notice (BR-148) --}}
+            <template x-if="deleteTemplateAppliedCount > 0">
+                <div class="mt-3 p-3 rounded-lg bg-info-subtle border border-info/20">
+                    <p class="text-xs text-info flex items-start gap-2">
+                        <svg class="w-4 h-4 shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+                        <span>{{ __('This template was applied to') }} <strong x-text="deleteTemplateAppliedCount"></strong> {{ __('day schedule(s). Those schedules will keep their current settings.') }}</span>
+                    </p>
+                </div>
+            </template>
+
+            {{-- Action Buttons --}}
+            <div class="flex items-center gap-3 mt-6">
+                <button
+                    type="button"
+                    x-on:click="cancelDelete()"
+                    class="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium text-on-surface hover:bg-surface border border-outline transition-colors duration-200"
+                >
+                    {{ __('Cancel') }}
+                </button>
+                <button
+                    type="button"
+                    x-on:click="executeDelete()"
+                    class="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium bg-danger hover:bg-danger/90 text-on-danger transition-colors duration-200"
+                >
+                    {{ __('Delete') }}
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
