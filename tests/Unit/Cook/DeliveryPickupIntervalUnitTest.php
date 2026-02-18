@@ -71,18 +71,22 @@ describe('UpdateDeliveryPickupIntervalRequest', function () {
         expect($rules)->toHaveKey('pickup_end_time');
     });
 
-    it('delivery_start_time uses date_format:H:i validation', function () {
+    it('delivery_start_time uses ValidTimeFormat validation', function () {
         $request = new UpdateDeliveryPickupIntervalRequest;
         $rules = $request->rules();
 
-        expect($rules['delivery_start_time'])->toContain('date_format:H:i');
+        $hasValidTimeFormat = collect($rules['delivery_start_time'])
+            ->contains(fn ($rule) => $rule instanceof \App\Rules\ValidTimeFormat);
+        expect($hasValidTimeFormat)->toBeTrue();
     });
 
-    it('pickup_start_time uses date_format:H:i validation', function () {
+    it('pickup_start_time uses ValidTimeFormat validation', function () {
         $request = new UpdateDeliveryPickupIntervalRequest;
         $rules = $request->rules();
 
-        expect($rules['pickup_start_time'])->toContain('date_format:H:i');
+        $hasValidTimeFormat = collect($rules['pickup_start_time'])
+            ->contains(fn ($rule) => $rule instanceof \App\Rules\ValidTimeFormat);
+        expect($hasValidTimeFormat)->toBeTrue();
     });
 
     it('has custom error messages', function () {
@@ -90,8 +94,8 @@ describe('UpdateDeliveryPickupIntervalRequest', function () {
         $messages = $request->messages();
 
         expect($messages)->not->toBeEmpty();
-        expect($messages)->toHaveKey('delivery_start_time.date_format');
-        expect($messages)->toHaveKey('pickup_start_time.date_format');
+        expect($messages)->toHaveKey('delivery_enabled.required');
+        expect($messages)->toHaveKey('pickup_enabled.required');
     });
 
     it('requires can-manage-schedules permission for authorization', function () {
@@ -262,7 +266,7 @@ describe('CookSchedule Model delivery/pickup helpers', function () {
 describe('CookScheduleService updateDeliveryPickupInterval', function () {
     beforeEach(function () {
         $this->seedRolesAndPermissions();
-        $this->service = new CookScheduleService;
+        $this->service = app(CookScheduleService::class);
     });
 
     it('saves delivery only interval successfully', function () {
@@ -842,7 +846,7 @@ describe('Activity logging', function () {
             ->withSameDayInterval('06:00', '10:00')
             ->create();
 
-        $service = new CookScheduleService;
+        $service = app(CookScheduleService::class);
 
         $service->updateDeliveryPickupInterval(
             $schedule,

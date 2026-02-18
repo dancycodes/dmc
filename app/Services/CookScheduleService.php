@@ -9,6 +9,7 @@ use App\Models\Tenant;
  * F-098: Cook Day Schedule Creation
  * F-099: Order Time Interval Configuration
  * F-100: Delivery/Pickup Time Interval Configuration
+ * F-107: Schedule Validation Rules (overlap checks, comprehensive validation)
  *
  * Service layer handling all business logic for cook schedule management.
  * Encapsulates validation of per-day limits, position assignment,
@@ -17,6 +18,10 @@ use App\Models\Tenant;
  */
 class CookScheduleService
 {
+    public function __construct(
+        private ScheduleValidationService $validationService,
+    ) {}
+
     /**
      * Get all schedule entries for a tenant, grouped by day.
      *
@@ -165,32 +170,22 @@ class CookScheduleService
             ];
         }
 
-        // BR-110: Start day offset max 7
-        if ($orderStartDayOffset > CookSchedule::MAX_START_DAY_OFFSET) {
-            return [
-                'success' => false,
-                'error' => __('Start day offset cannot exceed :max days before.', ['max' => CookSchedule::MAX_START_DAY_OFFSET]),
-            ];
-        }
-
-        // BR-111: End day offset max 1
-        if ($orderEndDayOffset > CookSchedule::MAX_END_DAY_OFFSET) {
-            return [
-                'success' => false,
-                'error' => __('End day offset cannot exceed :max day before.', ['max' => CookSchedule::MAX_END_DAY_OFFSET]),
-            ];
-        }
-
-        // BR-108: Validate chronological order
-        if (! $this->isIntervalChronologicallyValid(
+        // F-107: Comprehensive validation via ScheduleValidationService
+        // BR-173, BR-179, BR-180, BR-181
+        $validation = $this->validationService->validateOrderIntervalUpdate(
+            $schedule,
             $orderStartTime,
             $orderStartDayOffset,
             $orderEndTime,
             $orderEndDayOffset,
-        )) {
+        );
+
+        if (! $validation['valid']) {
+            $firstError = array_values($validation['errors'])[0];
+
             return [
                 'success' => false,
-                'error' => __('The order interval end must be after the start. Please adjust the times or day offsets.'),
+                'error' => $firstError,
             ];
         }
 
@@ -351,6 +346,31 @@ class CookScheduleService
             if ($pickupValidation !== null) {
                 return $pickupValidation;
             }
+        }
+
+        // F-107 BR-179: Check for overlapping delivery/pickup windows
+        $overlapCheck = $this->validationService->checkForOverlaps(
+            $schedule->tenant_id,
+            $schedule->day_of_week,
+            null,
+            null,
+            null,
+            null,
+            $deliveryEnabled ? $deliveryStartTime : null,
+            $deliveryEnabled ? $deliveryEndTime : null,
+            $pickupEnabled ? $pickupStartTime : null,
+            $pickupEnabled ? $pickupEndTime : null,
+            $schedule->id,
+        );
+
+        if ($overlapCheck['overlapping']) {
+            $field = $overlapCheck['type'] === 'delivery' ? 'delivery_start_time' : 'pickup_start_time';
+
+            return [
+                'success' => false,
+                'error' => $overlapCheck['message'],
+                'field' => $field,
+            ];
         }
 
         $schedule->update([

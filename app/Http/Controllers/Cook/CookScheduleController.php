@@ -7,6 +7,7 @@ use App\Http\Requests\Cook\StoreCookScheduleRequest;
 use App\Http\Requests\Cook\UpdateDeliveryPickupIntervalRequest;
 use App\Http\Requests\Cook\UpdateOrderIntervalRequest;
 use App\Models\CookSchedule;
+use App\Rules\ValidTimeFormat;
 use App\Services\CookScheduleService;
 use Illuminate\Http\Request;
 
@@ -166,19 +167,17 @@ class CookScheduleController extends Controller
         // Dual Gale/HTTP validation pattern
         if ($request->isGale()) {
             $validated = $request->validateState([
-                'order_start_time' => ['required', 'date_format:H:i'],
+                'order_start_time' => ['required', new ValidTimeFormat],
                 'order_start_day_offset' => ['required', 'integer', 'min:0', 'max:'.CookSchedule::MAX_START_DAY_OFFSET],
-                'order_end_time' => ['required', 'date_format:H:i'],
+                'order_end_time' => ['required', new ValidTimeFormat],
                 'order_end_day_offset' => ['required', 'integer', 'min:0', 'max:'.CookSchedule::MAX_END_DAY_OFFSET],
             ], [
                 'order_start_time.required' => __('Start time is required.'),
-                'order_start_time.date_format' => __('Start time must be in HH:MM format (24-hour).'),
                 'order_start_day_offset.required' => __('Start day offset is required.'),
-                'order_start_day_offset.max' => __('Start day offset cannot exceed :max days before.', ['max' => CookSchedule::MAX_START_DAY_OFFSET]),
+                'order_start_day_offset.max' => __('Order window cannot start more than :max days before the open day.', ['max' => CookSchedule::MAX_START_DAY_OFFSET]),
                 'order_end_time.required' => __('End time is required.'),
-                'order_end_time.date_format' => __('End time must be in HH:MM format (24-hour).'),
                 'order_end_day_offset.required' => __('End day offset is required.'),
-                'order_end_day_offset.max' => __('End day offset cannot exceed :max day before.', ['max' => CookSchedule::MAX_END_DAY_OFFSET]),
+                'order_end_day_offset.max' => __('Order end day offset cannot exceed :max.', ['max' => CookSchedule::MAX_END_DAY_OFFSET]),
             ]);
         } else {
             $formRequest = app(UpdateOrderIntervalRequest::class);
@@ -276,18 +275,14 @@ class CookScheduleController extends Controller
         if ($request->isGale()) {
             $validated = $request->validateState([
                 'delivery_enabled' => ['required'],
-                'delivery_start_time' => ['nullable', 'date_format:H:i'],
-                'delivery_end_time' => ['nullable', 'date_format:H:i'],
+                'delivery_start_time' => ['nullable', new ValidTimeFormat],
+                'delivery_end_time' => ['nullable', new ValidTimeFormat],
                 'pickup_enabled' => ['required'],
-                'pickup_start_time' => ['nullable', 'date_format:H:i'],
-                'pickup_end_time' => ['nullable', 'date_format:H:i'],
+                'pickup_start_time' => ['nullable', new ValidTimeFormat],
+                'pickup_end_time' => ['nullable', new ValidTimeFormat],
             ], [
                 'delivery_enabled.required' => __('Delivery status is required.'),
-                'delivery_start_time.date_format' => __('Delivery start time must be in HH:MM format (24-hour).'),
-                'delivery_end_time.date_format' => __('Delivery end time must be in HH:MM format (24-hour).'),
                 'pickup_enabled.required' => __('Pickup status is required.'),
-                'pickup_start_time.date_format' => __('Pickup start time must be in HH:MM format (24-hour).'),
-                'pickup_end_time.date_format' => __('Pickup end time must be in HH:MM format (24-hour).'),
             ]);
         } else {
             $formRequest = app(UpdateDeliveryPickupIntervalRequest::class);

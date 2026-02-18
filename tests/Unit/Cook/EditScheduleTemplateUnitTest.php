@@ -109,12 +109,16 @@ describe('UpdateScheduleTemplateRequest', function () {
         expect($rules['order_end_time'])->toContain('required');
     });
 
-    it('validates time format as H:i', function () {
+    it('validates time format with ValidTimeFormat rule', function () {
         $request = new UpdateScheduleTemplateRequest;
         $rules = $request->rules();
 
-        expect($rules['order_start_time'])->toContain('date_format:H:i');
-        expect($rules['order_end_time'])->toContain('date_format:H:i');
+        $hasStartRule = collect($rules['order_start_time'])
+            ->contains(fn ($rule) => $rule instanceof \App\Rules\ValidTimeFormat);
+        $hasEndRule = collect($rules['order_end_time'])
+            ->contains(fn ($rule) => $rule instanceof \App\Rules\ValidTimeFormat);
+        expect($hasStartRule)->toBeTrue();
+        expect($hasEndRule)->toBeTrue();
     });
 
     it('limits start day offset to CookSchedule MAX_START_DAY_OFFSET', function () {

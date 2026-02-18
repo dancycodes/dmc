@@ -179,7 +179,7 @@ describe('CookScheduleService - Order Interval', function () {
             'tenant_id' => $tenant->id,
         ]);
 
-        $service = new CookScheduleService;
+        $service = app(CookScheduleService::class);
         $result = $service->updateOrderInterval(
             $schedule, '18:00', 1, '08:00', 0
         );
@@ -194,7 +194,7 @@ describe('CookScheduleService - Order Interval', function () {
     it('rejects interval on unavailable entries (BR-112)', function () {
         $schedule = CookSchedule::factory()->unavailable()->create();
 
-        $service = new CookScheduleService;
+        $service = app(CookScheduleService::class);
         $result = $service->updateOrderInterval(
             $schedule, '06:00', 0, '10:00', 0
         );
@@ -206,7 +206,7 @@ describe('CookScheduleService - Order Interval', function () {
     it('rejects start day offset exceeding 7 (BR-110)', function () {
         $schedule = CookSchedule::factory()->create();
 
-        $service = new CookScheduleService;
+        $service = app(CookScheduleService::class);
         $result = $service->updateOrderInterval(
             $schedule, '06:00', 8, '10:00', 0
         );
@@ -217,7 +217,7 @@ describe('CookScheduleService - Order Interval', function () {
     it('rejects end day offset exceeding 1 (BR-111)', function () {
         $schedule = CookSchedule::factory()->create();
 
-        $service = new CookScheduleService;
+        $service = app(CookScheduleService::class);
         $result = $service->updateOrderInterval(
             $schedule, '06:00', 0, '10:00', 2
         );
@@ -228,7 +228,7 @@ describe('CookScheduleService - Order Interval', function () {
     it('rejects chronologically invalid interval (BR-108) - end before start same day', function () {
         $schedule = CookSchedule::factory()->create();
 
-        $service = new CookScheduleService;
+        $service = app(CookScheduleService::class);
         $result = $service->updateOrderInterval(
             $schedule, '10:00', 0, '08:00', 0
         );
@@ -240,7 +240,7 @@ describe('CookScheduleService - Order Interval', function () {
     it('rejects chronologically invalid interval (BR-108) - same time', function () {
         $schedule = CookSchedule::factory()->create();
 
-        $service = new CookScheduleService;
+        $service = app(CookScheduleService::class);
         $result = $service->updateOrderInterval(
             $schedule, '10:00', 0, '10:00', 0
         );
@@ -251,7 +251,7 @@ describe('CookScheduleService - Order Interval', function () {
     it('accepts valid day-before-to-same-day interval', function () {
         $schedule = CookSchedule::factory()->create();
 
-        $service = new CookScheduleService;
+        $service = app(CookScheduleService::class);
         $result = $service->updateOrderInterval(
             $schedule, '18:00', 1, '08:00', 0
         );
@@ -262,7 +262,7 @@ describe('CookScheduleService - Order Interval', function () {
     it('accepts valid same-day interval', function () {
         $schedule = CookSchedule::factory()->create();
 
-        $service = new CookScheduleService;
+        $service = app(CookScheduleService::class);
         $result = $service->updateOrderInterval(
             $schedule, '06:00', 0, '10:00', 0
         );
@@ -273,7 +273,7 @@ describe('CookScheduleService - Order Interval', function () {
     it('accepts valid multi-day-before interval', function () {
         $schedule = CookSchedule::factory()->create();
 
-        $service = new CookScheduleService;
+        $service = app(CookScheduleService::class);
         $result = $service->updateOrderInterval(
             $schedule, '12:00', 2, '18:00', 1
         );
@@ -284,7 +284,7 @@ describe('CookScheduleService - Order Interval', function () {
     it('validates midnight crossing correctly (start 11PM day before, end 1AM same day)', function () {
         $schedule = CookSchedule::factory()->create();
 
-        $service = new CookScheduleService;
+        $service = app(CookScheduleService::class);
         $result = $service->updateOrderInterval(
             $schedule, '23:00', 1, '01:00', 0
         );
@@ -295,7 +295,7 @@ describe('CookScheduleService - Order Interval', function () {
     it('removes order interval', function () {
         $schedule = CookSchedule::factory()->withOrderInterval()->create();
 
-        $service = new CookScheduleService;
+        $service = app(CookScheduleService::class);
         $result = $service->removeOrderInterval($schedule);
 
         expect($result['success'])->toBeTrue();
@@ -304,7 +304,7 @@ describe('CookScheduleService - Order Interval', function () {
     });
 
     it('validates chronological order correctly via isIntervalChronologicallyValid', function () {
-        $service = new CookScheduleService;
+        $service = app(CookScheduleService::class);
 
         // Same day, start before end
         expect($service->isIntervalChronologicallyValid('06:00', 0, '10:00', 0))->toBeTrue();
@@ -337,12 +337,14 @@ describe('UpdateOrderIntervalRequest', function () {
         expect($rules)->toHaveKey('order_end_day_offset');
     });
 
-    it('requires order_start_time in date_format H:i', function () {
+    it('requires order_start_time with ValidTimeFormat', function () {
         $request = new UpdateOrderIntervalRequest;
         $rules = $request->rules();
 
         expect($rules['order_start_time'])->toContain('required');
-        expect($rules['order_start_time'])->toContain('date_format:H:i');
+        $hasValidTimeFormat = collect($rules['order_start_time'])
+            ->contains(fn ($rule) => $rule instanceof \App\Rules\ValidTimeFormat);
+        expect($hasValidTimeFormat)->toBeTrue();
     });
 
     it('limits order_start_day_offset to 0-7', function () {
@@ -366,7 +368,6 @@ describe('UpdateOrderIntervalRequest', function () {
         $messages = $request->messages();
 
         expect($messages)->toHaveKey('order_start_time.required');
-        expect($messages)->toHaveKey('order_start_time.date_format');
         expect($messages)->toHaveKey('order_start_day_offset.max');
         expect($messages)->toHaveKey('order_end_time.required');
         expect($messages)->toHaveKey('order_end_day_offset.max');
