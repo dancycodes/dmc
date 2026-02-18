@@ -5,8 +5,9 @@
     Full implementation in F-116.
 
     F-111: Added delete button with confirmation modal.
+    F-112: Added inline status toggle button (Draft/Live).
 
-    Provides basic listing, "Add Meal" button, and delete action.
+    Provides basic listing, "Add Meal" button, delete action, and status toggle.
 --}}
 @extends('layouts.cook-dashboard')
 
@@ -134,6 +135,27 @@
                     <div class="flex items-center justify-between pt-3 border-t border-outline dark:border-outline">
                         <span class="text-xs text-on-surface/50">{{ $meal->created_at->diffForHumans() }}</span>
                         <div class="flex items-center gap-3">
+                            {{-- F-112: Inline status toggle --}}
+                            @if($meal->isDraft())
+                                <button
+                                    type="button"
+                                    @click="$action('{{ url('/dashboard/meals/' . $meal->id . '/toggle-status') }}', { method: 'PATCH' })"
+                                    class="text-xs font-medium text-success hover:text-success/80 transition-colors duration-200"
+                                    title="{{ __('Publish this meal') }}"
+                                >
+                                    {{ __('Go Live') }}
+                                </button>
+                            @else
+                                <button
+                                    type="button"
+                                    @click="$action('{{ url('/dashboard/meals/' . $meal->id . '/toggle-status') }}', { method: 'PATCH' })"
+                                    class="text-xs font-medium text-warning hover:text-warning/80 transition-colors duration-200"
+                                    title="{{ __('Move to draft') }}"
+                                >
+                                    {{ __('Unpublish') }}
+                                </button>
+                            @endif
+
                             {{-- F-111: Delete button --}}
                             @php
                                 $canDeleteInfo = app(\App\Services\MealService::class)->canDeleteMeal($meal);

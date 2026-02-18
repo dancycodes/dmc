@@ -18,6 +18,7 @@
     BR-217: Editing does not change status or availability
 
     F-111: Added delete button with confirmation modal.
+    F-112: Added status toggle button (Draft/Live).
 --}}
 @extends('layouts.cook-dashboard')
 
@@ -54,7 +55,7 @@
         <span class="text-on-surface-strong font-medium truncate">{{ $meal->name }}</span>
     </nav>
 
-    {{-- Toast notification --}}
+    {{-- Toast notifications --}}
     @if(session('success'))
         <div
             x-data="{ show: true }"
@@ -70,13 +71,53 @@
         </div>
     @endif
 
-    {{-- Meal header with status badge and delete button --}}
+    @if(session('error'))
+        <div
+            x-data="{ show: true }"
+            x-show="show"
+            x-init="setTimeout(() => show = false, 7000)"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="mb-6 p-4 rounded-lg bg-danger-subtle border border-danger/20 flex items-center gap-3"
+        >
+            <svg class="w-5 h-5 text-danger shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            <span class="text-sm text-on-surface">{{ session('error') }}</span>
+        </div>
+    @endif
+
+    {{-- Meal header with status badge, toggle, and delete button --}}
     <div class="flex items-start justify-between mb-6">
         <div>
             <h2 class="text-2xl font-display font-bold text-on-surface-strong">{{ $meal->name }}</h2>
             <p class="mt-1 text-sm text-on-surface/70">{{ __('Manage your meal details, images, and settings.') }}</p>
         </div>
         <div class="flex items-center gap-3">
+            {{-- F-112: Status toggle button --}}
+            @if($meal->isDraft())
+                <button
+                    type="button"
+                    @click="$action('{{ url('/dashboard/meals/' . $meal->id . '/toggle-status') }}', { method: 'PATCH' })"
+                    class="px-3 py-1.5 rounded-lg text-xs font-medium bg-success text-on-success hover:bg-success/90 shadow-sm transition-colors duration-200 flex items-center gap-1.5"
+                    title="{{ __('Publish this meal to make it visible to clients') }}"
+                >
+                    {{-- Lucide: rocket (xs=14) --}}
+                    <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"></path><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"></path></svg>
+                    {{ __('Go Live') }}
+                </button>
+            @else
+                <button
+                    type="button"
+                    @click="$action('{{ url('/dashboard/meals/' . $meal->id . '/toggle-status') }}', { method: 'PATCH' })"
+                    class="px-3 py-1.5 rounded-lg text-xs font-medium bg-warning-subtle text-warning border border-warning/30 hover:bg-warning/10 transition-colors duration-200 flex items-center gap-1.5"
+                    title="{{ __('Move this meal back to draft status') }}"
+                >
+                    {{-- Lucide: pencil-line (xs=14) --}}
+                    <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.855z"></path><path d="m15 5 3 3"></path></svg>
+                    {{ __('Unpublish') }}
+                </button>
+            @endif
+
             <span class="shrink-0 px-3 py-1 rounded-full text-xs font-medium {{ $meal->status === 'draft' ? 'bg-warning-subtle text-warning' : 'bg-success-subtle text-success' }}">
                 {{ $meal->status === 'draft' ? __('Draft') : __('Live') }}
             </span>

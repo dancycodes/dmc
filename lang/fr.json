@@ -1623,5 +1623,13 @@
     "This will remove it from your menu.": "Cela le retirera de votre menu.",
     "This meal has :count past orders. Order history will be preserved.": "Ce repas a :count commandes passees. L'historique des commandes sera conserve.",
     "Cannot delete this meal": "Impossible de supprimer ce repas",
-    "Cannot delete — :count pending orders exist. Complete or cancel them first.": "Impossible de supprimer — :count commandes en cours existent. Completez-les ou annulez-les d'abord."
+    "Cannot delete — :count pending orders exist. Complete or cancel them first.": "Impossible de supprimer — :count commandes en cours existent. Completez-les ou annulez-les d'abord.",
+    "Unpublish": "Retirer de la publication",
+    ":name is now live.": ":name est maintenant en ligne.",
+    ":name is now in draft.": ":name est maintenant en brouillon.",
+    "Add at least one component before going live.": "Ajoutez au moins un composant avant de mettre en ligne.",
+    "Publish this meal to make it visible to clients": "Publier ce repas pour le rendre visible aux clients",
+    "Move this meal back to draft status": "Remettre ce repas en brouillon",
+    "Publish this meal": "Publier ce repas",
+    "Move to draft": "Mettre en brouillon"
 }
