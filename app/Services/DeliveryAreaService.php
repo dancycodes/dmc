@@ -712,8 +712,14 @@ class DeliveryAreaService
 
     /**
      * Remove a pickup location.
+     *
+     * F-095: Delete Pickup Location
+     * BR-301: Cannot delete a pickup location with active (non-completed, non-cancelled) orders
+     * BR-303: On success, toast notification: "Pickup location deleted successfully"
+     *
+     * @return array{success: bool, error: string, pickup_name: string, pickup_model: ?PickupLocation}
      */
-    public function removePickupLocation(Tenant $tenant, int $pickupLocationId): bool
+    public function removePickupLocation(Tenant $tenant, int $pickupLocationId): array
     {
         $pickup = PickupLocation::query()
             ->where('tenant_id', $tenant->id)
@@ -721,12 +727,51 @@ class DeliveryAreaService
             ->first();
 
         if (! $pickup) {
-            return false;
+            return [
+                'success' => false,
+                'error' => __('Pickup location not found.'),
+                'pickup_name' => '',
+                'pickup_model' => null,
+            ];
         }
+
+        $locale = app()->getLocale();
+        $pickupName = $pickup->{'name_'.$locale} ?? $pickup->name_en;
+
+        // BR-301: Check for active orders referencing this pickup location (forward-compatible)
+        if (\Illuminate\Support\Facades\Schema::hasTable('orders')) {
+            $activeOrderCount = \Illuminate\Database\Eloquent\Model::resolveConnection()
+                ->table('orders')
+                ->where('tenant_id', $tenant->id)
+                ->where('pickup_location_id', $pickupLocationId)
+                ->whereNotIn('status', ['completed', 'cancelled'])
+                ->count();
+
+            if ($activeOrderCount > 0) {
+                return [
+                    'success' => false,
+                    'error' => trans_choice(
+                        '{1} Cannot delete :location because it has :count active order for pickup.|[2,*] Cannot delete :location because it has :count active orders for pickup.',
+                        $activeOrderCount,
+                        ['location' => $pickupName, 'count' => $activeOrderCount]
+                    ),
+                    'pickup_name' => $pickupName,
+                    'pickup_model' => $pickup,
+                ];
+            }
+        }
+
+        // Store model reference before deletion for activity logging
+        $pickupModel = $pickup;
 
         $pickup->delete();
 
-        return true;
+        return [
+            'success' => true,
+            'error' => '',
+            'pickup_name' => $pickupName,
+            'pickup_model' => $pickupModel,
+        ];
     }
 
     /**

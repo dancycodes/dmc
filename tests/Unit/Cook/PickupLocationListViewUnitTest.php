@@ -409,11 +409,11 @@ describe('Pickup Locations Blade Template', function () use ($projectRoot) {
         expect($content)->toContain('@endcan');
     });
 
-    it('has delete confirmation modal', function () use ($projectRoot) {
+    it('has delete confirmation modal (F-095)', function () use ($projectRoot) {
         $content = file_get_contents($projectRoot.'/resources/views/cook/locations/pickup.blade.php');
         expect($content)->toContain("__('Delete Pickup Location')");
-        expect($content)->toContain("__('Are you sure you want to delete')");
-        expect($content)->toContain("__('This action cannot be undone.')");
+        expect($content)->toContain("__('Delete')");
+        expect($content)->toContain("__('Clients will no longer be able to pick up from this location.')");
         expect($content)->toContain('cancelDelete()');
         expect($content)->toContain('executeDelete()');
     });

@@ -4,8 +4,9 @@
     F-092: Add Pickup Location
     F-093: Pickup Location List View
     F-094: Edit Pickup Location
+    F-095: Delete Pickup Location
 
-    Allows the cook to view existing pickup locations, add new ones, and edit existing ones.
+    Allows the cook to view existing pickup locations, add new ones, edit, and delete them.
     Each pickup location is scoped to the tenant and references a town and quarter
     from the cook's delivery areas.
 
@@ -34,6 +35,13 @@
     BR-298: Save via Gale; list updates without page reload
     BR-299: Changes apply to new orders; existing orders retain original data
     BR-300: Edit action requires location management permission
+
+    F-095 Business Rules:
+    BR-301: Cannot delete a pickup location with active (non-completed, non-cancelled) orders
+    BR-302: Confirmation dialog must show the location name
+    BR-303: On success, toast notification: "Pickup location deleted successfully"
+    BR-304: Delete action requires location management permission
+    BR-305: List updates via Gale without page reload
 --}}
 @extends('layouts.cook-dashboard')
 
@@ -181,7 +189,7 @@
                 this.confirmDeleteName = '';
             },
 
-            /* F-095: Execute delete (stub for future feature) */
+            /* F-095: Execute delete */
             executeDelete() {
                 if (!this.confirmDeleteId) return;
                 $action('{{ url('/dashboard/locations/pickup') }}/' + this.confirmDeleteId, {
@@ -461,7 +469,7 @@
                                                 {{-- Lucide: pencil --}}
                                                 <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg>
                                             </button>
-                                            {{-- Delete button (stub for F-095) --}}
+                                            {{-- F-095: Delete button --}}
                                             <button
                                                 type="button"
                                                 @click="confirmDeleteId = {{ $location['id'] }}; confirmDeleteName = '{{ addslashes($location['name']) }}'"
@@ -645,7 +653,7 @@
             </div>
         @endif
 
-        {{-- Delete Confirmation Modal (F-095 stub -- wired for future feature) --}}
+        {{-- Delete Confirmation Modal (F-095: Delete Pickup Location) --}}
         @can('can-manage-locations')
             <div
                 x-show="confirmDeleteId !== null"
@@ -679,9 +687,9 @@
                         <div>
                             <h3 class="text-base font-semibold text-on-surface-strong">{{ __('Delete Pickup Location') }}</h3>
                             <p class="text-sm text-on-surface/60 mt-1">
-                                {{ __('Are you sure you want to delete') }}
+                                {{ __('Delete') }}
                                 <span class="font-medium text-on-surface-strong" x-text="confirmDeleteName"></span>?
-                                {{ __('This action cannot be undone.') }}
+                                {{ __('Clients will no longer be able to pick up from this location.') }}
                             </p>
                         </div>
                     </div>

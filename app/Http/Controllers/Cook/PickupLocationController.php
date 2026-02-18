@@ -187,6 +187,62 @@ class PickupLocationController extends Controller
     }
 
     /**
+     * Delete a pickup location.
+     *
+     * F-095: Delete Pickup Location
+     * BR-301: Cannot delete a pickup location with active (non-completed, non-cancelled) orders
+     * BR-302: Confirmation dialog must show the location name
+     * BR-303: On success, toast notification: "Pickup location deleted successfully"
+     * BR-304: Delete action requires location management permission
+     * BR-305: List updates via Gale without page reload
+     */
+    public function destroy(Request $request, int $pickupLocation, DeliveryAreaService $deliveryAreaService): mixed
+    {
+        $user = $request->user();
+        $tenant = tenant();
+
+        // BR-304: Permission check
+        if (! $user->can('can-manage-locations')) {
+            abort(403);
+        }
+
+        // Use DeliveryAreaService for business logic (BR-301 active order check)
+        $result = $deliveryAreaService->removePickupLocation($tenant, $pickupLocation);
+
+        if (! $result['success']) {
+            // BR-301: Deletion blocked — show error message
+            if ($request->isGale()) {
+                return gale()
+                    ->redirect(url('/dashboard/locations/pickup'))
+                    ->with('error', $result['error']);
+            }
+
+            return redirect()->route('cook.locations.pickup.index')
+                ->with('error', $result['error']);
+        }
+
+        // Activity logging
+        activity('pickup_locations')
+            ->causedBy($user)
+            ->withProperties([
+                'action' => 'pickup_location_deleted',
+                'name' => $result['pickup_name'],
+                'tenant_id' => $tenant->id,
+            ])
+            ->log('Pickup location deleted');
+
+        // BR-303: Success toast, BR-305: Gale redirect updates list without page reload
+        if ($request->isGale()) {
+            return gale()
+                ->redirect(url('/dashboard/locations/pickup'))
+                ->with('success', __('Pickup location deleted successfully.'));
+        }
+
+        return redirect()->route('cook.locations.pickup.index')
+            ->with('success', __('Pickup location deleted successfully.'));
+    }
+
+    /**
      * Update an existing pickup location.
      *
      * F-094: Edit Pickup Location
