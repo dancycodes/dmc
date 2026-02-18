@@ -1397,5 +1397,12 @@
     "Pickup location added successfully.": "Pickup location added successfully.",
     "Pickup location deleted successfully.": "Pickup location deleted successfully.",
     "Clients will no longer be able to pick up from this location.": "Clients will no longer be able to pick up from this location.",
-    "{1} Cannot delete :location because it has :count active order for pickup.|[2,*] Cannot delete :location because it has :count active orders for pickup.": "{1} Cannot delete :location because it has :count active order for pickup.|[2,*] Cannot delete :location because it has :count active orders for pickup."
+    "{1} Cannot delete :location because it has :count active order for pickup.|[2,*] Cannot delete :location because it has :count active orders for pickup.": "{1} Cannot delete :location because it has :count active order for pickup.|[2,*] Cannot delete :location because it has :count active orders for pickup.",
+    "Search for a neighbourhood...": "Search for a neighbourhood...",
+    "Search for a location": "Search for a location",
+    "No locations found. Try a different search term.": "No locations found. Try a different search term.",
+    "Unable to search locations. Please type your address manually.": "Unable to search locations. Please type your address manually.",
+    "Too many search requests. Please try again in a moment.": "Too many search requests. Please try again in a moment.",
+    "Searching...": "Searching...",
+    "Unknown location": "Unknown location"
 }
