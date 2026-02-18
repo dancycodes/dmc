@@ -193,7 +193,8 @@ test('meal components cascade delete with meal', function () {
 
     expect(MealComponent::where('meal_id', $meal->id)->count())->toBe(3);
 
-    $meal->delete();
+    // F-108: Meal now uses SoftDeletes, so forceDelete() is needed to trigger FK cascade
+    $meal->forceDelete();
 
     expect(MealComponent::where('meal_id', $meal->id)->count())->toBe(0);
 });

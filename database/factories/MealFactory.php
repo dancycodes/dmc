@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Meal;
 use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -50,16 +51,20 @@ class MealFactory extends Factory
     public function definition(): array
     {
         $name = fake()->randomElement(self::MEAL_NAMES);
-        $description = fake()->optional(0.7)->randomElement(self::DESCRIPTIONS);
+        $description = fake()->randomElement(self::DESCRIPTIONS);
 
         return [
             'tenant_id' => Tenant::factory(),
             'name_en' => $name['en'],
             'name_fr' => $name['fr'],
-            'description_en' => $description['en'] ?? null,
-            'description_fr' => $description['fr'] ?? null,
+            'description_en' => $description['en'],
+            'description_fr' => $description['fr'],
             'price' => fake()->randomElement([500, 1000, 1500, 2000, 2500, 3000, 3500, 5000]),
             'is_active' => true,
+            'status' => Meal::STATUS_DRAFT,
+            'is_available' => true,
+            'estimated_prep_time' => null,
+            'position' => 0,
         ];
     }
 
@@ -74,12 +79,62 @@ class MealFactory extends Factory
     }
 
     /**
+     * Set the meal as live status.
+     */
+    public function live(): static
+    {
+        return $this->state(fn () => [
+            'status' => Meal::STATUS_LIVE,
+        ]);
+    }
+
+    /**
+     * Set the meal as draft status.
+     */
+    public function draft(): static
+    {
+        return $this->state(fn () => [
+            'status' => Meal::STATUS_DRAFT,
+        ]);
+    }
+
+    /**
+     * Set the meal as unavailable.
+     */
+    public function unavailable(): static
+    {
+        return $this->state(fn () => [
+            'is_available' => false,
+        ]);
+    }
+
+    /**
      * Set a specific price.
      */
     public function priced(int $price): static
     {
         return $this->state(fn () => [
             'price' => $price,
+        ]);
+    }
+
+    /**
+     * Set a specific position.
+     */
+    public function positioned(int $position): static
+    {
+        return $this->state(fn () => [
+            'position' => $position,
+        ]);
+    }
+
+    /**
+     * Set the estimated prep time.
+     */
+    public function withPrepTime(int $minutes): static
+    {
+        return $this->state(fn () => [
+            'estimated_prep_time' => $minutes,
         ]);
     }
 }

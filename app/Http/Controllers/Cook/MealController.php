@@ -1,0 +1,169 @@
+<?php
+
+namespace App\Http\Controllers\Cook;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Cook\StoreMealRequest;
+use App\Services\MealService;
+use Illuminate\Http\Request;
+
+class MealController extends Controller
+{
+    /**
+     * Display the meal list page.
+     *
+     * F-116: Meal List View (Cook Dashboard) - stub for now.
+     * BR-194: Only users with can-manage-meals permission.
+     */
+    public function index(Request $request): mixed
+    {
+        $user = $request->user();
+        $tenant = tenant();
+
+        // BR-194: Permission check
+        if (! $user->can('can-manage-meals')) {
+            abort(403);
+        }
+
+        $meals = $tenant->meals()
+            ->orderBy('position')
+            ->orderByDesc('created_at')
+            ->get();
+
+        return gale()->view('cook.meals.index', [
+            'meals' => $meals,
+        ], web: true);
+    }
+
+    /**
+     * Show the meal creation form.
+     *
+     * F-108: Meal Creation Form
+     * BR-194: Only users with can-manage-meals permission.
+     */
+    public function create(Request $request): mixed
+    {
+        $user = $request->user();
+
+        // BR-194: Permission check
+        if (! $user->can('can-manage-meals')) {
+            abort(403);
+        }
+
+        return gale()->view('cook.meals.create', web: true);
+    }
+
+    /**
+     * Store a new meal.
+     *
+     * F-108: Meal Creation Form
+     * BR-187: Meal name required in both EN and FR
+     * BR-188: Meal description required in both EN and FR
+     * BR-189: Meal name unique within tenant per language
+     * BR-190: New meals default to "draft" status
+     * BR-191: New meals default to "available" availability
+     * BR-193: Meals are tenant-scoped
+     * BR-194: Only users with can-manage-meals permission
+     * BR-195: Meal creation is logged via Spatie Activitylog
+     */
+    public function store(Request $request, MealService $mealService): mixed
+    {
+        $user = $request->user();
+        $tenant = tenant();
+
+        // BR-194: Permission check
+        if (! $user->can('can-manage-meals')) {
+            abort(403);
+        }
+
+        // Dual Gale/HTTP validation pattern
+        if ($request->isGale()) {
+            $validated = $request->validateState([
+                'name_en' => ['required', 'string', 'max:150'],
+                'name_fr' => ['required', 'string', 'max:150'],
+                'description_en' => ['required', 'string', 'max:2000'],
+                'description_fr' => ['required', 'string', 'max:2000'],
+            ], [
+                'name_en.required' => __('Meal name is required in English.'),
+                'name_en.max' => __('Meal name must not exceed :max characters.'),
+                'name_fr.required' => __('Meal name is required in French.'),
+                'name_fr.max' => __('Meal name must not exceed :max characters.'),
+                'description_en.required' => __('Meal description is required in English.'),
+                'description_en.max' => __('Meal description must not exceed :max characters.'),
+                'description_fr.required' => __('Meal description is required in French.'),
+                'description_fr.max' => __('Meal description must not exceed :max characters.'),
+            ]);
+        } else {
+            $formRequest = app(StoreMealRequest::class);
+            $validated = $formRequest->validated();
+        }
+
+        // Use MealService for business logic
+        $result = $mealService->createMeal($tenant, $validated);
+
+        if (! $result['success']) {
+            // BR-189: Uniqueness violation
+            $field = $result['field'] ?? 'name_en';
+
+            if ($request->isGale()) {
+                return gale()->messages([
+                    $field => $result['error'],
+                ]);
+            }
+
+            return redirect()->back()
+                ->withErrors([$field => $result['error']])
+                ->withInput();
+        }
+
+        $meal = $result['meal'];
+
+        // BR-195: Activity logging
+        activity('meals')
+            ->performedOn($meal)
+            ->causedBy($user)
+            ->withProperties([
+                'action' => 'meal_created',
+                'name_en' => $meal->name_en,
+                'name_fr' => $meal->name_fr,
+                'status' => $meal->status,
+                'tenant_id' => $tenant->id,
+            ])
+            ->log('Meal created');
+
+        // Redirect to meal edit page (F-110 stub for now — redirect to meal list)
+        $redirectUrl = url('/dashboard/meals/'.$meal->id.'/edit');
+
+        if ($request->isGale()) {
+            return gale()
+                ->redirect($redirectUrl)
+                ->with('success', __('Meal created.'));
+        }
+
+        return redirect($redirectUrl)
+            ->with('success', __('Meal created.'));
+    }
+
+    /**
+     * Show the meal edit form (stub for F-110).
+     *
+     * F-110: Meal Edit — placeholder route.
+     * BR-194: Only users with can-manage-meals permission.
+     */
+    public function edit(Request $request, int $mealId): mixed
+    {
+        $user = $request->user();
+        $tenant = tenant();
+
+        // BR-194: Permission check
+        if (! $user->can('can-manage-meals')) {
+            abort(403);
+        }
+
+        $meal = $tenant->meals()->findOrFail($mealId);
+
+        return gale()->view('cook.meals.edit', [
+            'meal' => $meal,
+        ], web: true);
+    }
+}
