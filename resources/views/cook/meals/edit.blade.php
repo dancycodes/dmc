@@ -91,14 +91,15 @@
         @include('cook.meals._schedule-override')
     @endif
 
+    {{-- F-109: Meal Image Upload & Carousel --}}
+    @if($canManageMeals)
+        <div class="mt-6">
+            @include('cook.meals._image-upload')
+        </div>
+    @endif
+
     {{-- Placeholder sections for future features --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-        {{-- Images section (F-109) --}}
-        <div class="bg-surface-alt dark:bg-surface-alt border border-outline dark:border-outline rounded-xl shadow-card p-6 opacity-60">
-            <h3 class="text-base font-semibold text-on-surface-strong mb-2">{{ __('Images') }}</h3>
-            <p class="text-sm text-on-surface/70">{{ __('Image upload will be available soon.') }}</p>
-        </div>
-
         {{-- Components section (F-118) --}}
         <div class="bg-surface-alt dark:bg-surface-alt border border-outline dark:border-outline rounded-xl shadow-card p-6 opacity-60">
             <h3 class="text-base font-semibold text-on-surface-strong mb-2">{{ __('Components') }}</h3>

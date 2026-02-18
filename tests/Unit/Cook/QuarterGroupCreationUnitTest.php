@@ -19,8 +19,6 @@
 
 use App\Http\Controllers\Cook\QuarterGroupController;
 use App\Http\Requests\Cook\StoreQuarterGroupRequest;
-use App\Models\DeliveryArea;
-use App\Models\DeliveryAreaQuarter;
 use App\Models\Quarter;
 use App\Models\QuarterGroup;
 use App\Models\Tenant;
@@ -302,13 +300,13 @@ describe('DeliveryAreaService::createQuarterGroup', function () use ($projectRoo
 
     it('checks for duplicate group name (BR-265)', function () use ($projectRoot) {
         $content = file_get_contents($projectRoot.'/app/Services/DeliveryAreaService.php');
-        expect($content)->toContain("LOWER(name) = ?");
-        expect($content)->toContain("A group with this name already exists.");
+        expect($content)->toContain('LOWER(name) = ?');
+        expect($content)->toContain('A group with this name already exists.');
     });
 
     it('validates quarter IDs belong to tenant (BR-269)', function () use ($projectRoot) {
         $content = file_get_contents($projectRoot.'/app/Services/DeliveryAreaService.php');
-        expect($content)->toContain("Some selected quarters do not belong to your delivery areas.");
+        expect($content)->toContain('Some selected quarters do not belong to your delivery areas.');
     });
 
     it('removes quarters from old groups before assigning (BR-268)', function () use ($projectRoot) {
@@ -316,7 +314,7 @@ describe('DeliveryAreaService::createQuarterGroup', function () use ($projectRoo
         // Should delete from quarter_group_quarter before attaching
         expect($content)->toContain("DB::table('quarter_group_quarter')");
         expect($content)->toContain("whereIn('quarter_id', \$quarterIds)");
-        expect($content)->toContain("->delete()");
+        expect($content)->toContain('->delete()');
     });
 
     it('uses DB transaction for atomicity', function () use ($projectRoot) {
@@ -424,7 +422,7 @@ describe('Blade View', function () use ($projectRoot) {
 
     it('form submits to group store route', function () use ($projectRoot) {
         $content = file_get_contents($projectRoot.'/resources/views/cook/locations/index.blade.php');
-        expect($content)->toContain("/dashboard/locations/groups");
+        expect($content)->toContain('/dashboard/locations/groups');
     });
 
     it('has quarter selection checkboxes (BR-269)', function () use ($projectRoot) {

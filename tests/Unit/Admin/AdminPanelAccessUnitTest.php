@@ -1,8 +1,6 @@
 <?php
 
 use App\Http\Middleware\EnsureAdminAccess;
-use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
 /*
 |--------------------------------------------------------------------------

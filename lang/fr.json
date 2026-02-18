@@ -1599,5 +1599,18 @@
     "Each quarter must have a valid ID.": "Chaque quartier doit avoir un ID valide.",
     "The selected quarter is invalid.": "Le quartier selectionne est invalide.",
     "Delivery fee must be at least :min XAF.": "Les frais de livraison doivent etre d'au moins :min XAF.",
-    "The selected pickup location is invalid.": "Le point de retrait selectionne est invalide."
+    "The selected pickup location is invalid.": "Le point de retrait selectionne est invalide.",
+    "Your meal images": "Vos images de repas",
+    "Drag to reorder — first image is the primary photo": "Glissez pour reorganiser — la premiere image est la photo principale",
+    "Use arrows to reorder — first image is the primary photo": "Utilisez les fleches pour reorganiser — la premiere image est la photo principale",
+    "Carousel Preview": "Apercu du carrousel",
+    "This is how your images will appear to customers.": "Voici comment vos images apparaitront aux clients.",
+    "1 image": "1 image",
+    "No images yet": "Pas encore d'images",
+    "Upload photos of this meal to attract more customers. You can upload up to :count images.": "Telechargez des photos de ce repas pour attirer plus de clients. Vous pouvez telecharger jusqu'a :count images.",
+    "Maximum :count images reached.": "Maximum de :count images atteint.",
+    "Image must be 2MB or smaller.": "L'image doit faire 2 Mo ou moins.",
+    "images": "images",
+    "Previous image": "Image precedente",
+    "Next image": "Image suivante"
 }
