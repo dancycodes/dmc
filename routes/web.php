@@ -16,6 +16,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Cook\BrandProfileController;
+use App\Http\Controllers\Cook\CookScheduleController;
 use App\Http\Controllers\Cook\CoverImageController;
 use App\Http\Controllers\Cook\DeliveryFeeController;
 use App\Http\Controllers\Cook\PickupLocationController;
@@ -399,6 +400,11 @@ Route::middleware('tenant.domain')->group(function () {
         Route::get('/locations/pickup/{pickupLocation}/edit', [PickupLocationController::class, 'edit'])->name('cook.locations.pickup.edit');
         Route::put('/locations/pickup/{pickupLocation}', [PickupLocationController::class, 'update'])->name('cook.locations.pickup.update');
         Route::delete('/locations/pickup/{pickupLocation}', [PickupLocationController::class, 'destroy'])->name('cook.locations.pickup.destroy');
+
+        // Schedule management (F-098: Cook Day Schedule Creation)
+        // BR-103: Only users with can-manage-schedules permission
+        Route::get('/schedule', [CookScheduleController::class, 'index'])->name('cook.schedule.index');
+        Route::post('/schedule', [CookScheduleController::class, 'store'])->name('cook.schedule.store');
     });
 
     // Tenant-specific routes will be added by later features (F-126, etc.)

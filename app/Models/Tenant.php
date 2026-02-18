@@ -259,6 +259,16 @@ class Tenant extends Model implements HasMedia
     }
 
     /**
+     * Get the cook schedule entries for this tenant.
+     *
+     * F-098: Cook Day Schedule Creation
+     */
+    public function cookSchedules(): HasMany
+    {
+        return $this->hasMany(CookSchedule::class);
+    }
+
+    /**
      * Get the meals for this tenant.
      *
      * F-075: Schedule & First Meal Step
