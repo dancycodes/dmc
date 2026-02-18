@@ -1541,5 +1541,17 @@
     "Overwrite & Apply": "Écraser et appliquer",
     "Select at least one day.": "Sélectionnez au moins un jour.",
     "Invalid day selected.": "Jour sélectionné invalide.",
-    "Template applied to :count day.|Template applied to :count days.": "Modèle appliqué à :count jour.|Modèle appliqué à :count jours."
+    "Template applied to :count day.|Template applied to :count days.": "Modèle appliqué à :count jour.|Modèle appliqué à :count jours.",
+
+    "Invalid time format. Use 24-hour format (00:00 - 23:59).": "Format d'heure invalide. Utilisez le format 24 heures (00:00 - 23:59).",
+    "Delivery must start at or after the order window closes (:time).": "La livraison doit commencer à ou après la fermeture de la fenêtre de commande (:time).",
+    "Pickup must start at or after the order window closes (:time).": "Le retrait doit commencer à ou après la fermeture de la fenêtre de commande (:time).",
+    "Delivery end time must be after the start time.": "L'heure de fin de livraison doit être après l'heure de début.",
+    "Pickup end time must be after the start time.": "L'heure de fin de retrait doit être après l'heure de début.",
+    "Order window overlaps with an existing :day schedule (:label).": "La fenêtre de commande chevauche un planning existant du :day (:label).",
+    "Delivery window overlaps with an existing :day schedule (:startTime - :endTime).": "La fenêtre de livraison chevauche un planning existant du :day (:startTime - :endTime).",
+    "Pickup window overlaps with an existing :day schedule (:startTime - :endTime).": "La fenêtre de retrait chevauche un planning existant du :day (:startTime - :endTime).",
+    "Order window cannot start more than :max days before the open day.": "La fenêtre de commande ne peut pas commencer plus de :max jours avant le jour d'ouverture.",
+    "Order end day offset cannot exceed :max.": "Le décalage du jour de fin de commande ne peut pas dépasser :max.",
+    "At least one schedule entry with availability must be configured to accept orders.": "Au moins une entrée de planning avec disponibilité doit être configurée pour accepter les commandes."
 }

@@ -86,6 +86,7 @@ describe('CookSchedule Model', function () {
             'pickup_enabled',
             'pickup_start_time',
             'pickup_end_time',
+            'template_id',
         ]);
     });
 
@@ -204,7 +205,7 @@ describe('CookScheduleService', function () {
         CookSchedule::factory()->forDay('monday')->create(['tenant_id' => $tenant->id, 'position' => 1]);
         CookSchedule::factory()->forDay('wednesday')->create(['tenant_id' => $tenant->id, 'position' => 1]);
 
-        $service = new CookScheduleService;
+        $service = app(CookScheduleService::class);
         $grouped = $service->getSchedulesByDay($tenant);
 
         expect($grouped)->toHaveCount(7);
@@ -218,7 +219,7 @@ describe('CookScheduleService', function () {
         CookSchedule::factory()->forDay('monday')->create(['tenant_id' => $tenant->id, 'position' => 1]);
         CookSchedule::factory()->forDay('monday')->create(['tenant_id' => $tenant->id, 'position' => 2]);
 
-        $service = new CookScheduleService;
+        $service = app(CookScheduleService::class);
         expect($service->countEntriesForDay($tenant, 'monday'))->toBe(2);
         expect($service->countEntriesForDay($tenant, 'tuesday'))->toBe(0);
     });
@@ -229,7 +230,7 @@ describe('CookScheduleService', function () {
             CookSchedule::factory()->forDay('monday')->atPosition($i)->create(['tenant_id' => $tenant->id]);
         }
 
-        $service = new CookScheduleService;
+        $service = app(CookScheduleService::class);
         expect($service->isDayAtLimit($tenant, 'monday'))->toBeTrue();
         expect($service->isDayAtLimit($tenant, 'tuesday'))->toBeFalse();
     });
@@ -238,14 +239,14 @@ describe('CookScheduleService', function () {
         $tenant = Tenant::factory()->create();
         CookSchedule::factory()->forDay('monday')->atPosition(1)->create(['tenant_id' => $tenant->id]);
 
-        $service = new CookScheduleService;
+        $service = app(CookScheduleService::class);
         expect($service->getNextPosition($tenant, 'monday'))->toBe(2);
         expect($service->getNextPosition($tenant, 'tuesday'))->toBe(1);
     });
 
     it('creates a schedule entry successfully', function () {
         $tenant = Tenant::factory()->create();
-        $service = new CookScheduleService;
+        $service = app(CookScheduleService::class);
 
         $result = $service->createScheduleEntry($tenant, 'monday', true, 'Lunch');
 
@@ -259,7 +260,7 @@ describe('CookScheduleService', function () {
 
     it('auto-assigns position for multiple entries on same day', function () {
         $tenant = Tenant::factory()->create();
-        $service = new CookScheduleService;
+        $service = app(CookScheduleService::class);
 
         $result1 = $service->createScheduleEntry($tenant, 'monday', true, 'Lunch');
         $result2 = $service->createScheduleEntry($tenant, 'monday', true, 'Dinner');
@@ -270,7 +271,7 @@ describe('CookScheduleService', function () {
 
     it('rejects when per-day limit is reached', function () {
         $tenant = Tenant::factory()->create();
-        $service = new CookScheduleService;
+        $service = app(CookScheduleService::class);
 
         for ($i = 0; $i < CookSchedule::MAX_ENTRIES_PER_DAY; $i++) {
             $service->createScheduleEntry($tenant, 'monday', true, "Slot $i");
@@ -283,7 +284,7 @@ describe('CookScheduleService', function () {
 
     it('trims and nullifies empty labels', function () {
         $tenant = Tenant::factory()->create();
-        $service = new CookScheduleService;
+        $service = app(CookScheduleService::class);
 
         $result = $service->createScheduleEntry($tenant, 'monday', true, '   ');
         expect($result['schedule']->label)->toBeNull();
@@ -291,7 +292,7 @@ describe('CookScheduleService', function () {
 
     it('creates unavailable entries', function () {
         $tenant = Tenant::factory()->create();
-        $service = new CookScheduleService;
+        $service = app(CookScheduleService::class);
 
         $result = $service->createScheduleEntry($tenant, 'sunday', false);
 
@@ -301,7 +302,7 @@ describe('CookScheduleService', function () {
 
     it('detects if tenant has any schedules', function () {
         $tenant = Tenant::factory()->create();
-        $service = new CookScheduleService;
+        $service = app(CookScheduleService::class);
 
         expect($service->hasAnySchedules($tenant))->toBeFalse();
 
@@ -315,7 +316,7 @@ describe('CookScheduleService', function () {
         CookSchedule::factory()->forDay('monday')->create(['tenant_id' => $tenant->id, 'position' => 2]);
         CookSchedule::factory()->forDay('tuesday')->unavailable()->create(['tenant_id' => $tenant->id]);
 
-        $service = new CookScheduleService;
+        $service = app(CookScheduleService::class);
         $summary = $service->getScheduleSummary($tenant);
 
         expect($summary['total'])->toBe(3);
@@ -569,7 +570,7 @@ describe('Tenant scope isolation', function () {
         CookSchedule::factory()->forDay('tuesday')->create(['tenant_id' => $tenant1->id]);
         CookSchedule::factory()->forDay('monday')->create(['tenant_id' => $tenant2->id]);
 
-        $service = new CookScheduleService;
+        $service = app(CookScheduleService::class);
         $tenant1Schedules = $service->getSchedulesByDay($tenant1);
         $tenant2Schedules = $service->getSchedulesByDay($tenant2);
 

@@ -2,10 +2,12 @@
 
 namespace App\Http\Requests\Cook;
 
+use App\Rules\ValidTimeFormat;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
  * F-100: Delivery/Pickup Time Interval Configuration
+ * F-107: Schedule Validation Rules (enhanced with custom rules)
  *
  * Validates the delivery and pickup time interval configuration
  * for a cook schedule entry.
@@ -15,6 +17,8 @@ use Illuminate\Foundation\Http\FormRequest;
  * BR-120: Pickup end > pickup start
  * BR-121: At least one of delivery or pickup must be enabled
  * BR-122: Time format is 24-hour (HH:MM)
+ * BR-172: Valid time format enforced via ValidTimeFormat rule
+ * BR-178: Delivery and pickup intervals must be on the open day (day offset = 0)
  */
 class UpdateDeliveryPickupIntervalRequest extends FormRequest
 {
@@ -35,11 +39,11 @@ class UpdateDeliveryPickupIntervalRequest extends FormRequest
     {
         return [
             'delivery_enabled' => ['required'],
-            'delivery_start_time' => ['nullable', 'date_format:H:i', 'required_if:delivery_enabled,true,1'],
-            'delivery_end_time' => ['nullable', 'date_format:H:i', 'required_if:delivery_enabled,true,1'],
+            'delivery_start_time' => ['nullable', new ValidTimeFormat, 'required_if:delivery_enabled,true,1'],
+            'delivery_end_time' => ['nullable', new ValidTimeFormat, 'required_if:delivery_enabled,true,1'],
             'pickup_enabled' => ['required'],
-            'pickup_start_time' => ['nullable', 'date_format:H:i', 'required_if:pickup_enabled,true,1'],
-            'pickup_end_time' => ['nullable', 'date_format:H:i', 'required_if:pickup_enabled,true,1'],
+            'pickup_start_time' => ['nullable', new ValidTimeFormat, 'required_if:pickup_enabled,true,1'],
+            'pickup_end_time' => ['nullable', new ValidTimeFormat, 'required_if:pickup_enabled,true,1'],
         ];
     }
 
@@ -53,14 +57,10 @@ class UpdateDeliveryPickupIntervalRequest extends FormRequest
         return [
             'delivery_enabled.required' => __('Delivery status is required.'),
             'delivery_start_time.required_if' => __('Delivery start time is required when delivery is enabled.'),
-            'delivery_start_time.date_format' => __('Delivery start time must be in HH:MM format (24-hour).'),
             'delivery_end_time.required_if' => __('Delivery end time is required when delivery is enabled.'),
-            'delivery_end_time.date_format' => __('Delivery end time must be in HH:MM format (24-hour).'),
             'pickup_enabled.required' => __('Pickup status is required.'),
             'pickup_start_time.required_if' => __('Pickup start time is required when pickup is enabled.'),
-            'pickup_start_time.date_format' => __('Pickup start time must be in HH:MM format (24-hour).'),
             'pickup_end_time.required_if' => __('Pickup end time is required when pickup is enabled.'),
-            'pickup_end_time.date_format' => __('Pickup end time must be in HH:MM format (24-hour).'),
         ];
     }
 }

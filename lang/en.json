@@ -1542,5 +1542,17 @@
     "Overwrite & Apply": "Overwrite & Apply",
     "Select at least one day.": "Select at least one day.",
     "Invalid day selected.": "Invalid day selected.",
-    "Template applied to :count day.|Template applied to :count days.": "Template applied to :count day.|Template applied to :count days."
+    "Template applied to :count day.|Template applied to :count days.": "Template applied to :count day.|Template applied to :count days.",
+
+    "Invalid time format. Use 24-hour format (00:00 - 23:59).": "Invalid time format. Use 24-hour format (00:00 - 23:59).",
+    "Delivery must start at or after the order window closes (:time).": "Delivery must start at or after the order window closes (:time).",
+    "Pickup must start at or after the order window closes (:time).": "Pickup must start at or after the order window closes (:time).",
+    "Delivery end time must be after the start time.": "Delivery end time must be after the start time.",
+    "Pickup end time must be after the start time.": "Pickup end time must be after the start time.",
+    "Order window overlaps with an existing :day schedule (:label).": "Order window overlaps with an existing :day schedule (:label).",
+    "Delivery window overlaps with an existing :day schedule (:startTime - :endTime).": "Delivery window overlaps with an existing :day schedule (:startTime - :endTime).",
+    "Pickup window overlaps with an existing :day schedule (:startTime - :endTime).": "Pickup window overlaps with an existing :day schedule (:startTime - :endTime).",
+    "Order window cannot start more than :max days before the open day.": "Order window cannot start more than :max days before the open day.",
+    "Order end day offset cannot exceed :max.": "Order end day offset cannot exceed :max.",
+    "At least one schedule entry with availability must be configured to accept orders.": "At least one schedule entry with availability must be configured to accept orders."
 }
