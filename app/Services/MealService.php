@@ -4,11 +4,114 @@ namespace App\Services;
 
 use App\Models\Meal;
 use App\Models\Tenant;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class MealService
 {
+    /**
+     * Get meal list data for the cook dashboard.
+     *
+     * F-116: Meal List View (Cook Dashboard)
+     * BR-261: Tenant-scoped meals only.
+     * BR-262: Soft-deleted meals excluded.
+     * BR-263: Search matches against both name_en and name_fr.
+     * BR-264: Status filter options: All, Draft, Live.
+     * BR-265: Availability filter options: All, Available, Unavailable.
+     * BR-266: Sort options: name_asc, name_desc, newest, oldest, most_ordered.
+     * BR-269: Component count and order count displayed per meal.
+     *
+     * @param  array{search?: string, status?: string, availability?: string, sort?: string}  $filters
+     * @return array{meals: LengthAwarePaginator, totalCount: int, draftCount: int, liveCount: int, availableCount: int, unavailableCount: int}
+     */
+    public function getMealListData(Tenant $tenant, array $filters = []): array
+    {
+        $search = trim($filters['search'] ?? '');
+        $status = $filters['status'] ?? '';
+        $availability = $filters['availability'] ?? '';
+        $sort = $filters['sort'] ?? 'newest';
+
+        // Base query: tenant-scoped, not soft-deleted (SoftDeletes handles this)
+        $query = Meal::forTenant($tenant->id)
+            ->withCount('components')
+            ->with(['images' => function ($q) {
+                $q->orderBy('position')->limit(1);
+            }]);
+
+        // Forward-compatible: eager load order count if orders table exists
+        if (Schema::hasTable('orders')) {
+            $query->withCount('orders');
+        }
+
+        // BR-263: Search matches against both name_en and name_fr
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw('LOWER(name_en) LIKE ?', ['%'.Str::lower($search).'%'])
+                    ->orWhereRaw('LOWER(name_fr) LIKE ?', ['%'.Str::lower($search).'%']);
+            });
+        }
+
+        // BR-264: Status filter
+        if ($status === 'draft') {
+            $query->draft();
+        } elseif ($status === 'live') {
+            $query->live();
+        }
+
+        // BR-265: Availability filter
+        if ($availability === 'available') {
+            $query->available();
+        } elseif ($availability === 'unavailable') {
+            $query->where('is_available', false);
+        }
+
+        // BR-266: Sort options
+        $locale = app()->getLocale();
+        $nameColumn = 'name_'.$locale;
+
+        switch ($sort) {
+            case 'name_asc':
+                $query->orderByRaw("LOWER({$nameColumn}) ASC");
+                break;
+            case 'name_desc':
+                $query->orderByRaw("LOWER({$nameColumn}) DESC");
+                break;
+            case 'oldest':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'most_ordered':
+                if (Schema::hasTable('orders')) {
+                    $query->orderByDesc('orders_count');
+                } else {
+                    $query->orderByDesc('created_at');
+                }
+                break;
+            case 'newest':
+            default:
+                $query->orderByDesc('created_at');
+                break;
+        }
+
+        $meals = $query->paginate(15)->withQueryString();
+
+        // Summary counts (unfiltered, for the current tenant)
+        $totalCount = Meal::forTenant($tenant->id)->count();
+        $draftCount = Meal::forTenant($tenant->id)->draft()->count();
+        $liveCount = Meal::forTenant($tenant->id)->live()->count();
+        $availableCount = Meal::forTenant($tenant->id)->available()->count();
+        $unavailableCount = Meal::forTenant($tenant->id)->where('is_available', false)->count();
+
+        return [
+            'meals' => $meals,
+            'totalCount' => $totalCount,
+            'draftCount' => $draftCount,
+            'liveCount' => $liveCount,
+            'availableCount' => $availableCount,
+            'unavailableCount' => $unavailableCount,
+        ];
+    }
+
     /**
      * Create a new meal for a tenant.
      *

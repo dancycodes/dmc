@@ -19,27 +19,54 @@ class MealController extends Controller
     /**
      * Display the meal list page.
      *
-     * F-116: Meal List View (Cook Dashboard) - stub for now.
-     * BR-194: Only users with can-manage-meals permission.
+     * F-116: Meal List View (Cook Dashboard)
+     * BR-261: Tenant-scoped meals only.
+     * BR-262: Soft-deleted meals excluded.
+     * BR-263: Search matches against both name_en and name_fr.
+     * BR-264: Status filter: All, Draft, Live.
+     * BR-265: Availability filter: All, Available, Unavailable.
+     * BR-266: Sort options: Name A-Z, Name Z-A, Newest, Oldest, Most Ordered.
+     * BR-268: Only users with can-manage-meals permission.
+     * BR-269: Component count and order count per meal.
      */
-    public function index(Request $request): mixed
+    public function index(Request $request, MealService $mealService): mixed
     {
         $user = $request->user();
         $tenant = tenant();
 
-        // BR-194: Permission check
+        // BR-268: Permission check
         if (! $user->can('can-manage-meals')) {
             abort(403);
         }
 
-        $meals = $tenant->meals()
-            ->orderBy('position')
-            ->orderByDesc('created_at')
-            ->get();
+        $filters = [
+            'search' => $request->input('search', ''),
+            'status' => $request->input('status', ''),
+            'availability' => $request->input('availability', ''),
+            'sort' => $request->input('sort', 'newest'),
+        ];
 
-        return gale()->view('cook.meals.index', [
-            'meals' => $meals,
-        ], web: true);
+        $listData = $mealService->getMealListData($tenant, $filters);
+
+        $data = [
+            'meals' => $listData['meals'],
+            'totalCount' => $listData['totalCount'],
+            'draftCount' => $listData['draftCount'],
+            'liveCount' => $listData['liveCount'],
+            'availableCount' => $listData['availableCount'],
+            'unavailableCount' => $listData['unavailableCount'],
+            'search' => $filters['search'],
+            'status' => $filters['status'],
+            'availability' => $filters['availability'],
+            'sort' => $filters['sort'],
+        ];
+
+        // Handle Gale navigate requests (search/filter/sort triggers)
+        if ($request->isGaleNavigate('meal-list')) {
+            return gale()->fragment('cook.meals.index', 'meal-list-content', $data);
+        }
+
+        return gale()->view('cook.meals.index', $data, web: true);
     }
 
     /**
@@ -363,14 +390,18 @@ class MealController extends Controller
 
         if (! $result['success']) {
             // BR-227: No components — block going live
+            $referer = $request->header('Referer', '');
+            $redirectUrl = str_contains($referer, '/meals/') && str_contains($referer, '/edit')
+                ? url('/dashboard/meals/'.$meal->id.'/edit')
+                : url('/dashboard/meals');
+
             if ($request->isGale()) {
                 return gale()
-                    ->redirect(url('/dashboard/meals/'.$meal->id.'/edit'))
-                    ->back()
+                    ->redirect($redirectUrl)
                     ->with('error', $result['error']);
             }
 
-            return redirect()->back()
+            return redirect($redirectUrl)
                 ->with('error', $result['error']);
         }
 
@@ -394,14 +425,18 @@ class MealController extends Controller
             ? __(':name is now live.', ['name' => $mealName])
             : __(':name is now in draft.', ['name' => $mealName]);
 
+        $referer = $request->header('Referer', '');
+        $redirectUrl = str_contains($referer, '/meals/') && str_contains($referer, '/edit')
+            ? url('/dashboard/meals/'.$meal->id.'/edit')
+            : url('/dashboard/meals');
+
         if ($request->isGale()) {
             return gale()
-                ->redirect(url('/dashboard/meals/'.$meal->id.'/edit'))
-                ->back()
+                ->redirect($redirectUrl)
                 ->with('success', $toastMessage);
         }
 
-        return redirect()->back()
+        return redirect($redirectUrl)
             ->with('success', $toastMessage);
     }
 
@@ -453,14 +488,18 @@ class MealController extends Controller
             ? __(':name is now available.', ['name' => $mealName])
             : __(':name is now unavailable.', ['name' => $mealName]);
 
+        $referer = $request->header('Referer', '');
+        $redirectUrl = str_contains($referer, '/meals/') && str_contains($referer, '/edit')
+            ? url('/dashboard/meals/'.$meal->id.'/edit')
+            : url('/dashboard/meals');
+
         if ($request->isGale()) {
             return gale()
-                ->redirect(url('/dashboard/meals/'.$meal->id.'/edit'))
-                ->back()
+                ->redirect($redirectUrl)
                 ->with('success', $toastMessage);
         }
 
-        return redirect()->back()
+        return redirect($redirectUrl)
             ->with('success', $toastMessage);
     }
 
