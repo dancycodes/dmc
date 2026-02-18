@@ -405,6 +405,8 @@ Route::middleware('tenant.domain')->group(function () {
         // BR-103: Only users with can-manage-schedules permission
         Route::get('/schedule', [CookScheduleController::class, 'index'])->name('cook.schedule.index');
         Route::post('/schedule', [CookScheduleController::class, 'store'])->name('cook.schedule.store');
+        // F-099: Order Time Interval Configuration
+        Route::put('/schedule/{cookSchedule}/order-interval', [CookScheduleController::class, 'updateOrderInterval'])->name('cook.schedule.update-order-interval');
     });
 
     // Tenant-specific routes will be added by later features (F-126, etc.)

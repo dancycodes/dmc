@@ -2,10 +2,12 @@
     Cook Day Schedule Management
     ----------------------------
     F-098: Cook Day Schedule Creation
+    F-099: Order Time Interval Configuration
 
     Allows the cook to create schedule entries for specific days of the week.
     Multiple entries per day (e.g., Lunch, Dinner) up to configurable max (default 3).
     Entries grouped by day in a card layout.
+    Each available entry can have an order time interval configured.
 
     Business Rules:
     BR-098: Each schedule entry belongs to a single day of the week (Monday-Sunday)
@@ -16,6 +18,14 @@
     BR-103: Only users with can-manage-schedules permission
     BR-104: Schedule creation logged via Spatie Activitylog
     BR-105: Label defaults to "Slot N" based on position when empty
+    BR-106: Order interval start = time + day offset (0-7)
+    BR-107: Order interval end = time + day offset (0-1)
+    BR-108: Start must be chronologically before end
+    BR-109: Time format is 24-hour (HH:MM)
+    BR-110: Start day offset max 7
+    BR-111: End day offset max 1
+    BR-112: Only available entries can have intervals configured
+    BR-115: Interval config logged via Spatie Activitylog
 --}}
 @extends('layouts.cook-dashboard')
 
@@ -30,9 +40,49 @@
         is_available: 'true',
         label: '',
         showAddForm: false,
-        confirmDeleteId: null
+        confirmDeleteId: null,
+        expandedIntervalId: null,
+        order_start_time: '06:00',
+        order_start_day_offset: '0',
+        order_end_time: '10:00',
+        order_end_day_offset: '0',
+
+        toggleInterval(entryId, startTime, startOffset, endTime, endOffset) {
+            if (this.expandedIntervalId === entryId) {
+                this.expandedIntervalId = null;
+                return;
+            }
+            this.expandedIntervalId = entryId;
+            this.order_start_time = startTime || '06:00';
+            this.order_start_day_offset = String(startOffset ?? 0);
+            this.order_end_time = endTime || '10:00';
+            this.order_end_day_offset = String(endOffset ?? 0);
+        },
+
+        getIntervalPreview() {
+            if (!this.order_start_time || !this.order_end_time) return '';
+            const startLabel = this.formatDayOffset(parseInt(this.order_start_day_offset));
+            const endLabel = this.formatDayOffset(parseInt(this.order_end_day_offset));
+            const startFormatted = this.formatTime(this.order_start_time);
+            const endFormatted = this.formatTime(this.order_end_time);
+            return startFormatted + ' ' + startLabel + ' {{ __('to') }} ' + endFormatted + ' ' + endLabel;
+        },
+
+        formatTime(timeStr) {
+            if (!timeStr) return '';
+            const [h, m] = timeStr.split(':').map(Number);
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            const hour12 = h % 12 || 12;
+            return hour12 + ':' + String(m).padStart(2, '0') + ' ' + ampm;
+        },
+
+        formatDayOffset(offset) {
+            if (offset === 0) return '{{ __('same day') }}';
+            if (offset === 1) return '{{ __('day before') }}';
+            return offset + ' {{ __('days before') }}';
+        }
     }"
-    x-sync="['day_of_week', 'is_available', 'label']"
+    x-sync="['day_of_week', 'is_available', 'label', 'order_start_time', 'order_start_day_offset', 'order_end_time', 'order_end_day_offset']"
 >
     {{-- Breadcrumb --}}
     <nav class="flex items-center gap-2 text-sm text-on-surface/60 mb-6" aria-label="{{ __('Breadcrumb') }}">
@@ -327,43 +377,212 @@
                     @if($entryCount > 0)
                         <div class="divide-y divide-outline dark:divide-outline">
                             @foreach($entries as $entry)
-                                <div class="flex items-center justify-between px-4 sm:px-6 py-3">
-                                    <div class="flex items-center gap-3">
-                                        {{-- Availability Badge --}}
-                                        @if($entry->is_available)
-                                            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-success-subtle text-success">
-                                                <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><path d="m9 11 3 3L22 4"></path></svg>
-                                                {{ __('Available') }}
-                                            </span>
-                                        @else
-                                            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-warning-subtle text-warning">
-                                                <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" x2="19.07" y1="4.93" y2="19.07"></line></svg>
-                                                {{ __('Unavailable') }}
-                                            </span>
-                                        @endif
+                                <div>
+                                    {{-- Entry row --}}
+                                    <div class="flex items-center justify-between px-4 sm:px-6 py-3">
+                                        <div class="flex items-center gap-3 flex-wrap">
+                                            {{-- Availability Badge --}}
+                                            @if($entry->is_available)
+                                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-success-subtle text-success">
+                                                    <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><path d="m9 11 3 3L22 4"></path></svg>
+                                                    {{ __('Available') }}
+                                                </span>
+                                            @else
+                                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-warning-subtle text-warning">
+                                                    <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" x2="19.07" y1="4.93" y2="19.07"></line></svg>
+                                                    {{ __('Unavailable') }}
+                                                </span>
+                                            @endif
 
-                                        {{-- Label --}}
-                                        <span class="text-sm font-medium text-on-surface-strong">
-                                            {{ $entry->display_label }}
-                                        </span>
+                                            {{-- Label --}}
+                                            <span class="text-sm font-medium text-on-surface-strong">
+                                                {{ $entry->display_label }}
+                                            </span>
 
-                                        {{-- Position indicator --}}
-                                        <span class="text-xs text-on-surface/40">#{{ $entry->position }}</span>
+                                            {{-- Position indicator --}}
+                                            <span class="text-xs text-on-surface/40">#{{ $entry->position }}</span>
+                                        </div>
+
+                                        <div class="flex items-center gap-2">
+                                            @if(!$entry->is_available)
+                                                {{-- BR-101/BR-112: No intervals for unavailable entries --}}
+                                                <span class="text-xs text-on-surface/40 hidden sm:inline" title="{{ __('No time intervals for unavailable entries') }}">
+                                                    {{ __('No intervals') }}
+                                                </span>
+                                            @else
+                                                {{-- F-099: Order interval status + config toggle --}}
+                                                @if($entry->hasOrderInterval())
+                                                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-info-subtle text-info hidden sm:inline-flex" title="{{ $entry->order_interval_summary }}">
+                                                        <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                                        {{ __('Orders') }}
+                                                    </span>
+                                                @endif
+                                                <button
+                                                    @click="toggleInterval({{ $entry->id }}, '{{ $entry->order_start_time ? substr($entry->order_start_time, 0, 5) : '' }}', '{{ $entry->order_start_day_offset }}', '{{ $entry->order_end_time ? substr($entry->order_end_time, 0, 5) : '' }}', '{{ $entry->order_end_day_offset }}')"
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200"
+                                                    :class="expandedIntervalId === {{ $entry->id }} ? 'bg-primary text-on-primary' : 'bg-surface dark:bg-surface border border-outline text-on-surface hover:bg-primary-subtle hover:text-primary'"
+                                                    title="{{ __('Configure Order Interval') }}"
+                                                >
+                                                    <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                                    <span class="hidden sm:inline">{{ $entry->hasOrderInterval() ? __('Edit') : __('Set') }}</span>
+                                                </button>
+                                            @endif
+                                        </div>
                                     </div>
 
-                                    <div class="flex items-center gap-2">
-                                        {{-- BR-101: Show indicator when time intervals cannot be configured --}}
-                                        @if(!$entry->is_available)
-                                            <span class="text-xs text-on-surface/40 hidden sm:inline" title="{{ __('No time intervals for unavailable entries') }}">
-                                                {{ __('No intervals') }}
-                                            </span>
-                                        @else
-                                            {{-- Forward-compatible: time intervals configured indicator (F-099/F-100) --}}
-                                            <span class="text-xs text-on-surface/40 hidden sm:inline" title="{{ __('Time intervals will be configured in future features') }}">
-                                                {{ __('Intervals pending') }}
-                                            </span>
-                                        @endif
-                                    </div>
+                                    {{-- F-099: Order Interval Summary (shown when interval is set but form is collapsed) --}}
+                                    @if($entry->is_available && $entry->hasOrderInterval())
+                                        <div
+                                            x-show="expandedIntervalId !== {{ $entry->id }}"
+                                            class="px-4 sm:px-6 pb-3 -mt-1"
+                                        >
+                                            <div class="flex items-center gap-2 text-xs text-on-surface/60">
+                                                <svg class="w-3.5 h-3.5 text-info shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                                <span>{{ __('Orders') }}: {{ $entry->order_interval_summary }}</span>
+                                            </div>
+                                        </div>
+                                    @endif
+
+                                    {{-- F-099: Order Interval Configuration Form (collapsible) --}}
+                                    @if($entry->is_available)
+                                        <div
+                                            x-show="expandedIntervalId === {{ $entry->id }}"
+                                            x-transition:enter="transition ease-out duration-200"
+                                            x-transition:enter-start="opacity-0 -translate-y-1"
+                                            x-transition:enter-end="opacity-100 translate-y-0"
+                                            x-transition:leave="transition ease-in duration-150"
+                                            x-transition:leave-start="opacity-100 translate-y-0"
+                                            x-transition:leave-end="opacity-0 -translate-y-1"
+                                            class="px-4 sm:px-6 pb-4 border-t border-outline/50 dark:border-outline/50 bg-surface/50 dark:bg-surface/30"
+                                            x-cloak
+                                        >
+                                            <div class="pt-4">
+                                                <h4 class="text-sm font-semibold text-on-surface-strong mb-3 flex items-center gap-2">
+                                                    <svg class="w-4 h-4 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                                    {{ __('Order Time Interval') }}
+                                                </h4>
+
+                                                <form @submit.prevent="$action('{{ url('/dashboard/schedule/' . $entry->id . '/order-interval') }}', { method: 'PUT' })">
+                                                    {{-- Start Time Row --}}
+                                                    <div class="mb-4">
+                                                        <label class="block text-sm font-medium text-on-surface mb-1.5">
+                                                            {{ __('Start accepting orders') }} <span class="text-danger">*</span>
+                                                        </label>
+                                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                            {{-- Start Time --}}
+                                                            <div>
+                                                                <select
+                                                                    x-model="order_start_time"
+                                                                    x-name="order_start_time"
+                                                                    class="w-full rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200"
+                                                                >
+                                                                    @for($h = 0; $h < 24; $h++)
+                                                                        @for($m = 0; $m < 60; $m += 30)
+                                                                            @php
+                                                                                $timeVal = sprintf('%02d:%02d', $h, $m);
+                                                                                $displayTime = date('g:i A', strtotime($timeVal));
+                                                                            @endphp
+                                                                            <option value="{{ $timeVal }}">{{ $displayTime }}</option>
+                                                                        @endfor
+                                                                    @endfor
+                                                                </select>
+                                                                <p x-message="order_start_time" class="mt-1 text-sm text-danger"></p>
+                                                            </div>
+
+                                                            {{-- Start Day Offset --}}
+                                                            <div>
+                                                                <select
+                                                                    x-model="order_start_day_offset"
+                                                                    x-name="order_start_day_offset"
+                                                                    class="w-full rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200"
+                                                                >
+                                                                    @foreach(\App\Models\CookSchedule::getStartDayOffsetOptions() as $offsetVal => $offsetLabel)
+                                                                        <option value="{{ $offsetVal }}">{{ ucfirst($offsetLabel) }}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                                <p x-message="order_start_day_offset" class="mt-1 text-sm text-danger"></p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {{-- End Time Row --}}
+                                                    <div class="mb-4">
+                                                        <label class="block text-sm font-medium text-on-surface mb-1.5">
+                                                            {{ __('Stop accepting orders') }} <span class="text-danger">*</span>
+                                                        </label>
+                                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                            {{-- End Time --}}
+                                                            <div>
+                                                                <select
+                                                                    x-model="order_end_time"
+                                                                    x-name="order_end_time"
+                                                                    class="w-full rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200"
+                                                                >
+                                                                    @for($h = 0; $h < 24; $h++)
+                                                                        @for($m = 0; $m < 60; $m += 30)
+                                                                            @php
+                                                                                $timeVal = sprintf('%02d:%02d', $h, $m);
+                                                                                $displayTime = date('g:i A', strtotime($timeVal));
+                                                                            @endphp
+                                                                            <option value="{{ $timeVal }}">{{ $displayTime }}</option>
+                                                                        @endfor
+                                                                    @endfor
+                                                                </select>
+                                                                <p x-message="order_end_time" class="mt-1 text-sm text-danger"></p>
+                                                            </div>
+
+                                                            {{-- End Day Offset --}}
+                                                            <div>
+                                                                <select
+                                                                    x-model="order_end_day_offset"
+                                                                    x-name="order_end_day_offset"
+                                                                    class="w-full rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200"
+                                                                >
+                                                                    @foreach(\App\Models\CookSchedule::getEndDayOffsetOptions() as $offsetVal => $offsetLabel)
+                                                                        <option value="{{ $offsetVal }}">{{ ucfirst($offsetLabel) }}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                                <p x-message="order_end_day_offset" class="mt-1 text-sm text-danger"></p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {{-- Live Preview --}}
+                                                    <div class="mb-4 p-3 rounded-lg bg-info-subtle border border-info/20">
+                                                        <div class="flex items-start gap-2">
+                                                            <svg class="w-4 h-4 mt-0.5 shrink-0 text-info" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+                                                            <div class="text-sm text-info">
+                                                                <span class="font-medium">{{ __('Preview') }}:</span>
+                                                                <span x-text="getIntervalPreview()"></span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {{-- Action Buttons --}}
+                                                    <div class="flex items-center justify-end gap-3">
+                                                        <button
+                                                            type="button"
+                                                            @click="expandedIntervalId = null"
+                                                            class="px-4 py-2 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-alt border border-outline transition-colors duration-200"
+                                                        >
+                                                            {{ __('Cancel') }}
+                                                        </button>
+                                                        <button
+                                                            type="submit"
+                                                            class="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-on-primary rounded-lg text-sm font-medium transition-colors duration-200 shadow-sm disabled:opacity-50"
+                                                            :disabled="$fetching()"
+                                                        >
+                                                            <span x-show="!$fetching()">{{ __('Save Interval') }}</span>
+                                                            <span x-show="$fetching()" class="flex items-center gap-2" x-cloak>
+                                                                <svg class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                                                {{ __('Saving...') }}
+                                                            </span>
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    @endif
                                 </div>
                             @endforeach
                         </div>

@@ -7,10 +7,11 @@ use App\Models\Tenant;
 
 /**
  * F-098: Cook Day Schedule Creation
+ * F-099: Order Time Interval Configuration
  *
  * Service layer handling all business logic for cook schedule management.
- * Encapsulates validation of per-day limits, position assignment, and
- * schedule data retrieval.
+ * Encapsulates validation of per-day limits, position assignment,
+ * schedule data retrieval, and order interval configuration.
  */
 class CookScheduleService
 {
@@ -133,6 +134,139 @@ class CookScheduleService
         return CookSchedule::query()
             ->forTenant($tenant->id)
             ->count();
+    }
+
+    /**
+     * Update the order time interval for a schedule entry.
+     *
+     * BR-106: Start = time + day offset (0-7)
+     * BR-107: End = time + day offset (0-1)
+     * BR-108: Start must be chronologically before end
+     * BR-110: Start day offset max 7
+     * BR-111: End day offset max 1
+     * BR-112: Only available entries can have order intervals
+     *
+     * @return array{success: bool, schedule?: CookSchedule, error?: string}
+     */
+    public function updateOrderInterval(
+        CookSchedule $schedule,
+        string $orderStartTime,
+        int $orderStartDayOffset,
+        string $orderEndTime,
+        int $orderEndDayOffset,
+    ): array {
+        // BR-112: Only available schedule entries can have order intervals
+        if (! $schedule->is_available) {
+            return [
+                'success' => false,
+                'error' => __('Order intervals can only be configured for available schedule entries.'),
+            ];
+        }
+
+        // BR-110: Start day offset max 7
+        if ($orderStartDayOffset > CookSchedule::MAX_START_DAY_OFFSET) {
+            return [
+                'success' => false,
+                'error' => __('Start day offset cannot exceed :max days before.', ['max' => CookSchedule::MAX_START_DAY_OFFSET]),
+            ];
+        }
+
+        // BR-111: End day offset max 1
+        if ($orderEndDayOffset > CookSchedule::MAX_END_DAY_OFFSET) {
+            return [
+                'success' => false,
+                'error' => __('End day offset cannot exceed :max day before.', ['max' => CookSchedule::MAX_END_DAY_OFFSET]),
+            ];
+        }
+
+        // BR-108: Validate chronological order
+        if (! $this->isIntervalChronologicallyValid(
+            $orderStartTime,
+            $orderStartDayOffset,
+            $orderEndTime,
+            $orderEndDayOffset,
+        )) {
+            return [
+                'success' => false,
+                'error' => __('The order interval end must be after the start. Please adjust the times or day offsets.'),
+            ];
+        }
+
+        $schedule->update([
+            'order_start_time' => $orderStartTime,
+            'order_start_day_offset' => $orderStartDayOffset,
+            'order_end_time' => $orderEndTime,
+            'order_end_day_offset' => $orderEndDayOffset,
+        ]);
+
+        return [
+            'success' => true,
+            'schedule' => $schedule->fresh(),
+        ];
+    }
+
+    /**
+     * Remove the order interval from a schedule entry.
+     *
+     * @return array{success: bool, schedule: CookSchedule}
+     */
+    public function removeOrderInterval(CookSchedule $schedule): array
+    {
+        $schedule->update([
+            'order_start_time' => null,
+            'order_start_day_offset' => 0,
+            'order_end_time' => null,
+            'order_end_day_offset' => 0,
+        ]);
+
+        return [
+            'success' => true,
+            'schedule' => $schedule->fresh(),
+        ];
+    }
+
+    /**
+     * Check if the interval is chronologically valid.
+     *
+     * BR-108: Start datetime must be chronologically before end datetime.
+     * We resolve both to "minutes relative to open day 00:00":
+     * - Same day 08:00 = +480
+     * - Day before 18:00 = -1440 + 1080 = -360
+     * - 2 days before 12:00 = -2880 + 720 = -2160
+     *
+     * Start must have a LOWER value (earlier in time) than end.
+     */
+    public function isIntervalChronologicallyValid(
+        string $startTime,
+        int $startDayOffset,
+        string $endTime,
+        int $endDayOffset,
+    ): bool {
+        $startAbsolute = $this->resolveToAbsoluteMinutes($startTime, $startDayOffset);
+        $endAbsolute = $this->resolveToAbsoluteMinutes($endTime, $endDayOffset);
+
+        // Start must be strictly before end
+        return $startAbsolute < $endAbsolute;
+    }
+
+    /**
+     * Resolve a time + day offset to absolute minutes relative to open day 00:00.
+     *
+     * Examples:
+     * - Same day 08:00, offset 0 = 480
+     * - Day before 18:00, offset 1 = -1440 + 1080 = -360
+     * - 2 days before 12:00, offset 2 = -2880 + 720 = -2160
+     *
+     * Lower value = earlier in time.
+     */
+    private function resolveToAbsoluteMinutes(string $time, int $dayOffset): int
+    {
+        $parts = explode(':', $time);
+        $hours = (int) $parts[0];
+        $minutes = (int) ($parts[1] ?? 0);
+        $minutesIntoDay = ($hours * 60) + $minutes;
+
+        return $minutesIntoDay - ($dayOffset * 1440);
     }
 
     /**
