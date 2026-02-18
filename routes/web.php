@@ -22,6 +22,7 @@ use App\Http\Controllers\Cook\DeliveryFeeController;
 use App\Http\Controllers\Cook\PickupLocationController;
 use App\Http\Controllers\Cook\QuarterController;
 use App\Http\Controllers\Cook\QuarterGroupController;
+use App\Http\Controllers\Cook\ScheduleTemplateController;
 use App\Http\Controllers\Cook\SetupWizardController;
 use App\Http\Controllers\Cook\TownController;
 use App\Http\Controllers\DashboardController;
@@ -409,6 +410,11 @@ Route::middleware('tenant.domain')->group(function () {
         Route::put('/schedule/{cookSchedule}/order-interval', [CookScheduleController::class, 'updateOrderInterval'])->name('cook.schedule.update-order-interval');
         // F-100: Delivery/Pickup Time Interval Configuration
         Route::put('/schedule/{cookSchedule}/delivery-pickup-interval', [CookScheduleController::class, 'updateDeliveryPickupInterval'])->name('cook.schedule.update-delivery-pickup-interval');
+
+        // Schedule templates (F-101: Create Schedule Template)
+        // BR-133: Only users with can-manage-schedules permission (enforced in controller)
+        Route::get('/schedule/templates/create', [ScheduleTemplateController::class, 'create'])->name('cook.schedule-templates.create');
+        Route::post('/schedule/templates', [ScheduleTemplateController::class, 'store'])->name('cook.schedule-templates.store');
     });
 
     // Tenant-specific routes will be added by later features (F-126, etc.)
