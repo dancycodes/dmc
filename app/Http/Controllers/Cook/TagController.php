@@ -79,7 +79,7 @@ class TagController extends Controller
         // BR-258: Activity logging handled by LogsActivityTrait on Tag model
 
         if ($request->isGale()) {
-            return gale()->redirect(route('cook.tags.index'))->back()
+            return gale()->redirect(url('/dashboard/tags'))->back()
                 ->with('toast', ['type' => 'success', 'message' => __('Tag created.')]);
         }
 
@@ -153,7 +153,7 @@ class TagController extends Controller
         }
 
         if ($request->isGale()) {
-            return gale()->redirect(route('cook.tags.index'))->back()
+            return gale()->redirect(url('/dashboard/tags'))->back()
                 ->with('toast', ['type' => 'success', 'message' => __('Tag updated.')]);
         }
 
@@ -187,7 +187,7 @@ class TagController extends Controller
 
         if (! $result['success']) {
             if ($request->isGale()) {
-                return gale()->redirect(route('cook.tags.index'))->back()
+                return gale()->redirect(url('/dashboard/tags'))->back()
                     ->with('toast', ['type' => 'error', 'message' => $result['error']]);
             }
 
@@ -196,7 +196,7 @@ class TagController extends Controller
         }
 
         if ($request->isGale()) {
-            return gale()->redirect(route('cook.tags.index'))->back()
+            return gale()->redirect(url('/dashboard/tags'))->back()
                 ->with('toast', ['type' => 'success', 'message' => __('Tag deleted.')]);
         }
 
