@@ -76,7 +76,14 @@
             @foreach($meals as $meal)
                 <div class="bg-surface-alt dark:bg-surface-alt border border-outline dark:border-outline rounded-xl shadow-card p-4 hover:shadow-md transition-shadow duration-200">
                     <div class="flex items-start justify-between mb-3">
-                        <h3 class="text-base font-semibold text-on-surface-strong truncate pr-2">{{ $meal->name }}</h3>
+                        <div class="flex items-center gap-2 min-w-0 pr-2">
+                            <h3 class="text-base font-semibold text-on-surface-strong truncate">{{ $meal->name }}</h3>
+                            @if($meal->has_custom_locations)
+                                <span class="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-info-subtle text-info" title="{{ __('Custom locations') }}">
+                                    <svg class="w-3 h-3 inline-block -mt-px" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                </span>
+                            @endif
+                        </div>
                         <span class="shrink-0 px-2 py-0.5 rounded-full text-xs font-medium {{ $meal->status === 'draft' ? 'bg-warning-subtle text-warning' : 'bg-success-subtle text-success' }}">
                             {{ $meal->status === 'draft' ? __('Draft') : __('Live') }}
                         </span>

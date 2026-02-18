@@ -81,8 +81,13 @@
         </div>
     </div>
 
+    {{-- F-096: Location Override Section --}}
+    @if($canManageLocations && $locationData)
+        @include('cook.meals._location-override')
+    @endif
+
     {{-- Placeholder sections for future features --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
         {{-- Images section (F-109) --}}
         <div class="bg-surface-alt dark:bg-surface-alt border border-outline dark:border-outline rounded-xl shadow-card p-6 opacity-60">
             <h3 class="text-base font-semibold text-on-surface-strong mb-2">{{ __('Images') }}</h3>
