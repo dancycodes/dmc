@@ -1397,5 +1397,12 @@
     "Pickup location added successfully.": "Lieu de retrait ajout\u00e9 avec succ\u00e8s.",
     "Pickup location deleted successfully.": "Lieu de retrait supprim\u00e9 avec succ\u00e8s.",
     "Clients will no longer be able to pick up from this location.": "Les clients ne pourront plus r\u00e9cup\u00e9rer leurs commandes \u00e0 cet endroit.",
-    "{1} Cannot delete :location because it has :count active order for pickup.|[2,*] Cannot delete :location because it has :count active orders for pickup.": "{1} Impossible de supprimer :location car il a :count commande active en retrait.|[2,*] Impossible de supprimer :location car il a :count commandes actives en retrait."
+    "{1} Cannot delete :location because it has :count active order for pickup.|[2,*] Cannot delete :location because it has :count active orders for pickup.": "{1} Impossible de supprimer :location car il a :count commande active en retrait.|[2,*] Impossible de supprimer :location car il a :count commandes actives en retrait.",
+    "Search for a neighbourhood...": "Rechercher un quartier...",
+    "Search for a location": "Rechercher un lieu",
+    "No locations found. Try a different search term.": "Aucun lieu trouvé. Essayez un autre terme de recherche.",
+    "Unable to search locations. Please type your address manually.": "Impossible de rechercher des lieux. Veuillez saisir votre adresse manuellement.",
+    "Too many search requests. Please try again in a moment.": "Trop de requêtes de recherche. Veuillez réessayer dans un moment.",
+    "Searching...": "Recherche en cours...",
+    "Unknown location": "Lieu inconnu"
 }

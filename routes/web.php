@@ -27,6 +27,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DiscoveryController;
 use App\Http\Controllers\LanguagePreferenceController;
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\LocationSearchController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PushSubscriptionController;
@@ -192,6 +193,20 @@ Route::middleware('auth')->group(function () {
 |
 */
 Route::post('/locale/switch', [LocaleController::class, 'switch'])->name('locale.switch');
+
+/*
+|--------------------------------------------------------------------------
+| Location Search Routes (accessible on ALL domains)
+|--------------------------------------------------------------------------
+|
+| OpenStreetMap Nominatim API proxy for neighbourhood autocomplete (F-097).
+| BR-322: Server-side proxy to avoid CORS and control rate limiting.
+| Available to all users (guests may use it on tenant domains).
+|
+*/
+Route::get('/location-search', [LocationSearchController::class, 'search'])
+    ->middleware('throttle:moderate')
+    ->name('location-search');
 
 /*
 |--------------------------------------------------------------------------
