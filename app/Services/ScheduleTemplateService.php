@@ -2,12 +2,15 @@
 
 namespace App\Services;
 
+use App\Models\CookSchedule;
 use App\Models\ScheduleTemplate;
 use App\Models\Tenant;
+use Illuminate\Support\Facades\DB;
 
 /**
  * F-101: Create Schedule Template
  * F-102: Schedule Template List View
+ * F-105: Schedule Template Application to Days
  *
  * Service layer handling all business logic for schedule template management.
  * Reuses interval validation logic from CookScheduleService for consistency.
@@ -401,6 +404,144 @@ class ScheduleTemplateService
         }
 
         return null;
+    }
+
+    /**
+     * F-105: Apply a template to one or more days of the week.
+     *
+     * BR-153: Copies template values (not a live link)
+     * BR-154: At least one day must be selected
+     * BR-155: Warns about overwriting (handled client-side)
+     * BR-156: Replaces all interval values on existing entries
+     * BR-157: Sets template_id reference for tracking
+     * BR-158: Availability set to true for all applied entries
+     * BR-159: Replaces first entry and removes extras if day has multiple
+     * BR-160: Logged via Spatie Activitylog
+     * BR-161: Permission check (handled in controller)
+     *
+     * @param  list<string>  $days
+     * @return array{success: bool, days_applied: int, days_created: int, days_overwritten: int, error?: string}
+     */
+    public function applyTemplateToDays(
+        ScheduleTemplate $template,
+        Tenant $tenant,
+        array $days,
+    ): array {
+        // BR-154: At least one day
+        if (empty($days)) {
+            return [
+                'success' => false,
+                'error' => __('Select at least one day.'),
+                'days_applied' => 0,
+                'days_created' => 0,
+                'days_overwritten' => 0,
+            ];
+        }
+
+        // Validate all days are valid
+        $validDays = array_intersect($days, CookSchedule::DAYS_OF_WEEK);
+        if (count($validDays) !== count($days)) {
+            return [
+                'success' => false,
+                'error' => __('Invalid day selected.'),
+                'days_applied' => 0,
+                'days_created' => 0,
+                'days_overwritten' => 0,
+            ];
+        }
+
+        $templateData = $this->getTemplateDataForApplication($template);
+
+        $daysCreated = 0;
+        $daysOverwritten = 0;
+
+        DB::transaction(function () use ($tenant, $validDays, $templateData, &$daysCreated, &$daysOverwritten) {
+            foreach ($validDays as $day) {
+                $existingEntries = CookSchedule::query()
+                    ->forTenant($tenant->id)
+                    ->forDay($day)
+                    ->orderBy('position')
+                    ->get();
+
+                if ($existingEntries->isEmpty()) {
+                    // Create new entry
+                    CookSchedule::create(array_merge($templateData, [
+                        'tenant_id' => $tenant->id,
+                        'day_of_week' => $day,
+                        'position' => 1,
+                    ]));
+                    $daysCreated++;
+                } else {
+                    // BR-159: Update first entry, delete extras
+                    $firstEntry = $existingEntries->first();
+                    $firstEntry->update($templateData);
+
+                    // Remove extra entries if day had multiple
+                    if ($existingEntries->count() > 1) {
+                        CookSchedule::query()
+                            ->forTenant($tenant->id)
+                            ->forDay($day)
+                            ->where('id', '!=', $firstEntry->id)
+                            ->delete();
+                    }
+
+                    $daysOverwritten++;
+                }
+            }
+        });
+
+        return [
+            'success' => true,
+            'days_applied' => count($validDays),
+            'days_created' => $daysCreated,
+            'days_overwritten' => $daysOverwritten,
+        ];
+    }
+
+    /**
+     * F-105: Get days that already have schedule entries for a tenant.
+     *
+     * Used by the apply form to show warning icons on days with existing schedules.
+     *
+     * @return list<string>
+     */
+    public function getDaysWithExistingSchedules(Tenant $tenant): array
+    {
+        return CookSchedule::query()
+            ->forTenant($tenant->id)
+            ->select('day_of_week')
+            ->distinct()
+            ->pluck('day_of_week')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Extract template data for copying to a schedule entry.
+     *
+     * BR-153: Values are copied (not linked)
+     * BR-157: template_id is set for tracking
+     * BR-158: is_available set to true
+     *
+     * @return array<string, mixed>
+     */
+    private function getTemplateDataForApplication(ScheduleTemplate $template): array
+    {
+        return [
+            'template_id' => $template->id,
+            'is_available' => true,
+            'label' => $template->name,
+            'order_start_time' => $template->order_start_time,
+            'order_start_day_offset' => $template->order_start_day_offset,
+            'order_end_time' => $template->order_end_time,
+            'order_end_day_offset' => $template->order_end_day_offset,
+            'delivery_enabled' => $template->delivery_enabled,
+            'delivery_start_time' => $template->delivery_start_time,
+            'delivery_end_time' => $template->delivery_end_time,
+            'pickup_enabled' => $template->pickup_enabled,
+            'pickup_start_time' => $template->pickup_start_time,
+            'pickup_end_time' => $template->pickup_end_time,
+        ];
     }
 
     /**

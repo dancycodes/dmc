@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Cook;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Cook\ApplyScheduleTemplateRequest;
 use App\Http\Requests\Cook\StoreScheduleTemplateRequest;
 use App\Http\Requests\Cook\UpdateScheduleTemplateRequest;
 use App\Models\CookSchedule;
@@ -15,6 +16,7 @@ use Illuminate\Http\Request;
  * F-102: Schedule Template List View
  * F-103: Edit Schedule Template
  * F-104: Delete Schedule Template
+ * F-105: Schedule Template Application to Days
  *
  * Manages schedule templates for cooks. Templates are reusable
  * configurations that bundle order, delivery, and pickup intervals
@@ -411,5 +413,129 @@ class ScheduleTemplateController extends Controller
 
         return redirect()->route('cook.schedule-templates.index')
             ->with('success', __('Schedule template ":name" deleted successfully.', ['name' => $result['template_name']]));
+    }
+
+    /**
+     * F-105: Show the apply template to days form.
+     *
+     * BR-161: Only users with can-manage-schedules permission
+     * Displays day checkboxes with warning icons for days that already have schedules.
+     */
+    public function showApply(Request $request, ScheduleTemplate $scheduleTemplate, ScheduleTemplateService $templateService): mixed
+    {
+        $user = $request->user();
+        $tenant = tenant();
+
+        // BR-161: Permission check
+        if (! $user->can('can-manage-schedules')) {
+            abort(403);
+        }
+
+        // Ensure template belongs to current tenant
+        if ($scheduleTemplate->tenant_id !== $tenant->id) {
+            abort(404);
+        }
+
+        $daysWithSchedules = $templateService->getDaysWithExistingSchedules($tenant);
+
+        return gale()->view('cook.schedule.templates.apply', [
+            'template' => $scheduleTemplate,
+            'daysOfWeek' => CookSchedule::DAYS_OF_WEEK,
+            'dayLabels' => CookSchedule::DAY_LABELS,
+            'daysWithSchedules' => $daysWithSchedules,
+        ], web: true);
+    }
+
+    /**
+     * F-105: Apply a template to selected days.
+     *
+     * BR-153: Copies template values (not a live link)
+     * BR-154: At least one day must be selected
+     * BR-156: Overwrites existing schedule entries
+     * BR-157: Sets template_id for tracking
+     * BR-158: Sets availability to true
+     * BR-159: Replaces first entry, removes extras
+     * BR-160: Logged via Spatie Activitylog
+     * BR-161: Permission check
+     */
+    public function apply(Request $request, ScheduleTemplate $scheduleTemplate, ScheduleTemplateService $templateService): mixed
+    {
+        $user = $request->user();
+        $tenant = tenant();
+
+        // BR-161: Permission check
+        if (! $user->can('can-manage-schedules')) {
+            abort(403);
+        }
+
+        // Ensure template belongs to current tenant
+        if ($scheduleTemplate->tenant_id !== $tenant->id) {
+            abort(404);
+        }
+
+        // Dual Gale/HTTP validation pattern
+        if ($request->isGale()) {
+            $validated = $request->validateState([
+                'days' => ['required', 'array', 'min:1'],
+                'days.*' => ['required', 'string', \Illuminate\Validation\Rule::in(CookSchedule::DAYS_OF_WEEK)],
+            ], [
+                'days.required' => __('Select at least one day.'),
+                'days.min' => __('Select at least one day.'),
+                'days.*.in' => __('Invalid day selected.'),
+            ]);
+        } else {
+            $formRequest = app(ApplyScheduleTemplateRequest::class);
+            $validated = $formRequest->validated();
+        }
+
+        $days = $validated['days'] ?? [];
+
+        $result = $templateService->applyTemplateToDays(
+            $scheduleTemplate,
+            $tenant,
+            $days,
+        );
+
+        if (! $result['success']) {
+            if ($request->isGale()) {
+                return gale()->messages([
+                    'days' => $result['error'],
+                ]);
+            }
+
+            return redirect()->back()->withErrors(['days' => $result['error']])->withInput();
+        }
+
+        // BR-160: Activity logging
+        $dayLabels = array_map(fn ($day) => __(CookSchedule::DAY_LABELS[$day] ?? $day), $days);
+
+        activity('schedule_templates')
+            ->performedOn($scheduleTemplate)
+            ->causedBy($user)
+            ->withProperties([
+                'action' => 'template_applied',
+                'template_name' => $scheduleTemplate->name,
+                'days_applied' => $days,
+                'days_applied_labels' => $dayLabels,
+                'days_created' => $result['days_created'],
+                'days_overwritten' => $result['days_overwritten'],
+                'tenant_id' => $tenant->id,
+            ])
+            ->log('Schedule template applied to days');
+
+        $message = trans_choice(
+            'Template applied to :count day.|Template applied to :count days.',
+            $result['days_applied'],
+            ['count' => $result['days_applied']],
+        );
+
+        if ($request->isGale()) {
+            return gale()
+                ->redirect(url('/dashboard/schedule/templates'))
+                ->with('success', $message);
+        }
+
+        return redirect()->route('cook.schedule-templates.index')
+            ->with('success', $message);
     }
 }

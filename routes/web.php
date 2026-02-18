@@ -421,6 +421,9 @@ Route::middleware('tenant.domain')->group(function () {
         Route::put('/schedule/templates/{scheduleTemplate}', [ScheduleTemplateController::class, 'update'])->name('cook.schedule-templates.update');
         // F-104: Delete Schedule Template
         Route::delete('/schedule/templates/{scheduleTemplate}', [ScheduleTemplateController::class, 'destroy'])->name('cook.schedule-templates.destroy');
+        // F-105: Schedule Template Application to Days
+        Route::get('/schedule/templates/{scheduleTemplate}/apply', [ScheduleTemplateController::class, 'showApply'])->name('cook.schedule-templates.show-apply');
+        Route::post('/schedule/templates/{scheduleTemplate}/apply', [ScheduleTemplateController::class, 'apply'])->name('cook.schedule-templates.apply');
     });
 
     // Tenant-specific routes will be added by later features (F-126, etc.)
