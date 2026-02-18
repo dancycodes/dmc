@@ -1513,5 +1513,10 @@
     "Applied": "Applied",
     ":count day|:count days": ":count day|:count days",
     "Apply to Days": "Apply to Days",
-    "Apply": "Apply"
+    "Apply": "Apply",
+    "Edit Template": "Edit Template",
+    "Modify the schedule template settings.": "Modify the schedule template settings.",
+    "Back to Templates": "Back to Templates",
+    "Changes will not affect schedules already using this template. Re-apply to update them.": "Changes will not affect schedules already using this template. Re-apply to update them.",
+    "Schedule template updated successfully.": "Schedule template updated successfully."
 }
