@@ -14,11 +14,12 @@ use Illuminate\Http\Request;
  * F-141: Delivery Location Selection
  * F-142: Pickup Location Selection
  * F-143: Order Phone Number
+ * F-146: Order Total Calculation & Summary
  *
  * Handles checkout flow on tenant domains via Gale SSE.
  * BR-264: Client must choose delivery or pickup to proceed.
  * BR-272: Requires authentication.
- * BR-273/BR-282/BR-290/BR-297: All text localized via __().
+ * BR-273/BR-282/BR-290/BR-297/BR-326: All text localized via __().
  */
 class CheckoutController extends Controller
 {
@@ -579,8 +580,70 @@ class CheckoutController extends Controller
         // BR-298: Save phone to checkout session (BR-294: does NOT update profile)
         $this->checkoutService->setPhone($tenant->id, $normalizedPhone);
 
-        // F-146 will provide the next checkout step (Order Total & Summary)
+        // F-146: Proceed to Order Total & Summary
         return gale()->redirect(url('/checkout/summary'))
             ->with('message', __('Phone number saved.'));
+    }
+
+    /**
+     * F-146: Display the order total calculation and summary.
+     *
+     * BR-316: Itemized list shows meal name, component name, quantity, unit price, line subtotal.
+     * BR-317: Items are grouped by meal.
+     * BR-318: Subtotal is the sum of all food item line subtotals.
+     * BR-319: Delivery fee shown as separate line item; pickup shows "Pickup - Free".
+     * BR-321: Grand total = subtotal + delivery fee - promo discount.
+     * BR-322: All amounts in XAF with thousand separators.
+     * BR-323: Summary updates reactively via Gale.
+     * BR-324: Edit Cart link returns to cart without losing checkout progress.
+     * BR-325: Proceed to Payment leads to F-149.
+     * BR-326: All text localized via __().
+     */
+    public function summary(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        // Require authentication
+        if (! auth()->check()) {
+            return gale()->redirect(route('login'))
+                ->with('message', __('Please login to proceed with your order.'));
+        }
+
+        // Edge case: Cart is empty when reaching summary
+        $cart = $this->cartService->getCartWithAvailability($tenant->id);
+        if (empty($cart['items'])) {
+            return gale()->redirect(url('/cart'))
+                ->with('message', __('Your cart is empty. Add items before reviewing your order.'));
+        }
+
+        // Verify checkout steps are complete
+        $deliveryMethod = $this->checkoutService->getDeliveryMethod($tenant->id);
+        if (! $deliveryMethod) {
+            return gale()->redirect(url('/checkout/delivery-method'))
+                ->with('message', __('Please select a delivery method first.'));
+        }
+
+        $phone = $this->checkoutService->getPhone($tenant->id);
+        if (! $phone) {
+            return gale()->redirect(url('/checkout/phone'))
+                ->with('message', __('Please provide your phone number first.'));
+        }
+
+        // BR-316 through BR-322: Build order summary
+        $orderSummary = $this->checkoutService->getOrderSummary($tenant->id, $cart);
+
+        $backUrl = $this->checkoutService->getSummaryBackUrl();
+
+        return gale()->view('tenant.checkout.summary', [
+            'tenant' => $tenant,
+            'orderSummary' => $orderSummary,
+            'deliveryMethod' => $deliveryMethod,
+            'phone' => $phone,
+            'backUrl' => $backUrl,
+        ], web: true);
     }
 }
