@@ -409,16 +409,16 @@ class TenantLandingService
         }
 
         // BR-226: Price range filter using starting price (min component price)
+        // Starting price = MIN(price) of available components for each meal
         if ($priceMin !== null || $priceMax !== null) {
-            $query->whereHas('components', function ($cq) use ($priceMin, $priceMax) {
-                $cq->where('is_available', true);
-                if ($priceMin !== null) {
-                    $cq->where('price', '>=', $priceMin);
-                }
-                if ($priceMax !== null) {
-                    $cq->where('price', '<=', $priceMax);
-                }
-            });
+            $startingPriceSql = '(SELECT MIN(mc_price.price) FROM meal_components mc_price WHERE mc_price.meal_id = meals.id AND mc_price.is_available = true)';
+
+            if ($priceMin !== null) {
+                $query->whereRaw($startingPriceSql.' >= ?', [$priceMin]);
+            }
+            if ($priceMax !== null) {
+                $query->whereRaw($startingPriceSql.' <= ?', [$priceMax]);
+            }
         }
 
         return $query
