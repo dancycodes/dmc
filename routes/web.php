@@ -468,6 +468,8 @@ Route::middleware('tenant.domain')->group(function () {
         Route::put('/meals/{meal}/components/{component}', [MealComponentController::class, 'update'])->name('cook.meals.components.update');
         // F-120: Meal Component Delete
         Route::delete('/meals/{meal}/components/{component}', [MealComponentController::class, 'destroy'])->name('cook.meals.components.destroy');
+        // F-123: Meal Component Availability Toggle
+        Route::patch('/meals/{meal}/components/{component}/toggle-availability', [MealComponentController::class, 'toggleAvailability'])->name('cook.meals.components.toggle-availability');
         // F-122: Meal Component Requirement Rules
         Route::post('/meals/{meal}/components/{component}/rules', [ComponentRequirementRuleController::class, 'store'])->name('cook.meals.components.rules.store');
         Route::delete('/meals/{meal}/components/{component}/rules/{rule}', [ComponentRequirementRuleController::class, 'destroy'])->name('cook.meals.components.rules.destroy');

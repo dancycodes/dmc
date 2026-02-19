@@ -285,6 +285,31 @@ class MealComponentService
     }
 
     /**
+     * Toggle a meal component's availability.
+     *
+     * F-123: Meal Component Availability Toggle
+     * BR-326: Component availability is independent of meal availability
+     * BR-329: Toggling availability does not affect pending orders
+     * BR-330: Availability toggle has immediate effect
+     *
+     * @return array{success: bool, old_availability: bool, new_availability: bool, component: MealComponent}
+     */
+    public function toggleAvailability(MealComponent $component): array
+    {
+        $oldAvailability = $component->is_available;
+        $newAvailability = ! $oldAvailability;
+
+        $component->update(['is_available' => $newAvailability]);
+
+        return [
+            'success' => true,
+            'old_availability' => $oldAvailability,
+            'new_availability' => $newAvailability,
+            'component' => $component->fresh(),
+        ];
+    }
+
+    /**
      * Get components data for a meal (ordered by position).
      *
      * @return array{components: \Illuminate\Database\Eloquent\Collection, count: int}

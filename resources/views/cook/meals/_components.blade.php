@@ -339,7 +339,7 @@
                                 </h4>
                                 @if(!$component->is_available)
                                     <span class="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium bg-danger-subtle text-danger">
-                                        {{ __('Unavailable') }}
+                                        {{ __('Sold Out') }}
                                     </span>
                                 @endif
                             </div>
@@ -366,6 +366,19 @@
 
                         {{-- Action buttons --}}
                         <div class="flex items-center gap-1 ml-3 shrink-0">
+                            {{-- F-123: Availability Toggle --}}
+                            <button
+                                type="button"
+                                @click="$action('{{ url('/dashboard/meals/' . $meal->id . '/components/' . $component->id . '/toggle-availability') }}', { method: 'PATCH' })"
+                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/30 {{ $component->is_available ? 'bg-success' : 'bg-on-surface/20' }}"
+                                title="{{ $component->is_available ? __('Click to mark unavailable') : __('Click to mark available') }}"
+                                aria-label="{{ $component->is_available ? __('Mark component unavailable') : __('Mark component available') }}"
+                            >
+                                <span
+                                    class="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 {{ $component->is_available ? 'translate-x-6' : 'translate-x-1' }}"
+                                ></span>
+                            </button>
+
                             {{-- Edit (F-119) --}}
                             <button
                                 type="button"

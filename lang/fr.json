@@ -1810,5 +1810,12 @@
     "At least one target component is required.": "Au moins un composant cible est requis.",
     "A component cannot reference itself in a rule.": "Un composant ne peut pas se referencer lui-meme dans une regle.",
     "All target components must belong to the same meal.": "Tous les composants cibles doivent appartenir au meme repas.",
-    "Circular dependency detected: :target already requires this component.": "Dependance circulaire detectee : :target requiert deja ce composant."
+    "Circular dependency detected: :target already requires this component.": "Dependance circulaire detectee : :target requiert deja ce composant.",
+    "Sold Out": "Epuise",
+    "Click to mark unavailable": "Cliquer pour marquer indisponible",
+    "Click to mark available": "Cliquer pour marquer disponible",
+    "Mark component unavailable": "Marquer le composant indisponible",
+    "Mark component available": "Marquer le composant disponible",
+    "Component \":name\" is now available.": "Le composant \":name\" est maintenant disponible.",
+    "Component \":name\" is now unavailable.": "Le composant \":name\" est maintenant indisponible."
 }
