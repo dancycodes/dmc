@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class MealComponent extends Model
 {
@@ -170,6 +171,16 @@ class MealComponent extends Model
     public static function nextPositionForMeal(int $mealId): int
     {
         return (int) static::where('meal_id', $mealId)->max('position') + 1;
+    }
+
+    /**
+     * Get the requirement rules defined on this component.
+     *
+     * F-122: Rules that govern this component's orderability.
+     */
+    public function requirementRules(): HasMany
+    {
+        return $this->hasMany(ComponentRequirementRule::class, 'meal_component_id');
     }
 
     /**
