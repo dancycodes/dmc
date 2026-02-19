@@ -71,10 +71,16 @@
                 unit: {{ json_encode($component['unit']) }},
                 qty: this.quantity
             });
-            /* Reset adding state after brief delay (SSE will update state) */
-            setTimeout(() => { this.adding = false; this.inCart = true; }, 800);
+            /* Reset adding state after brief delay */
+            setTimeout(() => { this.adding = false; }, 800);
+        },
+        handleCartUpdated(detail) {
+            if (detail.componentId === {{ $component['id'] }}) {
+                this.inCart = detail.success;
+            }
         }
     }"
+    x-on:cart-updated.window="handleCartUpdated($event.detail)"
 >
     <div class="flex items-start justify-between gap-3">
         <div class="flex-1 min-w-0">

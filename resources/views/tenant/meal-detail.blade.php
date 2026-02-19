@@ -46,6 +46,12 @@
                 this.toastVisible = true;
                 clearTimeout(this.toastTimeout);
                 this.toastTimeout = setTimeout(() => { this.toastVisible = false; }, 3000);
+                /* Notify child components of successful add */
+                this.$dispatch('cart-updated', { componentId: this.component_id, success: true });
+            }
+            if (this.cartError) {
+                /* Notify child of failed add so it does not show In cart */
+                this.$dispatch('cart-updated', { componentId: this.component_id, success: false });
             }
         },
         doAddToCart(id, qty) {
