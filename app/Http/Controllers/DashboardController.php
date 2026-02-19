@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\CookDashboardService;
+use App\Services\TenantLandingService;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -76,13 +77,17 @@ class DashboardController extends Controller
 
     /**
      * Display the tenant landing page for public visitors.
+     *
+     * F-126: Tenant Landing Page Layout
+     * BR-126: Only renders on tenant domains (enforced by root route dispatch)
+     * BR-134: Publicly accessible without authentication
      */
-    public function tenantHome(Request $request): mixed
+    public function tenantHome(Request $request, TenantLandingService $landingService): mixed
     {
         $tenant = tenant();
 
-        return gale()->view('tenant.home', [
-            'tenant' => $tenant,
-        ], web: true);
+        $landingData = $landingService->getLandingPageData($tenant);
+
+        return gale()->view('tenant.home', $landingData, web: true);
     }
 }
