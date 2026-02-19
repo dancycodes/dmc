@@ -53,11 +53,20 @@ class CheckoutController extends Controller
         $options = $this->checkoutService->getAvailableOptions($tenant->id);
         $currentMethod = $this->checkoutService->getDeliveryMethod($tenant->id);
 
-        // Auto-select when only one option available
-        if ($options['has_delivery'] && ! $options['has_pickup'] && ! $currentMethod) {
+        // Edge case: If previously selected method is no longer available, reset it
+        if ($currentMethod === CheckoutService::METHOD_DELIVERY && ! $options['has_delivery']) {
+            $currentMethod = null;
+            $this->checkoutService->setDeliveryMethod($tenant->id, '');
+        } elseif ($currentMethod === CheckoutService::METHOD_PICKUP && ! $options['has_pickup']) {
+            $currentMethod = null;
+            $this->checkoutService->setDeliveryMethod($tenant->id, '');
+        }
+
+        // Auto-select when only one option available and no valid selection
+        if (! $currentMethod && $options['has_delivery'] && ! $options['has_pickup']) {
             $currentMethod = CheckoutService::METHOD_DELIVERY;
             $this->checkoutService->setDeliveryMethod($tenant->id, $currentMethod);
-        } elseif (! $options['has_delivery'] && $options['has_pickup'] && ! $currentMethod) {
+        } elseif (! $currentMethod && ! $options['has_delivery'] && $options['has_pickup']) {
             $currentMethod = CheckoutService::METHOD_PICKUP;
             $this->checkoutService->setDeliveryMethod($tenant->id, $currentMethod);
         }
