@@ -1863,5 +1863,8 @@
     "Delicious home-cooked meals made with love.": "Delicious home-cooked meals made with love.",
     "Ratings": "Ratings",
     "Testimonials": "Testimonials",
-    "WhatsApp": "WhatsApp"
+    "WhatsApp": "WhatsApp",
+    "New Cook": "New Cook",
+    ":count review|:count reviews": ":count review|:count reviews",
+    "Order Now": "Order Now"
 }

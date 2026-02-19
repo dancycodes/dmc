@@ -1863,5 +1863,8 @@
     "Delicious home-cooked meals made with love.": "De delicieux repas faits maison avec amour.",
     "Ratings": "Evaluations",
     "Testimonials": "Temoignages",
-    "WhatsApp": "WhatsApp"
+    "WhatsApp": "WhatsApp",
+    "New Cook": "Nouveau Chef",
+    ":count review|:count reviews": ":count avis|:count avis",
+    "Order Now": "Commander"
 }
