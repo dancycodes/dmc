@@ -554,6 +554,11 @@ Route::middleware('tenant.domain')->group(function () {
     Route::post('/checkout/load-quarters', [\App\Http\Controllers\Tenant\CheckoutController::class, 'loadQuarters'])
         ->name('tenant.checkout.load-quarters');
 
+    // F-147: Location Not Available Flow — Switch to Pickup
+    // BR-331: Switch to pickup when delivery to selected quarter is not available
+    Route::post('/checkout/switch-to-pickup', [\App\Http\Controllers\Tenant\CheckoutController::class, 'switchToPickup'])
+        ->name('tenant.checkout.switch-to-pickup');
+
     // F-142: Pickup Location Selection
     // BR-284: All pickup locations displayed
     // BR-286: Client must select exactly one

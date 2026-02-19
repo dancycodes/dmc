@@ -251,7 +251,11 @@ class CheckoutService
      * BR-283: Quarter names displayed in the user's current language.
      * BR-280: The selected quarter determines the delivery fee.
      *
-     * @return Collection<int, array{id: int, name: string, delivery_fee: int}>
+     * F-147: Now includes ALL quarters for the town, with an 'available' flag
+     * indicating whether the cook delivers to that quarter. Non-available quarters
+     * are shown so clients can select them and see the "not available" message.
+     *
+     * @return Collection<int, array{id: int, name: string, delivery_fee: int, available: bool}>
      */
     public function getDeliveryQuarters(int $tenantId, int $townId): Collection
     {
@@ -263,25 +267,33 @@ class CheckoutService
             ->where('town_id', $townId)
             ->first();
 
-        if (! $deliveryArea) {
-            return collect();
+        // Build a map of available quarter IDs with their delivery fees
+        $availableQuarters = [];
+        if ($deliveryArea) {
+            $deliveryAreaQuarters = DeliveryAreaQuarter::query()
+                ->where('delivery_area_id', $deliveryArea->id)
+                ->with('quarter')
+                ->get();
+
+            foreach ($deliveryAreaQuarters as $daq) {
+                $groupFee = $this->getGroupFeeForQuarter($tenantId, $daq->quarter_id);
+                $availableQuarters[$daq->quarter_id] = $groupFee !== null ? $groupFee : $daq->delivery_fee;
+            }
         }
 
-        return DeliveryAreaQuarter::query()
-            ->where('delivery_area_id', $deliveryArea->id)
-            ->with('quarter')
+        // F-147: Get ALL active quarters for this town
+        return Quarter::query()
+            ->where('town_id', $townId)
+            ->active()
             ->get()
-            ->map(function (DeliveryAreaQuarter $daq) use ($nameColumn, $tenantId) {
-                $quarter = $daq->quarter;
-
-                // Check if quarter belongs to a group — group fee overrides individual fee (F-090)
-                $groupFee = $this->getGroupFeeForQuarter($tenantId, $quarter->id);
-                $effectiveFee = $groupFee !== null ? $groupFee : $daq->delivery_fee;
+            ->map(function (Quarter $quarter) use ($nameColumn, $availableQuarters) {
+                $isAvailable = isset($availableQuarters[$quarter->id]);
 
                 return [
                     'id' => $quarter->id,
                     'name' => $quarter->{$nameColumn} ?? $quarter->name_en,
-                    'delivery_fee' => $effectiveFee,
+                    'delivery_fee' => $isAvailable ? $availableQuarters[$quarter->id] : 0,
+                    'available' => $isAvailable,
                 ];
             })
             ->sortBy('name')
@@ -674,6 +686,54 @@ class CheckoutService
     public function getSummaryBackUrl(): string
     {
         return url('/checkout/phone');
+    }
+
+    /**
+     * F-147: Get cook contact info for the "location not available" flow.
+     *
+     * BR-329: Cook's WhatsApp number and phone number are displayed with action buttons.
+     * BR-330: WhatsApp message is pre-filled with the client's location and inquiry text.
+     *
+     * @return array{whatsapp: string|null, phone: string|null, brand_name: string, has_contact: bool}
+     */
+    public function getCookContactInfo(Tenant $tenant): array
+    {
+        $locale = app()->getLocale();
+        $nameColumn = 'name_'.$locale;
+        $brandName = $tenant->{$nameColumn} ?? $tenant->name_en ?? $tenant->slug;
+
+        return [
+            'whatsapp' => $tenant->whatsapp ?: null,
+            'phone' => $tenant->phone ?: null,
+            'brand_name' => $brandName,
+            'has_contact' => ! empty($tenant->whatsapp) || ! empty($tenant->phone),
+        ];
+    }
+
+    /**
+     * F-147: Build the pre-filled WhatsApp message for the "location not available" flow.
+     *
+     * BR-330: WhatsApp message is pre-filled with the client's location and inquiry text (localized).
+     */
+    public function buildWhatsAppMessage(string $brandName, string $quarterName, string $townName): string
+    {
+        return __("Hi :brand, I'd like to order from DancyMeals but I'm in :quarter, :town. Is delivery to my area possible?", [
+            'brand' => $brandName,
+            'quarter' => $quarterName,
+            'town' => $townName,
+        ]);
+    }
+
+    /**
+     * F-147: Check if a tenant has pickup locations available.
+     *
+     * BR-331: A "Switch to Pickup" option is provided if the cook has pickup locations.
+     */
+    public function hasPickupLocations(int $tenantId): bool
+    {
+        return PickupLocation::query()
+            ->where('tenant_id', $tenantId)
+            ->exists();
     }
 
     /**

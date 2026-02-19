@@ -2090,5 +2090,14 @@
     "Please provide your phone number first.": "Please provide your phone number first.",
     "Some prices have changed": "Some prices have changed",
     "The total below reflects the current prices. Please review before continuing.": "The total below reflects the current prices. Please review before continuing.",
-    "Promo": "Promo"
+    "Promo": "Promo",
+    "is not currently available.": "is not currently available.",
+    "Contact :cook to inquire about delivery to your area": "Contact :cook to inquire about delivery to your area",
+    "Hi :brand, I'd like to order from DancyMeals but I'm in :quarter, :town. Is delivery to my area possible?": "Hi :brand, I'd like to order from DancyMeals but I'm in :quarter, :town. Is delivery to my area possible?",
+    "WhatsApp": "WhatsApp",
+    "Please contact the cook through their social media.": "Please contact the cook through their social media.",
+    "Switch to Pickup": "Switch to Pickup",
+    "Delivery to this quarter is not available. Please select a different quarter or switch to pickup.": "Delivery to this quarter is not available. Please select a different quarter or switch to pickup.",
+    "N/A": "N/A",
+    "Switched to pickup. Choose your pickup location.": "Switched to pickup. Choose your pickup location."
 }

@@ -1,6 +1,7 @@
 {{--
     F-141: Delivery Location Selection
     F-145: Delivery Fee Calculation
+    F-147: Location Not Available Flow
     BR-274: Town dropdown shows only towns where the cook has delivery areas configured
     BR-275: Quarter dropdown is filtered by the selected town
     BR-276: Neighbourhood is a free-text field with OpenStreetMap Nominatim autocomplete
@@ -14,9 +15,17 @@
     BR-307: Delivery fee is determined by the selected quarter
     BR-308: If the quarter belongs to a fee group, the group fee is used
     BR-309: If the quarter has an individual fee (no group), the individual fee is used
-    BR-310: A fee of 0 XAF is displayed as "Free delivery"
-    BR-311: The fee is displayed in the format: "Delivery to {quarter}: {fee} XAF"
+    BR-310: A fee of 0 XAF is displayed as Free delivery
+    BR-311: The fee is displayed in the format: Delivery to quarter - fee XAF
     BR-312: The fee updates reactively when the quarter selection changes
+    BR-327: When a clients quarter is not in the cooks delivery areas, a clear message is displayed
+    BR-328: Message format: Delivery to quarter is not currently available.
+    BR-329: Cooks WhatsApp number and phone number are displayed with action buttons
+    BR-330: WhatsApp message is pre-filled with the clients location and inquiry text (localized)
+    BR-331: A Switch to Pickup option is provided if the cook has pickup locations
+    BR-332: The client can still select a different quarter from the dropdown
+    BR-333: This flow does not block the entire checkout; only delivery to that specific quarter
+    BR-334: All text must be localized via __()
 --}}
 @extends('layouts.tenant-public')
 
@@ -67,10 +76,18 @@
             this.locationError = '';
         },
 
+        /* F-147: Check if the currently selected quarter is available for delivery */
+        isQuarterAvailable() {
+            if (!this.quarter_id) return true;
+            const q = this.quarters.find(q => String(q.id) === String(this.quarter_id));
+            return q ? q.available : true;
+        },
+
         getDeliveryFee() {
             if (!this.quarter_id) return null;
             const q = this.quarters.find(q => String(q.id) === String(this.quarter_id));
-            return q ? q.delivery_fee : null;
+            if (!q || !q.available) return null;
+            return q.delivery_fee;
         },
 
         /* F-145: Get the name of the currently selected quarter */
@@ -78,6 +95,27 @@
             if (!this.quarter_id) return '';
             const q = this.quarters.find(q => String(q.id) === String(this.quarter_id));
             return q ? q.name : '';
+        },
+
+        /* F-147: Get the name of the currently selected town */
+        getSelectedTownName() {
+            if (!this.town_id) return '';
+            const sel = document.getElementById('town-select');
+            if (sel && sel.selectedIndex > 0) {
+                return sel.options[sel.selectedIndex].text;
+            }
+            return '';
+        },
+
+        /* F-147 BR-330: Build WhatsApp URL with pre-filled message */
+        getWhatsAppUrl() {
+            const phone = '{{ $cookContact['whatsapp'] ?? '' }}';
+            if (!phone) return '';
+            const quarterName = this.getSelectedQuarterName();
+            const townName = this.getSelectedTownName();
+            const brand = '{{ addslashes($cookContact['brand_name'] ?? '') }}';
+            const msg = '{{ addslashes(__("Hi :brand, I'd like to order from DancyMeals but I'm in :quarter, :town. Is delivery to my area possible?", ['brand' => '__BRAND__', 'quarter' => '__QUARTER__', 'town' => '__TOWN__'])) }}'.replace('__BRAND__', brand).replace('__QUARTER__', quarterName).replace('__TOWN__', townName);
+            return 'https://wa.me/' + phone.replace(/[^0-9]/g, '') + '?text=' + encodeURIComponent(msg);
         },
 
         /* F-145 BR-311: Format the delivery fee display text */
@@ -106,6 +144,11 @@
             }
             if (!this.quarter_id) {
                 this.locationError = '{{ __('Please select a quarter.') }}';
+                return;
+            }
+            /* F-147: Prevent submission if quarter is not available */
+            if (!this.isQuarterAvailable()) {
+                this.locationError = '{{ __('Delivery to this quarter is not available. Please select a different quarter or switch to pickup.') }}';
                 return;
             }
             if (!this.neighbourhood.trim()) {
@@ -269,7 +312,7 @@
                 <p x-message="town_id" class="mt-1 text-xs text-danger"></p>
             </div>
 
-            {{-- Quarter dropdown (BR-275) --}}
+            {{-- Quarter dropdown (BR-275, F-147: shows all quarters with availability) --}}
             <div>
                 <label for="quarter-select" class="block text-sm font-medium text-on-surface mb-1.5">
                     {{ __('Quarter') }} <span class="text-danger">*</span>
@@ -287,7 +330,7 @@
                     >
                         <option value="">{{ __('Select a quarter') }}</option>
                         <template x-for="quarter in quarters" :key="quarter.id">
-                            <option :value="String(quarter.id)" x-text="quarter.name + (quarter.delivery_fee > 0 ? ' (' + formatPrice(quarter.delivery_fee) + ')' : ' ({{ __('Free') }})')"></option>
+                            <option :value="String(quarter.id)" x-text="quarter.available ? (quarter.name + (quarter.delivery_fee > 0 ? ' (' + formatPrice(quarter.delivery_fee) + ')' : ' ({{ __('Free') }})')) : quarter.name"></option>
                         </template>
                     </select>
                     {{-- Dropdown arrow --}}
@@ -308,9 +351,9 @@
                     {{ __('No quarters available for delivery in this town.') }}
                 </div>
 
-                {{-- F-145: Delivery fee indicator (BR-311, BR-310, BR-312) --}}
+                {{-- F-145: Delivery fee indicator (BR-311, BR-310, BR-312) - only for available quarters --}}
                 <div
-                    x-show="quarter_id && getDeliveryFee() !== null"
+                    x-show="quarter_id && isQuarterAvailable() && getDeliveryFee() !== null"
                     x-cloak
                     x-transition:enter="transition ease-out duration-200"
                     x-transition:enter-start="opacity-0 -translate-y-1"
@@ -320,12 +363,90 @@
                 >
                     {{-- Delivery truck icon --}}
                     <svg class="w-3.5 h-3.5 shrink-0" :class="getDeliveryFee() === 0 ? 'text-success' : 'text-primary'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"></path><path d="M15 18H9"></path><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"></path><circle cx="17" cy="18" r="2"></circle><circle cx="7" cy="18" r="2"></circle></svg>
-                    {{-- BR-311: "Delivery to {quarter}: {fee} XAF" / BR-310: "Free delivery" --}}
+                    {{-- BR-311: Delivery to quarter: fee XAF / BR-310: Free delivery --}}
                     <span
                         class="text-xs font-medium"
                         :class="getDeliveryFee() === 0 ? 'text-success' : 'text-primary'"
                         x-text="getDeliveryFeeDisplay()"
                     ></span>
+                </div>
+
+                {{-- F-147: Location Not Available warning card (BR-327, BR-328, BR-329, BR-330, BR-331) --}}
+                <div
+                    x-show="quarter_id && !isQuarterAvailable()"
+                    x-cloak
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="opacity-0 -translate-y-1"
+                    x-transition:enter-end="opacity-100 translate-y-0"
+                    class="mt-3 rounded-xl border border-warning/30 bg-warning-subtle p-4"
+                >
+                    {{-- BR-328: Not available message --}}
+                    <div class="flex items-start gap-2.5">
+                        {{-- Warning/info icon --}}
+                        <svg class="w-5 h-5 shrink-0 text-warning mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-semibold text-warning">
+                                {{ __('Delivery to') }} <span x-text="getSelectedQuarterName()"></span> {{ __('is not currently available.') }}
+                            </p>
+                            <p class="text-xs text-on-surface mt-1">
+                                {{ __('Contact :cook to inquire about delivery to your area', ['cook' => $cookContact['brand_name']]) }}
+                            </p>
+
+                            {{-- BR-329: Cook contact options --}}
+                            <div class="flex flex-wrap items-center gap-2 mt-3">
+                                {{-- WhatsApp button (only if cook has WhatsApp) --}}
+                                @if($cookContact['whatsapp'])
+                                    <a
+                                        :href="getWhatsAppUrl()"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#25D366] hover:bg-[#20BD5A] text-white text-xs font-semibold transition-colors duration-200"
+                                        x-navigate-skip
+                                    >
+                                        {{-- WhatsApp icon --}}
+                                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                                        {{ __('WhatsApp') }}
+                                    </a>
+                                @endif
+
+                                {{-- Phone link (if cook has phone) --}}
+                                @if($cookContact['phone'])
+                                    <a
+                                        href="tel:{{ $cookContact['phone'] }}"
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface hover:bg-surface-alt dark:hover:bg-surface-alt text-on-surface text-xs font-medium transition-colors duration-200"
+                                        x-navigate-skip
+                                    >
+                                        {{-- Phone icon --}}
+                                        <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                        {{ $cookContact['phone'] }}
+                                    </a>
+                                @endif
+
+                                {{-- Edge case: Cook has neither WhatsApp nor phone --}}
+                                @if(!$cookContact['has_contact'])
+                                    <p class="text-xs text-on-surface/60 italic">
+                                        {{ __('Please contact the cook through their social media.') }}
+                                    </p>
+                                @endif
+                            </div>
+
+                            {{-- BR-331: Switch to Pickup option (only if cook has pickup locations) --}}
+                            @if($hasPickupLocations)
+                                <div class="mt-3 pt-3 border-t border-warning/20">
+                                    <button
+                                        type="button"
+                                        @click="$action('{{ route('tenant.checkout.switch-to-pickup') }}')"
+                                        class="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary-hover transition-colors duration-200 cursor-pointer"
+                                    >
+                                        {{-- Package icon --}}
+                                        <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"></path><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg>
+                                        {{ __('Switch to Pickup') }}
+                                        <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                                    </button>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -355,13 +476,13 @@
                 <span class="text-sm font-medium text-on-surface">{{ __('Delivery Fee') }}</span>
                 <span
                     class="text-sm"
-                    :class="quarter_id && getDeliveryFee() !== null ? (getDeliveryFee() === 0 ? 'text-success font-semibold' : 'text-on-surface-strong font-semibold') : 'text-on-surface/50'"
-                    x-text="quarter_id && getDeliveryFee() !== null ? (getDeliveryFee() > 0 ? formatPrice(getDeliveryFee()) : '{{ __('Free') }}') : '{{ __('Select quarter to calculate') }}'"
+                    :class="quarter_id && isQuarterAvailable() && getDeliveryFee() !== null ? (getDeliveryFee() === 0 ? 'text-success font-semibold' : 'text-on-surface-strong font-semibold') : 'text-on-surface/50'"
+                    x-text="quarter_id && !isQuarterAvailable() ? '{{ __('N/A') }}' : (quarter_id && getDeliveryFee() !== null ? (getDeliveryFee() > 0 ? formatPrice(getDeliveryFee()) : '{{ __('Free') }}') : '{{ __('Select quarter to calculate') }}')"
                 ></span>
             </div>
             {{-- Total line (BR-313: delivery fee added to order total) --}}
             <div
-                x-show="quarter_id && getDeliveryFee() !== null"
+                x-show="quarter_id && isQuarterAvailable() && getDeliveryFee() !== null"
                 x-cloak
                 x-transition:enter="transition ease-out duration-200"
                 x-transition:enter-start="opacity-0"
@@ -382,7 +503,7 @@
             <button
                 @click="submitLocation()"
                 class="flex-1 h-11 inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg shadow-card transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                :disabled="$fetching() || !town_id || !quarter_id || !neighbourhood.trim()"
+                :disabled="$fetching() || !town_id || !quarter_id || !neighbourhood.trim() || !isQuarterAvailable()"
             >
                 <span x-show="!$fetching()">{{ __('Continue') }}</span>
                 <span x-show="$fetching()" x-cloak>{{ __('Processing...') }}</span>
@@ -394,7 +515,7 @@
     {{-- Mobile sticky action bar --}}
     <div
         class="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface dark:bg-surface border-t border-outline dark:border-outline px-4 py-3 shadow-dropdown"
-        x-show="town_id && quarter_id && neighbourhood.trim()"
+        x-show="town_id && quarter_id && neighbourhood.trim() && isQuarterAvailable()"
         x-cloak
         x-transition:enter="transition ease-out duration-200"
         x-transition:enter-start="translate-y-full"
