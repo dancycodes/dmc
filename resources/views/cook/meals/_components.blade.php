@@ -3,8 +3,9 @@
     -----------------------
     F-118: Meal Component Creation
     F-119: Meal Component Edit
+    F-120: Meal Component Delete
 
-    Displays existing components and provides forms to add or edit them.
+    Displays existing components and provides forms to add, edit, or delete them.
     Components are the sellable items (combos) within a meal.
 
     Business Rules:
@@ -25,6 +26,14 @@
     BR-295: Component edits are logged via Spatie Activitylog
     BR-296: Only users with manage-meals permission
     BR-297: If available quantity is edited to 0, auto-toggle to unavailable
+    BR-298: Cannot delete the last component of a live meal
+    BR-299: Cannot delete a component if pending orders include it
+    BR-300: Components are hard-deleted
+    BR-301: Confirmation dialog before deletion
+    BR-302: Deletion logged via Spatie Activitylog
+    BR-303: Only users with manage-meals permission
+    BR-304: Remaining positions recalculated
+    BR-305: Requirement rules cleaned up
 --}}
 <div
     class="bg-surface-alt dark:bg-surface-alt border border-outline dark:border-outline rounded-xl shadow-card p-6"
@@ -74,6 +83,23 @@
         },
         cancelEdit() {
             this.editingComponentId = null;
+        },
+        confirmDeleteId: null,
+        confirmDeleteName: '',
+        confirmDelete(id, name) {
+            this.confirmDeleteId = id;
+            this.confirmDeleteName = name;
+        },
+        cancelDelete() {
+            this.confirmDeleteId = null;
+            this.confirmDeleteName = '';
+        },
+        executeDelete() {
+            if (this.confirmDeleteId) {
+                $action('{{ url('/dashboard/meals/' . $meal->id . '/components') }}/' + this.confirmDeleteId, { method: 'DELETE' });
+                this.confirmDeleteId = null;
+                this.confirmDeleteName = '';
+            }
         }
     }"
     x-sync="['comp_name_en', 'comp_name_fr', 'comp_price', 'comp_selling_unit', 'comp_min_quantity', 'comp_max_quantity', 'comp_available_quantity', 'edit_comp_name_en', 'edit_comp_name_fr', 'edit_comp_price', 'edit_comp_selling_unit', 'edit_comp_min_quantity', 'edit_comp_max_quantity', 'edit_comp_available_quantity']"
@@ -347,6 +373,25 @@
                             >
                                 <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.855z"></path><path d="m15 5 3 3"></path></svg>
                             </button>
+
+                            {{-- Delete (F-120) --}}
+                            @php
+                                $deleteInfo = $componentDeleteInfo[$component->id] ?? ['can_delete' => true];
+                                $canDelete = $deleteInfo['can_delete'];
+                                $deleteReason = $deleteInfo['reason'] ?? '';
+                            @endphp
+                            <button
+                                type="button"
+                                @if($canDelete)
+                                    @click="confirmDelete({{ $component->id }}, '{{ addslashes($component->name) }}')"
+                                @endif
+                                class="p-1.5 rounded transition-colors duration-200 {{ $canDelete ? 'text-on-surface/50 hover:text-danger hover:bg-danger-subtle' : 'text-on-surface/20 cursor-not-allowed' }}"
+                                title="{{ $canDelete ? __('Delete component') : $deleteReason }}"
+                                {{ $canDelete ? '' : 'disabled' }}
+                            >
+                                {{-- Lucide: trash-2 (sm=16) --}}
+                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                            </button>
                         </div>
                     </div>
 
@@ -559,4 +604,77 @@
             <p class="text-xs text-on-surface/40">{{ __('Add at least one component before going live.') }}</p>
         </div>
     @endif
+
+    {{-- F-120: Delete Confirmation Modal (BR-301) --}}
+    <div
+        x-show="confirmDeleteId !== null"
+        x-cloak
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-component-dialog-title"
+    >
+        {{-- Backdrop --}}
+        <div class="absolute inset-0 bg-black/50" @click="cancelDelete()"></div>
+
+        {{-- Modal content --}}
+        <div
+            x-show="confirmDeleteId !== null"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
+            class="relative bg-surface dark:bg-surface rounded-xl shadow-lg border border-outline dark:border-outline max-w-sm w-full p-6"
+        >
+            {{-- Warning icon --}}
+            <div class="w-12 h-12 rounded-full bg-danger-subtle mx-auto mb-4 flex items-center justify-center">
+                {{-- Lucide: alert-triangle (lg=24) --}}
+                <svg class="w-6 h-6 text-danger" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+            </div>
+
+            <h3 id="delete-component-dialog-title" class="text-lg font-semibold text-on-surface-strong text-center mb-2">
+                {{ __('Delete Component') }}
+            </h3>
+
+            <p class="text-sm text-on-surface/70 text-center mb-6">
+                {{ __('Are you sure you want to delete') }}
+                <span class="font-medium text-on-surface-strong" x-text="confirmDeleteName"></span>?
+                {{ __('This action cannot be undone.') }}
+            </p>
+
+            {{-- Modal buttons --}}
+            <div class="flex items-center justify-end gap-3">
+                <button
+                    type="button"
+                    @click="cancelDelete()"
+                    class="px-4 py-2 rounded-lg text-sm font-medium text-on-surface bg-surface dark:bg-surface border border-outline dark:border-outline hover:bg-surface-alt transition-colors duration-200"
+                >
+                    {{ __('Cancel') }}
+                </button>
+                <button
+                    type="button"
+                    @click="executeDelete()"
+                    class="px-4 py-2 rounded-lg text-sm font-medium bg-danger text-on-danger hover:bg-danger/90 shadow-sm transition-colors duration-200 flex items-center gap-2"
+                >
+                    <span x-show="!$fetching()">
+                        {{-- Lucide: trash-2 (sm=16) --}}
+                        <svg class="w-4 h-4 inline-block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                        {{ __('Delete') }}
+                    </span>
+                    <span x-show="$fetching()" x-cloak class="flex items-center gap-2">
+                        <svg class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                        {{ __('Deleting...') }}
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
 </div>

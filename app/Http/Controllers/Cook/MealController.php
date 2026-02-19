@@ -258,6 +258,18 @@ class MealController extends Controller
             ? $componentService->getAvailableUnitsWithLabels($tenant)
             : [];
 
+        // F-120: Compute delete eligibility per component for UI
+        $componentDeleteInfo = [];
+        if ($componentData && $componentData['count'] > 0) {
+            foreach ($componentData['components'] as $comp) {
+                $componentDeleteInfo[$comp->id] = $componentService->canDeleteComponent(
+                    $comp,
+                    $meal,
+                    $componentData['count']
+                );
+            }
+        }
+
         return gale()->view('cook.meals.edit', [
             'meal' => $meal,
             'canManageLocations' => $canManageLocations,
@@ -272,6 +284,7 @@ class MealController extends Controller
             'tagData' => $tagData,
             'componentData' => $componentData,
             'availableUnits' => $availableUnits,
+            'componentDeleteInfo' => $componentDeleteInfo,
         ], web: true);
     }
 
