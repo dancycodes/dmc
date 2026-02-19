@@ -1931,5 +1931,12 @@
     ":count quarter|:count quarters": ":count quarter|:count quarters",
     "Get in Touch": "Get in Touch",
     "Hi :name, I'm interested in ordering from DancyMeals!": "Hi :name, I'm interested in ordering from DancyMeals!",
-    "Phone number copied!": "Phone number copied!"
+    "Phone number copied!": "Phone number copied!",
+    "Search meals...": "Search meals...",
+    "Search meals": "Search meals",
+    "Clear search": "Clear search",
+    "No meals found for ':query'. Try a different search.": "No meals found for ':query'. Try a different search.",
+    "Try searching with a different keyword or browse all meals.": "Try searching with a different keyword or browse all meals.",
+    ":count result|:count results": ":count result|:count results",
+    "for": "for"
 }

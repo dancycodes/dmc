@@ -209,6 +209,71 @@ class TenantLandingService
     }
 
     /**
+     * Search available meals for a tenant by query string.
+     *
+     * F-135: Meal Search Bar
+     * BR-214: Search matches meal name (en/fr), description (en/fr), component names, tag names
+     * BR-215: Case-insensitive search
+     * BR-217: Results filter the existing meals grid via Gale (no page reload)
+     * BR-221: Minimum 2 characters required to trigger search
+     */
+    public function searchMeals(Tenant $tenant, string $query, int $page = 1): LengthAwarePaginator
+    {
+        $scheduledDays = $this->getScheduledDays($tenant);
+        $locale = app()->getLocale();
+        $nameColumn = 'name_'.$locale;
+
+        // BR-215: Case-insensitive search using PostgreSQL ILIKE
+        $searchTerm = '%'.addcslashes($query, '%_\\').'%';
+
+        $mealQuery = Meal::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('status', Meal::STATUS_LIVE)
+            ->where('is_available', true)
+            ->with([
+                'images' => fn ($q) => $q->orderBy('position')->limit(1),
+                'components' => fn ($q) => $q->where('is_available', true)->select('id', 'meal_id', 'price'),
+                'tags' => fn ($q) => $q->select('tags.id', 'tags.name_en', 'tags.name_fr'),
+            ]);
+
+        // BR-214: Search across meal names, descriptions, component names, tag names
+        $mealQuery->where(function ($q) use ($searchTerm) {
+            // Match meal name (en/fr)
+            $q->where('name_en', 'ILIKE', $searchTerm)
+                ->orWhere('name_fr', 'ILIKE', $searchTerm)
+                // Match meal description (en/fr)
+                ->orWhere('description_en', 'ILIKE', $searchTerm)
+                ->orWhere('description_fr', 'ILIKE', $searchTerm)
+                // Match component names
+                ->orWhereHas('components', function ($cq) use ($searchTerm) {
+                    $cq->where('name_en', 'ILIKE', $searchTerm)
+                        ->orWhere('name_fr', 'ILIKE', $searchTerm);
+                })
+                // Match tag names
+                ->orWhereHas('tags', function ($tq) use ($searchTerm) {
+                    $tq->where('tags.name_en', 'ILIKE', $searchTerm)
+                        ->orWhere('tags.name_fr', 'ILIKE', $searchTerm);
+                });
+        });
+
+        // BR-147: Filter meals by schedule (same logic as getAvailableMeals)
+        if (! empty($scheduledDays)) {
+            $mealQuery->where(function ($q) use ($scheduledDays) {
+                $q->whereHas('schedules', function ($sq) use ($scheduledDays) {
+                    $sq->where('is_available', true)
+                        ->whereIn('day_of_week', $scheduledDays);
+                });
+                $q->orWhereDoesntHave('schedules');
+            });
+        }
+
+        return $mealQuery
+            ->orderBy('position')
+            ->orderBy($nameColumn)
+            ->paginate(self::MEALS_PER_PAGE, ['*'], 'page', $page);
+    }
+
+    /**
      * Get the days of the week that the cook has available schedules for.
      *
      * BR-147: Only meals orderable on today or upcoming schedule days appear.
