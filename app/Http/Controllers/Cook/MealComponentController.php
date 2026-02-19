@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Cook;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cook\StoreMealComponentRequest;
+use App\Http\Requests\Cook\UpdateComponentQuantityRequest;
 use App\Http\Requests\Cook\UpdateMealComponentRequest;
 use App\Services\MealComponentService;
 use Illuminate\Http\Request;
@@ -254,6 +255,124 @@ class MealComponentController extends Controller
 
         return redirect($redirectUrl)
             ->with('success', __('Component updated.'));
+    }
+
+    /**
+     * Update quantity settings for a meal component.
+     *
+     * F-124: Meal Component Quantity Settings
+     * BR-334: Min quantity default 0 (optional component)
+     * BR-335: Max quantity default null (unlimited)
+     * BR-336: Available quantity default null (unlimited)
+     * BR-337: Auto-toggle unavailable when available qty reaches 0
+     * BR-339: Min quantity >= 0
+     * BR-340: Max quantity >= min quantity when both set
+     * BR-341: Available quantity >= 0
+     * BR-345: Quantity changes take immediate effect
+     * BR-346: Only users with manage-meals permission
+     * BR-347: Quantity changes logged via Spatie Activitylog
+     */
+    public function updateQuantity(Request $request, int $mealId, int $componentId, MealComponentService $componentService): mixed
+    {
+        $user = $request->user();
+        $tenant = tenant();
+
+        // BR-346: Permission check
+        if (! $user->can('can-manage-meals')) {
+            abort(403);
+        }
+
+        // Meal must belong to current tenant
+        $meal = $tenant->meals()->findOrFail($mealId);
+
+        // Component must belong to meal
+        $component = $meal->components()->findOrFail($componentId);
+
+        // Dual Gale/HTTP validation pattern
+        if ($request->isGale()) {
+            $validated = $request->validateState([
+                'qty_min_quantity' => ['nullable', 'integer', 'min:0'],
+                'qty_max_quantity' => ['nullable', 'integer', 'min:1'],
+                'qty_available_quantity' => ['nullable', 'integer', 'min:0'],
+            ], [
+                'qty_min_quantity.integer' => __('Minimum quantity must be a whole number.'),
+                'qty_min_quantity.min' => __('Minimum quantity cannot be negative.'),
+                'qty_max_quantity.integer' => __('Maximum quantity must be a whole number.'),
+                'qty_max_quantity.min' => __('Maximum quantity must be at least 1.'),
+                'qty_available_quantity.integer' => __('Available quantity must be a whole number.'),
+                'qty_available_quantity.min' => __('Available quantity cannot be negative.'),
+            ]);
+
+            // Map prefixed keys to service data format
+            $data = [
+                'min_quantity' => $validated['qty_min_quantity'] ?? 0,
+                'max_quantity' => $validated['qty_max_quantity'] ?? null,
+                'available_quantity' => $validated['qty_available_quantity'] ?? null,
+            ];
+        } else {
+            $formRequest = app(UpdateComponentQuantityRequest::class);
+            $data = $formRequest->validated();
+        }
+
+        // Use service for business logic
+        $result = $componentService->updateQuantitySettings($component, $data);
+
+        if (! $result['success']) {
+            if ($request->isGale()) {
+                return gale()->messages([
+                    'qty_min_quantity' => $result['error'],
+                ]);
+            }
+
+            return redirect()->back()
+                ->withErrors(['min_quantity' => $result['error']])
+                ->withInput();
+        }
+
+        $updatedComponent = $result['component'];
+        $oldValues = $result['old_values'];
+
+        // BR-347: Activity logging for quantity changes
+        $newValues = [
+            'min_quantity' => $updatedComponent->min_quantity,
+            'max_quantity' => $updatedComponent->max_quantity,
+            'available_quantity' => $updatedComponent->available_quantity,
+            'is_available' => $updatedComponent->is_available,
+        ];
+
+        // Only log if there are actual changes
+        $changes = array_diff_assoc(
+            array_map('strval', $newValues),
+            array_map('strval', array_map(fn ($v) => $v ?? '', $oldValues))
+        );
+
+        if (! empty($changes)) {
+            activity('meal_components')
+                ->performedOn($updatedComponent)
+                ->causedBy($user)
+                ->withProperties([
+                    'action' => 'component_quantity_updated',
+                    'name_en' => $updatedComponent->name_en,
+                    'name_fr' => $updatedComponent->name_fr,
+                    'meal_id' => $meal->id,
+                    'meal_name' => $meal->name_en,
+                    'tenant_id' => $tenant->id,
+                    'old' => array_intersect_key($oldValues, $changes),
+                    'new' => array_intersect_key($newValues, $changes),
+                ])
+                ->log('Component quantity settings updated');
+        }
+
+        $redirectUrl = url('/dashboard/meals/'.$meal->id.'/edit');
+
+        if ($request->isGale()) {
+            return gale()
+                ->redirect($redirectUrl)
+                ->with('success', __('Quantity settings updated.'));
+        }
+
+        return redirect($redirectUrl)
+            ->with('success', __('Quantity settings updated.'));
     }
 
     /**

@@ -264,6 +264,8 @@ class MealController extends Controller
         $componentDeleteInfo = [];
         // F-122: Compute requirement rules per component for UI
         $componentRulesData = [];
+        // F-124: Compute stock status per component for UI
+        $componentStockStatus = [];
         if ($componentData && $componentData['count'] > 0) {
             foreach ($componentData['components'] as $comp) {
                 $componentDeleteInfo[$comp->id] = $componentService->canDeleteComponent(
@@ -275,6 +277,7 @@ class MealController extends Controller
                     'rules' => $ruleService->getRulesForComponent($comp),
                     'available_targets' => $ruleService->getAvailableTargets($comp),
                 ];
+                $componentStockStatus[$comp->id] = $componentService->getStockStatus($comp);
             }
         }
 
@@ -294,6 +297,7 @@ class MealController extends Controller
             'availableUnits' => $availableUnits,
             'componentDeleteInfo' => $componentDeleteInfo,
             'componentRulesData' => $componentRulesData,
+            'componentStockStatus' => $componentStockStatus,
         ], web: true);
     }
 

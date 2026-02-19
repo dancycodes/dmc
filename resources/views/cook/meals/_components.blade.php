@@ -59,6 +59,10 @@
         @if(($componentData['count'] ?? 0) > 0)
             @foreach($componentData['components'] as $comp)
                 showRuleForm_{{ $comp->id }}: false,
+                showQtySettings_{{ $comp->id }}: false,
+                qty_min_quantity_{{ $comp->id }}: {{ $comp->min_quantity > 0 ? $comp->min_quantity : "''" }},
+                qty_max_quantity_{{ $comp->id }}: {{ $comp->max_quantity !== null ? $comp->max_quantity : "''" }},
+                qty_available_quantity_{{ $comp->id }}: {{ $comp->available_quantity !== null ? $comp->available_quantity : "''" }},
             @endforeach
         @endif
         toggleAddForm() {
@@ -352,14 +356,19 @@
                                     <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
                                     {{ __('per :unit', ['unit' => $component->unit_label]) }}
                                 </span>
-                                @if($component->min_quantity > 0)
-                                    <span>{{ __('Min: :qty', ['qty' => $component->min_quantity]) }}</span>
-                                @endif
-                                @if(!$component->hasUnlimitedMaxQuantity())
-                                    <span>{{ __('Max: :qty', ['qty' => $component->max_quantity]) }}</span>
-                                @endif
-                                @if(!$component->hasUnlimitedAvailableQuantity())
-                                    <span>{{ __('Available: :qty', ['qty' => $component->available_quantity]) }}</span>
+                                {{-- F-124: Stock status badge --}}
+                                @php
+                                    $stockStatus = $componentStockStatus[$component->id] ?? ['label' => __('Unlimited'), 'type' => 'unlimited'];
+                                @endphp
+                                @if($stockStatus['type'] === 'low_stock')
+                                    <span class="flex items-center gap-0.5 text-warning font-medium">
+                                        <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                                        {{ $stockStatus['label'] }}
+                                    </span>
+                                @elseif($stockStatus['type'] === 'out_of_stock')
+                                    <span class="text-danger font-medium">{{ $stockStatus['label'] }}</span>
+                                @elseif($stockStatus['type'] === 'in_stock')
+                                    <span>{{ $stockStatus['label'] }}</span>
                                 @endif
                             </div>
                         </div>
@@ -417,6 +426,15 @@
                                 <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                             </button>
                         </div>
+                    </div>
+
+                    {{-- F-124: Quantity Settings Section --}}
+                    <div x-show="editingComponentId !== {{ $component->id }}" class="px-3 pb-1">
+                        @include('cook.meals._quantity-settings', [
+                            'component' => $component,
+                            'meal' => $meal,
+                            'componentStockStatus' => $componentStockStatus,
+                        ])
                     </div>
 
                     {{-- F-122: Requirement Rules Section --}}
