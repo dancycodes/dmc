@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\Quarter;
 use App\Services\CartService;
 use App\Services\CheckoutService;
@@ -12,11 +13,12 @@ use Illuminate\Http\Request;
  * F-140: Delivery/Pickup Choice Selection
  * F-141: Delivery Location Selection
  * F-142: Pickup Location Selection
+ * F-143: Order Phone Number
  *
  * Handles checkout flow on tenant domains via Gale SSE.
  * BR-264: Client must choose delivery or pickup to proceed.
  * BR-272: Requires authentication.
- * BR-273/BR-282/BR-290: All text localized via __().
+ * BR-273/BR-282/BR-290/BR-297: All text localized via __().
  */
 class CheckoutController extends Controller
 {
@@ -461,8 +463,124 @@ class CheckoutController extends Controller
         // BR-289: Save selection to session
         $this->checkoutService->setPickupLocation($tenant->id, $pickupLocationId);
 
-        // F-143 will provide the next checkout step (Order Phone Number)
+        // F-143: Proceed to phone number step
         return gale()->redirect(url('/checkout/phone'))
             ->with('message', __('Pickup location saved.'));
+    }
+
+    /**
+     * F-143: Display the order phone number step.
+     *
+     * BR-292: Phone number is pre-filled from user's profile phone number.
+     * BR-293: Client can override the phone number per order.
+     * BR-296: Phone number is a required field.
+     * BR-297: Validation error messages must be localized via __().
+     */
+    public function phoneNumber(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        // Require authentication
+        if (! auth()->check()) {
+            return gale()->redirect(route('login'))
+                ->with('message', __('Please login to proceed with your order.'));
+        }
+
+        // Verify cart is not empty
+        $cart = $this->cartService->getCart($tenant->id);
+        if (empty($cart['items'])) {
+            return gale()->redirect(url('/cart'))
+                ->with('message', __('Your cart is empty.'));
+        }
+
+        // Verify a delivery method has been selected
+        $deliveryMethod = $this->checkoutService->getDeliveryMethod($tenant->id);
+        if (! $deliveryMethod) {
+            return gale()->redirect(url('/checkout/delivery-method'))
+                ->with('message', __('Please select a delivery method first.'));
+        }
+
+        // BR-292: Pre-fill from profile or session
+        $user = auth()->user();
+        $prefilledPhone = $this->checkoutService->getPrefilledPhone($tenant->id, $user->phone);
+
+        // Strip the +237 prefix for the input field (shown as non-editable prefix)
+        $phoneDigits = $prefilledPhone;
+        if (str_starts_with($phoneDigits, '+237')) {
+            $phoneDigits = substr($phoneDigits, 4);
+        }
+
+        $backUrl = $this->checkoutService->getPhoneStepBackUrl($tenant->id);
+
+        return gale()->view('tenant.checkout.phone', [
+            'tenant' => $tenant,
+            'phoneDigits' => $phoneDigits,
+            'profilePhone' => $user->phone ?? '',
+            'deliveryMethod' => $deliveryMethod,
+            'cartSummary' => $cart['summary'],
+            'backUrl' => $backUrl,
+        ], web: true);
+    }
+
+    /**
+     * F-143: Save order phone number and proceed to next step.
+     *
+     * BR-295: Phone must match Cameroon format: +237 followed by 9 digits starting with 6, 7, or 2.
+     * BR-296: Phone number is a required field.
+     * BR-294: Overriding the phone number does NOT update user's profile.
+     * BR-298: Phone number is stored with the order for delivery/communication purposes.
+     */
+    public function savePhoneNumber(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        if (! auth()->check()) {
+            return gale()->redirect(route('login'))
+                ->with('message', __('Please login to proceed with your order.'));
+        }
+
+        // Verify cart is not empty
+        $cart = $this->cartService->getCart($tenant->id);
+        if (empty($cart['items'])) {
+            return gale()->redirect(url('/cart'))
+                ->with('message', __('Your cart is empty.'));
+        }
+
+        // Verify delivery method is selected
+        $deliveryMethod = $this->checkoutService->getDeliveryMethod($tenant->id);
+        if (! $deliveryMethod) {
+            return gale()->redirect(url('/checkout/delivery-method'))
+                ->with('message', __('Please select a delivery method first.'));
+        }
+
+        // BR-296: Required + BR-295: Cameroon format validation
+        $validated = $request->validateState([
+            'phone_digits' => 'required|string',
+        ]);
+
+        // Normalize: prepend +237 and strip spaces/dashes
+        $normalizedPhone = RegisterRequest::normalizePhone($validated['phone_digits']);
+
+        // BR-295: Validate Cameroon phone format
+        if (! preg_match(RegisterRequest::CAMEROON_PHONE_REGEX, $normalizedPhone)) {
+            return gale()->messages([
+                'phone_digits' => __('Please enter a valid Cameroon phone number (+237 followed by 9 digits).'),
+            ]);
+        }
+
+        // BR-298: Save phone to checkout session (BR-294: does NOT update profile)
+        $this->checkoutService->setPhone($tenant->id, $normalizedPhone);
+
+        // F-146 will provide the next checkout step (Order Total & Summary)
+        return gale()->redirect(url('/checkout/summary'))
+            ->with('message', __('Phone number saved.'));
     }
 }

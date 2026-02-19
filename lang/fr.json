@@ -2059,5 +2059,14 @@
     "Pickup Fee": "Frais de retrait",
     "Pickup location saved.": "Lieu de retrait enregistr\u00e9.",
     "The selected pickup location is no longer available.": "Le lieu de retrait s\u00e9lectionn\u00e9 n'est plus disponible.",
-    "No pickup locations available. Please choose a different delivery method.": "Aucun lieu de retrait disponible. Veuillez choisir un autre mode de livraison."
+    "No pickup locations available. Please choose a different delivery method.": "Aucun lieu de retrait disponible. Veuillez choisir un autre mode de livraison.",
+    "Phone Number": "Num\u00e9ro de T\u00e9l\u00e9phone",
+    "Your contact phone number": "Votre num\u00e9ro de t\u00e9l\u00e9phone de contact",
+    "This number will be used by the cook to contact you about your order.": "Ce num\u00e9ro sera utilis\u00e9 par le cuisinier pour vous contacter au sujet de votre commande.",
+    "Cameroon mobile number": "Num\u00e9ro mobile camerounais",
+    "Number:": "Num\u00e9ro :",
+    "Same as my profile": "Identique \u00e0 mon profil",
+    "Changing the number here will not update your profile. This number is used for this order only.": "Changer le num\u00e9ro ici ne mettra pas \u00e0 jour votre profil. Ce num\u00e9ro est utilis\u00e9 uniquement pour cette commande.",
+    "Phone number saved.": "Num\u00e9ro de t\u00e9l\u00e9phone enregistr\u00e9.",
+    "Phone": "T\u00e9l\u00e9phone"
 }
