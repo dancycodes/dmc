@@ -1928,5 +1928,8 @@
     "Don't see your area? Contact the cook to ask about delivery to your location.": "Don't see your area? Contact the cook to ask about delivery to your location.",
     "Contact via WhatsApp": "Contact via WhatsApp",
     "Delivery areas not yet configured. Contact the cook.": "Delivery areas not yet configured. Contact the cook.",
-    ":count quarter|:count quarters": ":count quarter|:count quarters"
+    ":count quarter|:count quarters": ":count quarter|:count quarters",
+    "Get in Touch": "Get in Touch",
+    "Hi :name, I'm interested in ordering from DancyMeals!": "Hi :name, I'm interested in ordering from DancyMeals!",
+    "Phone number copied!": "Phone number copied!"
 }
