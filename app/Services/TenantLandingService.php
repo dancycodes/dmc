@@ -10,6 +10,7 @@ use App\Models\MealComponent;
 use App\Models\MealSchedule;
 use App\Models\PickupLocation;
 use App\Models\Tenant;
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class TenantLandingService
@@ -30,10 +31,11 @@ class TenantLandingService
      *
      * F-126: Tenant Landing Page Layout
      * F-128: Available Meals Grid Display
+     * F-132: Schedule & Availability Display
      * BR-126: Only renders on tenant domains
      * BR-127: Cook's selected theme applied dynamically
      *
-     * @return array{tenant: Tenant, themeConfig: array, sections: array, cookProfile: array, meals: LengthAwarePaginator}
+     * @return array{tenant: Tenant, themeConfig: array, sections: array, cookProfile: array, meals: LengthAwarePaginator, scheduleDisplay: array}
      */
     public function getLandingPageData(Tenant $tenant, int $page = 1): array
     {
@@ -41,6 +43,7 @@ class TenantLandingService
         $cookProfile = $this->buildCookProfile($tenant);
         $meals = $this->getAvailableMeals($tenant, $page);
         $sections = $this->buildSections($tenant);
+        $scheduleDisplay = $this->getScheduleDisplayData($tenant);
 
         return [
             'tenant' => $tenant,
@@ -48,6 +51,7 @@ class TenantLandingService
             'cookProfile' => $cookProfile,
             'sections' => $sections,
             'meals' => $meals,
+            'scheduleDisplay' => $scheduleDisplay,
         ];
     }
 
@@ -642,6 +646,309 @@ class TenantLandingService
             'pickupLocations' => $pickupLocations,
             'hasLocations' => ! empty($deliveryTowns) || ! empty($pickupLocations),
         ];
+    }
+
+    /**
+     * Build the full 7-day schedule display data for the tenant landing page.
+     *
+     * F-132: Schedule & Availability Display
+     * BR-186: All 7 days displayed with availability status
+     * BR-187: Order, delivery, pickup windows shown per day/slot
+     * BR-188: Current day highlighted
+     * BR-189: "Available Now" badge when within active order window
+     * BR-190: "Next available" badge when outside order windows
+     * BR-191: Unavailable days clearly marked
+     * BR-192: Multiple slots per day displayed with labels
+     * BR-193: Times in Africa/Douala timezone
+     * BR-194: All text localized via __()
+     *
+     * @return array{hasSchedule: bool, days: array, availabilityBadge: array, timezoneNote: string}
+     */
+    public function getScheduleDisplayData(Tenant $tenant): array
+    {
+        $schedules = CookSchedule::query()
+            ->where('tenant_id', $tenant->id)
+            ->orderBy('position')
+            ->get();
+
+        if ($schedules->isEmpty()) {
+            return [
+                'hasSchedule' => false,
+                'days' => [],
+                'availabilityBadge' => [
+                    'type' => 'none',
+                    'label' => __('Schedule not yet available. Contact the cook for ordering information.'),
+                    'color' => 'info',
+                ],
+                'timezoneNote' => '',
+            ];
+        }
+
+        $now = Carbon::now('Africa/Douala');
+        $todayDay = strtolower($now->format('l'));
+
+        // Build 7-day grid grouped by day
+        $schedulesByDay = $schedules->groupBy('day_of_week');
+        $days = $this->buildWeeklySchedule($schedulesByDay, $todayDay);
+
+        // Build availability badge
+        $availabilityBadge = $this->buildAvailabilityBadge($schedules, $now, $todayDay);
+
+        return [
+            'hasSchedule' => true,
+            'days' => $days,
+            'availabilityBadge' => $availabilityBadge,
+            'timezoneNote' => __('All times shown in Africa/Douala timezone (WAT)'),
+        ];
+    }
+
+    /**
+     * Build the weekly schedule array for all 7 days.
+     *
+     * BR-186: All 7 days displayed
+     * BR-191: Unavailable days clearly marked
+     * BR-192: Multiple slots per day with labels
+     *
+     * @param  \Illuminate\Support\Collection  $schedulesByDay
+     * @return array<int, array{day: string, dayLabel: string, dayShort: string, isToday: bool, isAvailable: bool, slots: array}>
+     */
+    private function buildWeeklySchedule($schedulesByDay, string $todayDay): array
+    {
+        $days = [];
+
+        foreach (CookSchedule::DAYS_OF_WEEK as $day) {
+            $daySchedules = $schedulesByDay->get($day, collect());
+            $availableSlots = $daySchedules->where('is_available', true);
+
+            $slots = $availableSlots->map(function ($schedule) {
+                return [
+                    'label' => $schedule->display_label,
+                    'orderInterval' => $schedule->order_interval_summary,
+                    'deliveryInterval' => $schedule->delivery_interval_summary,
+                    'pickupInterval' => $schedule->pickup_interval_summary,
+                    'hasOrderInterval' => $schedule->hasOrderInterval(),
+                    'hasDeliveryInterval' => $schedule->hasDeliveryInterval(),
+                    'hasPickupInterval' => $schedule->hasPickupInterval(),
+                ];
+            })->values()->toArray();
+
+            $days[] = [
+                'day' => $day,
+                'dayLabel' => __(CookSchedule::DAY_LABELS[$day] ?? 'Unknown'),
+                'dayShort' => __(mb_substr(CookSchedule::DAY_LABELS[$day] ?? '', 0, 3)),
+                'isToday' => $day === $todayDay,
+                'isAvailable' => ! empty($slots),
+                'slots' => $slots,
+            ];
+        }
+
+        return $days;
+    }
+
+    /**
+     * Build the availability badge data.
+     *
+     * BR-189: "Available Now" when current time is within an active order window
+     * BR-190: "Next available: [day/time]" when outside order windows
+     * Edge case: order window ends in < 15 min shows "Closing soon" warning
+     * Edge case: all 7 days unavailable shows "Currently not accepting orders"
+     *
+     * @param  \Illuminate\Database\Eloquent\Collection  $schedules
+     * @return array{type: string, label: string, color: string}
+     */
+    private function buildAvailabilityBadge($schedules, Carbon $now, string $todayDay): array
+    {
+        $availableSchedules = $schedules->where('is_available', true);
+
+        // Edge case: all days unavailable
+        if ($availableSchedules->isEmpty()) {
+            return [
+                'type' => 'closed',
+                'label' => __('Currently not accepting orders'),
+                'color' => 'danger',
+            ];
+        }
+
+        // Check if currently within an active order window
+        $activeWindow = $this->findActiveOrderWindow($availableSchedules, $now, $todayDay);
+
+        if ($activeWindow !== null) {
+            $minutesLeft = $activeWindow['minutesRemaining'];
+
+            if ($minutesLeft <= 15) {
+                return [
+                    'type' => 'closing_soon',
+                    'label' => __('Available Now - Closing soon at :time', [
+                        'time' => $activeWindow['endTimeFormatted'],
+                    ]),
+                    'color' => 'warning',
+                ];
+            }
+
+            return [
+                'type' => 'available',
+                'label' => __('Available Now - Orders open until :time', [
+                    'time' => $activeWindow['endTimeFormatted'],
+                ]),
+                'color' => 'success',
+            ];
+        }
+
+        // Find next available window
+        $nextWindow = $this->findNextOrderWindow($availableSchedules, $now, $todayDay);
+
+        if ($nextWindow !== null) {
+            return [
+                'type' => 'next',
+                'label' => __('Next available: :day at :time', [
+                    'day' => $nextWindow['dayLabel'],
+                    'time' => $nextWindow['startTimeFormatted'],
+                ]),
+                'color' => 'warning',
+            ];
+        }
+
+        return [
+            'type' => 'closed',
+            'label' => __('Currently not accepting orders'),
+            'color' => 'danger',
+        ];
+    }
+
+    /**
+     * Find an active order window that the current time falls within.
+     *
+     * BR-189: Check if now is between order_start and order_end, accounting for day offsets.
+     * The order window is relative to the schedule's "open day" (day_of_week).
+     * order_start can be on a previous day (offset > 0 means days before open day).
+     * order_end can also be on a previous day (offset > 0) or same day (offset = 0).
+     *
+     * @param  \Illuminate\Support\Collection  $availableSchedules
+     * @return array{endTimeFormatted: string, minutesRemaining: int}|null
+     */
+    private function findActiveOrderWindow($availableSchedules, Carbon $now, string $todayDay): ?array
+    {
+        foreach ($availableSchedules as $schedule) {
+            if (! $schedule->hasOrderInterval()) {
+                continue;
+            }
+
+            // Calculate the actual start and end datetimes for this week's window
+            $window = $this->resolveOrderWindowDates($schedule, $now);
+
+            if ($window === null) {
+                continue;
+            }
+
+            if ($now->between($window['start'], $window['end'])) {
+                $minutesRemaining = (int) $now->diffInMinutes($window['end'], false);
+
+                return [
+                    'endTimeFormatted' => $window['end']->format('g:i A'),
+                    'minutesRemaining' => max(0, $minutesRemaining),
+                ];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Resolve the absolute datetime boundaries for an order window this week.
+     *
+     * The schedule entry's day_of_week is the "open day" (when food is served).
+     * order_start_day_offset means how many days BEFORE the open day the order window starts.
+     * order_end_day_offset means how many days BEFORE the open day the order window ends.
+     *
+     * @return array{start: Carbon, end: Carbon}|null
+     */
+    private function resolveOrderWindowDates(CookSchedule $schedule, Carbon $now): ?array
+    {
+        $dayIndex = array_search($schedule->day_of_week, CookSchedule::DAYS_OF_WEEK);
+        if ($dayIndex === false) {
+            return null;
+        }
+
+        // Find this week's occurrence of the open day
+        $openDay = $now->copy()->startOfWeek()->addDays($dayIndex);
+
+        // If the open day is past and the window is fully past, look at next week
+        $startOffset = $schedule->order_start_day_offset ?? 0;
+        $endOffset = $schedule->order_end_day_offset ?? 0;
+
+        // Calculate window start: open day minus start offset, at start time
+        $windowStart = $openDay->copy()
+            ->subDays($startOffset)
+            ->setTimeFromTimeString($schedule->order_start_time);
+
+        // Calculate window end: open day minus end offset, at end time
+        $windowEnd = $openDay->copy()
+            ->subDays($endOffset)
+            ->setTimeFromTimeString($schedule->order_end_time);
+
+        // Also check next week's window
+        $nextWeekStart = $windowStart->copy()->addWeek();
+        $nextWeekEnd = $windowEnd->copy()->addWeek();
+
+        // Return whichever window the current time might fall in
+        if ($now->between($windowStart, $windowEnd)) {
+            return ['start' => $windowStart, 'end' => $windowEnd];
+        }
+
+        if ($now->between($nextWeekStart, $nextWeekEnd)) {
+            return ['start' => $nextWeekStart, 'end' => $nextWeekEnd];
+        }
+
+        // For findNextOrderWindow, return this week's window
+        return ['start' => $windowStart, 'end' => $windowEnd];
+    }
+
+    /**
+     * Find the next upcoming order window.
+     *
+     * BR-190: "Next available: [day] at [time]"
+     *
+     * @param  \Illuminate\Support\Collection  $availableSchedules
+     * @return array{dayLabel: string, startTimeFormatted: string}|null
+     */
+    private function findNextOrderWindow($availableSchedules, Carbon $now, string $todayDay): ?array
+    {
+        $candidates = [];
+
+        foreach ($availableSchedules as $schedule) {
+            if (! $schedule->hasOrderInterval()) {
+                continue;
+            }
+
+            $window = $this->resolveOrderWindowDates($schedule, $now);
+
+            if ($window === null) {
+                continue;
+            }
+
+            // Find the next future start time
+            $candidateStart = $window['start'];
+
+            // If this window start is in the past, try next week
+            if ($candidateStart->lte($now)) {
+                $candidateStart = $candidateStart->copy()->addWeek();
+            }
+
+            $candidates[] = [
+                'start' => $candidateStart,
+                'dayLabel' => __(CookSchedule::DAY_LABELS[$schedule->day_of_week] ?? 'Unknown'),
+                'startTimeFormatted' => Carbon::parse($schedule->order_start_time)->format('g:i A'),
+            ];
+        }
+
+        if (empty($candidates)) {
+            return null;
+        }
+
+        // Sort by earliest start time
+        usort($candidates, fn ($a, $b) => $a['start']->timestamp <=> $b['start']->timestamp);
+
+        return $candidates[0];
     }
 
     /**
