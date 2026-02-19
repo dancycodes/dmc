@@ -2,8 +2,13 @@
 
 namespace App\Services;
 
+use App\Models\ComponentRequirementRule;
 use App\Models\CookSchedule;
+use App\Models\DeliveryArea;
 use App\Models\Meal;
+use App\Models\MealComponent;
+use App\Models\MealSchedule;
+use App\Models\PickupLocation;
 use App\Models\Tenant;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
@@ -269,6 +274,374 @@ class TenantLandingService
     public static function formatPrice(int $price): string
     {
         return number_format($price, 0, '.', ',').' XAF';
+    }
+
+    /**
+     * Get full meal detail data for the meal detail page.
+     *
+     * F-129: Meal Detail View
+     * BR-156: Displays name, description, images, all components, schedule, locations
+     * BR-157: Image carousel up to 3 images
+     * BR-158: Each component shows name, price, unit, availability status
+     * BR-160: Requirement rules displayed in plain language
+     * BR-164: Schedule with day/time information
+     * BR-165: Available delivery towns and pickup locations
+     *
+     * @return array{meal: array, components: array, schedule: array, locations: array}
+     */
+    public function getMealDetailData(Meal $meal, Tenant $tenant): array
+    {
+        $meal->load([
+            'images' => fn ($q) => $q->orderBy('position'),
+            'components' => fn ($q) => $q->orderBy('position'),
+            'components.requirementRules.targetComponents',
+            'tags',
+        ]);
+
+        $locale = app()->getLocale();
+
+        return [
+            'meal' => $this->buildMealDetail($meal, $locale),
+            'components' => $this->buildComponentsDetail($meal, $locale),
+            'schedule' => $this->buildScheduleDetail($meal, $tenant, $locale),
+            'locations' => $this->buildLocationsDetail($meal, $tenant, $locale),
+        ];
+    }
+
+    /**
+     * Build the core meal data for the detail view.
+     *
+     * @return array{id: int, name: string, description: string|null, images: array, tags: array, prepTime: int|null, allUnavailable: bool, hasComponents: bool}
+     */
+    private function buildMealDetail(Meal $meal, string $locale): array
+    {
+        $name = $meal->{'name_'.$locale} ?? $meal->name_en;
+        $description = $meal->{'description_'.$locale} ?? $meal->description_en;
+
+        $images = $meal->images->map(fn ($image) => [
+            'url' => $image->url,
+            'thumbnail' => $image->thumbnail_url,
+        ])->toArray();
+
+        $tags = $meal->tags->map(fn ($tag) => [
+            'id' => $tag->id,
+            'name' => $tag->{'name_'.$locale} ?? $tag->name_en,
+        ])->toArray();
+
+        $allUnavailable = $meal->components->isNotEmpty()
+            && $meal->components->where('is_available', true)->isEmpty();
+
+        return [
+            'id' => $meal->id,
+            'name' => $name,
+            'description' => $description,
+            'images' => $images,
+            'tags' => $tags,
+            'prepTime' => $meal->estimated_prep_time,
+            'allUnavailable' => $allUnavailable,
+            'hasComponents' => $meal->components->isNotEmpty(),
+        ];
+    }
+
+    /**
+     * Build the component list for the detail view.
+     *
+     * BR-158: Each component shows name, price, unit, availability status
+     * BR-159: Availability statuses: "Available", "Low Stock (X left)", "Sold Out"
+     * BR-160: Requirement rules in plain language
+     * BR-161: Quantity selector respects min/max/stock limits
+     * BR-162: Add to Cart disabled for sold-out components
+     *
+     * @return array<int, array{id: int, name: string, price: int, formattedPrice: string, unit: string, isAvailable: bool, availabilityStatus: string, availabilityColor: string, maxSelectable: int, minQuantity: int, isFree: bool, requirements: array}>
+     */
+    private function buildComponentsDetail(Meal $meal, string $locale): array
+    {
+        return $meal->components->map(function (MealComponent $component) use ($locale) {
+            $name = $component->{'name_'.$locale} ?? $component->name_en;
+            $unit = $component->unit_label;
+
+            // BR-159: Determine availability status
+            $availabilityData = $this->getComponentAvailability($component);
+
+            // BR-161: Calculate max selectable quantity
+            $maxSelectable = $this->getMaxSelectableQuantity($component);
+
+            // BR-160: Build requirement rules in plain language
+            $requirements = $this->buildRequirementRules($component, $locale);
+
+            // Edge case: price 0 = free add-on
+            $isFree = $component->price === 0;
+
+            return [
+                'id' => $component->id,
+                'name' => $name,
+                'price' => $component->price,
+                'formattedPrice' => $isFree ? __('Free') : self::formatPrice($component->price),
+                'unit' => $unit,
+                'isAvailable' => $component->is_available && ! $component->isOutOfStock(),
+                'availabilityStatus' => $availabilityData['status'],
+                'availabilityColor' => $availabilityData['color'],
+                'maxSelectable' => $maxSelectable,
+                'minQuantity' => $component->min_quantity ?? 1,
+                'isFree' => $isFree,
+                'requirements' => $requirements,
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Get the availability status and color for a component.
+     *
+     * BR-159: "Available", "Low Stock (X left)", "Sold Out"
+     *
+     * @return array{status: string, color: string}
+     */
+    private function getComponentAvailability(MealComponent $component): array
+    {
+        if (! $component->is_available || $component->isOutOfStock()) {
+            return [
+                'status' => __('Sold Out'),
+                'color' => 'danger',
+            ];
+        }
+
+        if ($component->isLowStock()) {
+            return [
+                'status' => __('Only :count left', ['count' => $component->available_quantity]),
+                'color' => 'warning',
+            ];
+        }
+
+        return [
+            'status' => __('Available'),
+            'color' => 'success',
+        ];
+    }
+
+    /**
+     * Get the maximum selectable quantity for a component.
+     *
+     * BR-161: Quantity max based on available stock or cook-defined max.
+     */
+    private function getMaxSelectableQuantity(MealComponent $component): int
+    {
+        $limits = [];
+
+        if (! $component->hasUnlimitedMaxQuantity()) {
+            $limits[] = $component->max_quantity;
+        }
+
+        if (! $component->hasUnlimitedAvailableQuantity()) {
+            $limits[] = $component->available_quantity;
+        }
+
+        if (empty($limits)) {
+            return 99; // Reasonable upper bound for unlimited
+        }
+
+        return max(1, min($limits));
+    }
+
+    /**
+     * Build requirement rules in plain language.
+     *
+     * BR-160: "Requires: Ndole (main dish)", "Requires all of: X, Y", "Incompatible with: Z"
+     *
+     * @return array<int, array{type: string, label: string, components: string}>
+     */
+    private function buildRequirementRules(MealComponent $component, string $locale): array
+    {
+        return $component->requirementRules->map(function (ComponentRequirementRule $rule) use ($locale) {
+            $targetNames = $rule->targetComponents->map(
+                fn ($target) => $target->{'name_'.$locale} ?? $target->name_en
+            )->toArray();
+
+            return [
+                'type' => $rule->rule_type,
+                'label' => $rule->rule_type_label,
+                'components' => implode(', ', $targetNames),
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Build schedule data for a meal.
+     *
+     * BR-164: Shows day/time information for when the meal is orderable.
+     * Uses meal-specific schedule override (F-106) if available,
+     * otherwise falls back to cook's tenant schedule (F-098).
+     *
+     * @return array{hasSchedule: bool, source: string, entries: array}
+     */
+    private function buildScheduleDetail(Meal $meal, Tenant $tenant, string $locale): array
+    {
+        // Check for meal-specific schedule (F-106)
+        $mealSchedules = MealSchedule::query()
+            ->where('meal_id', $meal->id)
+            ->where('is_available', true)
+            ->orderByRaw("CASE day_of_week WHEN 'monday' THEN 1 WHEN 'tuesday' THEN 2 WHEN 'wednesday' THEN 3 WHEN 'thursday' THEN 4 WHEN 'friday' THEN 5 WHEN 'saturday' THEN 6 WHEN 'sunday' THEN 7 END")
+            ->orderBy('position')
+            ->get();
+
+        if ($mealSchedules->isNotEmpty()) {
+            return [
+                'hasSchedule' => true,
+                'source' => 'meal',
+                'entries' => $this->formatScheduleEntries($mealSchedules, $locale),
+            ];
+        }
+
+        // Fallback to cook schedule (F-098)
+        $cookSchedules = CookSchedule::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('is_available', true)
+            ->orderByRaw("CASE day_of_week WHEN 'monday' THEN 1 WHEN 'tuesday' THEN 2 WHEN 'wednesday' THEN 3 WHEN 'thursday' THEN 4 WHEN 'friday' THEN 5 WHEN 'saturday' THEN 6 WHEN 'sunday' THEN 7 END")
+            ->orderBy('position')
+            ->get();
+
+        if ($cookSchedules->isNotEmpty()) {
+            return [
+                'hasSchedule' => true,
+                'source' => 'cook',
+                'entries' => $this->formatScheduleEntries($cookSchedules, $locale),
+            ];
+        }
+
+        return [
+            'hasSchedule' => false,
+            'source' => 'none',
+            'entries' => [],
+        ];
+    }
+
+    /**
+     * Format schedule entries for display.
+     *
+     * @param  \Illuminate\Database\Eloquent\Collection  $schedules
+     * @return array<int, array{day: string, dayLabel: string, label: string, orderInterval: string|null, deliveryInterval: string|null, pickupInterval: string|null, isToday: bool}>
+     */
+    private function formatScheduleEntries($schedules, string $locale): array
+    {
+        $today = strtolower(now()->format('l')); // e.g., 'monday'
+
+        return $schedules->map(function ($schedule) use ($today) {
+            return [
+                'day' => $schedule->day_of_week,
+                'dayLabel' => $schedule->day_label,
+                'label' => $schedule->display_label,
+                'orderInterval' => $schedule->order_interval_summary,
+                'deliveryInterval' => $schedule->delivery_interval_summary,
+                'pickupInterval' => $schedule->pickup_interval_summary,
+                'isToday' => $schedule->day_of_week === $today,
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Build delivery and pickup location data.
+     *
+     * BR-165: Available delivery towns and pickup locations.
+     * Uses meal-specific location overrides (F-096) if available,
+     * otherwise falls back to cook's delivery areas.
+     *
+     * @return array{deliveryTowns: array, pickupLocations: array, hasLocations: bool}
+     */
+    private function buildLocationsDetail(Meal $meal, Tenant $tenant, string $locale): array
+    {
+        $deliveryTowns = [];
+        $pickupLocations = [];
+
+        // Check for meal-specific location overrides (F-096)
+        if ($meal->has_custom_locations) {
+            $overrides = $meal->locationOverrides()
+                ->with(['quarter.town', 'pickupLocation.town'])
+                ->get();
+
+            foreach ($overrides as $override) {
+                if ($override->isDeliveryOverride() && $override->quarter && $override->quarter->town) {
+                    $town = $override->quarter->town;
+                    $townName = $town->{'name_'.$locale} ?? $town->name_en;
+                    $quarterName = $override->quarter->{'name_'.$locale} ?? $override->quarter->name_en;
+
+                    if (! isset($deliveryTowns[$town->id])) {
+                        $deliveryTowns[$town->id] = [
+                            'name' => $townName,
+                            'quarters' => [],
+                        ];
+                    }
+
+                    $deliveryTowns[$town->id]['quarters'][] = [
+                        'name' => $quarterName,
+                        'fee' => $override->custom_delivery_fee ?? 0,
+                        'formattedFee' => $override->custom_delivery_fee
+                            ? self::formatPrice($override->custom_delivery_fee)
+                            : __('Free'),
+                    ];
+                }
+
+                if ($override->isPickupOverride() && $override->pickupLocation) {
+                    $pickup = $override->pickupLocation;
+                    $pickupLocations[] = [
+                        'name' => $pickup->{'name_'.$locale} ?? $pickup->name_en,
+                        'town' => $pickup->town ? ($pickup->town->{'name_'.$locale} ?? $pickup->town->name_en) : '',
+                        'address' => $pickup->address,
+                    ];
+                }
+            }
+
+            return [
+                'deliveryTowns' => array_values($deliveryTowns),
+                'pickupLocations' => $pickupLocations,
+                'hasLocations' => ! empty($deliveryTowns) || ! empty($pickupLocations),
+            ];
+        }
+
+        // Default: cook's delivery areas
+        $areas = DeliveryArea::query()
+            ->where('tenant_id', $tenant->id)
+            ->with(['town', 'deliveryAreaQuarters.quarter'])
+            ->get();
+
+        foreach ($areas as $area) {
+            if ($area->town) {
+                $townName = $area->town->{'name_'.$locale} ?? $area->town->name_en;
+                $deliveryTowns[$area->town->id] = [
+                    'name' => $townName,
+                    'quarters' => $area->deliveryAreaQuarters->map(function ($daq) use ($locale) {
+                        $quarterName = $daq->quarter ? ($daq->quarter->{'name_'.$locale} ?? $daq->quarter->name_en) : '';
+
+                        return [
+                            'name' => $quarterName,
+                            'fee' => $daq->delivery_fee,
+                            'formattedFee' => self::formatPrice($daq->delivery_fee),
+                        ];
+                    })->toArray(),
+                ];
+            }
+        }
+
+        // Pickup locations
+        $pickups = PickupLocation::query()
+            ->where('tenant_id', $tenant->id)
+            ->with(['town', 'quarter'])
+            ->get();
+
+        $pickupLocations = $pickups->map(function ($pickup) use ($locale) {
+            $name = $pickup->{'name_'.$locale} ?? $pickup->name_en;
+            $townName = $pickup->town ? ($pickup->town->{'name_'.$locale} ?? $pickup->town->name_en) : '';
+
+            return [
+                'name' => $name,
+                'town' => $townName,
+                'address' => $pickup->address,
+            ];
+        })->toArray();
+
+        return [
+            'deliveryTowns' => array_values($deliveryTowns),
+            'pickupLocations' => $pickupLocations,
+            'hasLocations' => ! empty($deliveryTowns) || ! empty($pickupLocations),
+        ];
     }
 
     /**
