@@ -239,9 +239,25 @@
             </div>
 
             {{-- F-135: Meal Search Bar --}}
-            @include('tenant._meal-search', ['searchQuery' => ''])
+            @include('tenant._meal-search', ['searchQuery' => '', 'filterData' => $filterData])
 
-            @include('tenant._meals-grid', ['meals' => $meals, 'sections' => $sections, 'searchQuery' => ''])
+            {{-- F-136: Desktop sidebar layout with filters + grid --}}
+            @if(($filterData['hasTags'] ?? false) || ($filterData['hasPriceRange'] ?? false))
+                <div class="lg:flex lg:gap-8">
+                    {{-- F-136: Filter sidebar (desktop) + floating button + bottom sheet (mobile) --}}
+                    <div class="lg:w-64 lg:shrink-0">
+                        @include('tenant._meal-filters', ['filterData' => $filterData])
+                    </div>
+
+                    {{-- Meals grid --}}
+                    <div class="flex-1 min-w-0">
+                        @include('tenant._meals-grid', ['meals' => $meals, 'sections' => $sections, 'searchQuery' => '', 'activeFilterCount' => 0])
+                    </div>
+                </div>
+            @else
+                {{-- No filters available — full-width grid --}}
+                @include('tenant._meals-grid', ['meals' => $meals, 'sections' => $sections, 'searchQuery' => '', 'activeFilterCount' => 0])
+            @endif
         </div>
     </section>
 

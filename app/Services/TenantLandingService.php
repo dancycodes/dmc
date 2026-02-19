@@ -11,9 +11,11 @@ use App\Models\MealComponent;
 use App\Models\MealSchedule;
 use App\Models\PickupLocation;
 use App\Models\QuarterGroup;
+use App\Models\Tag;
 use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 
 class TenantLandingService
 {
@@ -37,7 +39,7 @@ class TenantLandingService
      * BR-126: Only renders on tenant domains
      * BR-127: Cook's selected theme applied dynamically
      *
-     * @return array{tenant: Tenant, themeConfig: array, sections: array, cookProfile: array, meals: LengthAwarePaginator, scheduleDisplay: array, deliveryDisplay: array}
+     * @return array{tenant: Tenant, themeConfig: array, sections: array, cookProfile: array, meals: LengthAwarePaginator, scheduleDisplay: array, deliveryDisplay: array, filterData: array}
      */
     public function getLandingPageData(Tenant $tenant, int $page = 1): array
     {
@@ -47,6 +49,7 @@ class TenantLandingService
         $sections = $this->buildSections($tenant);
         $scheduleDisplay = $this->getScheduleDisplayData($tenant);
         $deliveryDisplay = $this->getDeliveryDisplayData($tenant);
+        $filterData = $this->getFilterData($tenant);
 
         return [
             'tenant' => $tenant,
@@ -56,6 +59,7 @@ class TenantLandingService
             'meals' => $meals,
             'scheduleDisplay' => $scheduleDisplay,
             'deliveryDisplay' => $deliveryDisplay,
+            'filterData' => $filterData,
         ];
     }
 
@@ -271,6 +275,202 @@ class TenantLandingService
             ->orderBy('position')
             ->orderBy($nameColumn)
             ->paginate(self::MEALS_PER_PAGE, ['*'], 'page', $page);
+    }
+
+    /**
+     * Get filter data for the tenant's meals (tags, price range).
+     *
+     * F-136: Meal Filters
+     * BR-223: Tag filter populated from cook's meal tags
+     * BR-227: Price range bounds from meal starting prices
+     *
+     * @return array{tags: array, priceRange: array{min: int, max: int}, hasTags: bool, hasPriceRange: bool}
+     */
+    public function getFilterData(Tenant $tenant): array
+    {
+        $locale = app()->getLocale();
+
+        // Get tags that are actually assigned to live+available meals for this cook
+        $tags = Tag::query()
+            ->where('tags.tenant_id', $tenant->id)
+            ->whereHas('meals', function (Builder $q) use ($tenant) {
+                $q->where('tenant_id', $tenant->id)
+                    ->where('status', Meal::STATUS_LIVE)
+                    ->where('is_available', true);
+            })
+            ->orderBy('name_'.$locale)
+            ->get()
+            ->map(fn (Tag $tag) => [
+                'id' => $tag->id,
+                'name' => $tag->{'name_'.$locale} ?? $tag->name_en,
+            ])
+            ->toArray();
+
+        // Get price range from available meal component prices
+        $priceStats = MealComponent::query()
+            ->whereHas('meal', function (Builder $q) use ($tenant) {
+                $q->where('tenant_id', $tenant->id)
+                    ->where('status', Meal::STATUS_LIVE)
+                    ->where('is_available', true);
+            })
+            ->where('is_available', true)
+            ->selectRaw('MIN(price) as min_price, MAX(price) as max_price')
+            ->first();
+
+        $minPrice = (int) ($priceStats->min_price ?? 0);
+        $maxPrice = (int) ($priceStats->max_price ?? 0);
+
+        return [
+            'tags' => $tags,
+            'priceRange' => [
+                'min' => $minPrice,
+                'max' => $maxPrice,
+            ],
+            'hasTags' => ! empty($tags),
+            'hasPriceRange' => $minPrice !== $maxPrice && $maxPrice > 0,
+        ];
+    }
+
+    /**
+     * Filter available meals with search, tags, availability, and price range.
+     *
+     * F-136: Meal Filters
+     * BR-223: Tag filter OR logic (meals matching ANY selected tag)
+     * BR-224/BR-225: Availability filter ("Available Now" = within current schedule window)
+     * BR-226: Price range uses meal starting price (min component price)
+     * BR-228: AND logic between filter types
+     * BR-232: Combinable with search (F-135)
+     *
+     * @param  array<int>  $tagIds
+     */
+    public function filterMeals(
+        Tenant $tenant,
+        string $searchQuery = '',
+        array $tagIds = [],
+        string $availability = 'all',
+        ?int $priceMin = null,
+        ?int $priceMax = null,
+        int $page = 1,
+    ): LengthAwarePaginator {
+        $scheduledDays = $this->getScheduledDays($tenant);
+        $locale = app()->getLocale();
+        $nameColumn = 'name_'.$locale;
+
+        $query = Meal::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('status', Meal::STATUS_LIVE)
+            ->where('is_available', true)
+            ->with([
+                'images' => fn ($q) => $q->orderBy('position')->limit(1),
+                'components' => fn ($q) => $q->where('is_available', true)->select('id', 'meal_id', 'price'),
+                'tags' => fn ($q) => $q->select('tags.id', 'tags.name_en', 'tags.name_fr'),
+            ]);
+
+        // BR-232: Apply search query (from F-135)
+        if (mb_strlen($searchQuery) >= 2) {
+            $searchTerm = '%'.addcslashes($searchQuery, '%_\\').'%';
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('name_en', 'ILIKE', $searchTerm)
+                    ->orWhere('name_fr', 'ILIKE', $searchTerm)
+                    ->orWhere('description_en', 'ILIKE', $searchTerm)
+                    ->orWhere('description_fr', 'ILIKE', $searchTerm)
+                    ->orWhereHas('components', function ($cq) use ($searchTerm) {
+                        $cq->where('name_en', 'ILIKE', $searchTerm)
+                            ->orWhere('name_fr', 'ILIKE', $searchTerm);
+                    })
+                    ->orWhereHas('tags', function ($tq) use ($searchTerm) {
+                        $tq->where('tags.name_en', 'ILIKE', $searchTerm)
+                            ->orWhere('tags.name_fr', 'ILIKE', $searchTerm);
+                    });
+            });
+        }
+
+        // BR-223: Tag filter — OR logic within tags
+        if (! empty($tagIds)) {
+            $query->whereHas('tags', function ($tq) use ($tagIds) {
+                $tq->whereIn('tags.id', $tagIds);
+            });
+        }
+
+        // BR-224/BR-225: Availability filter — "Available Now" means within current schedule window
+        if ($availability === 'available_now') {
+            $this->applyAvailableNowFilter($query, $tenant);
+        } else {
+            // Default "all" filter still respects schedule days
+            if (! empty($scheduledDays)) {
+                $query->where(function ($q) use ($scheduledDays) {
+                    $q->whereHas('schedules', function ($sq) use ($scheduledDays) {
+                        $sq->where('is_available', true)
+                            ->whereIn('day_of_week', $scheduledDays);
+                    });
+                    $q->orWhereDoesntHave('schedules');
+                });
+            }
+        }
+
+        // BR-226: Price range filter using starting price (min component price)
+        if ($priceMin !== null || $priceMax !== null) {
+            $query->whereHas('components', function ($cq) use ($priceMin, $priceMax) {
+                $cq->where('is_available', true);
+                if ($priceMin !== null) {
+                    $cq->where('price', '>=', $priceMin);
+                }
+                if ($priceMax !== null) {
+                    $cq->where('price', '<=', $priceMax);
+                }
+            });
+        }
+
+        return $query
+            ->orderBy('position')
+            ->orderBy($nameColumn)
+            ->paginate(self::MEALS_PER_PAGE, ['*'], 'page', $page);
+    }
+
+    /**
+     * Apply "Available Now" filter to a meal query.
+     *
+     * BR-225: "Available Now" means the meal can be ordered within the current
+     * active schedule window. Check both meal-specific schedules and cook schedules.
+     */
+    private function applyAvailableNowFilter(Builder $query, Tenant $tenant): void
+    {
+        $now = Carbon::now('Africa/Douala');
+        $todayDay = strtolower($now->format('l'));
+
+        // Get cook schedules that are currently active (within order window)
+        $activeCookScheduleIds = CookSchedule::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('is_available', true)
+            ->get()
+            ->filter(function ($schedule) use ($now) {
+                if (! $schedule->hasOrderInterval()) {
+                    return false;
+                }
+                $window = $this->resolveOrderWindowDates($schedule, $now);
+
+                return $window !== null && $now->between($window['start'], $window['end']);
+            })
+            ->pluck('day_of_week')
+            ->unique()
+            ->toArray();
+
+        if (empty($activeCookScheduleIds)) {
+            // No active windows at all — filter to nothing
+            $query->whereRaw('1 = 0');
+
+            return;
+        }
+
+        // Meals with custom schedules: must have an active window day
+        // Meals without custom schedules: cook's active window days apply
+        $query->where(function ($q) use ($activeCookScheduleIds) {
+            $q->whereHas('schedules', function ($sq) use ($activeCookScheduleIds) {
+                $sq->where('is_available', true)
+                    ->whereIn('day_of_week', $activeCookScheduleIds);
+            });
+            $q->orWhereDoesntHave('schedules');
+        });
     }
 
     /**
