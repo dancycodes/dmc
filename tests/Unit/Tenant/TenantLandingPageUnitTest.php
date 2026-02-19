@@ -341,22 +341,26 @@ describe('Tenant Home View', function () use ($projectRoot) {
         expect($homeContent)->toContain('scroll-mt-16');
     });
 
-    it('has footer-content section for social links (F-134)', function () use ($homeContent) {
+    it('has footer-content section for contact & social links (F-134)', function () use ($homeContent) {
         expect($homeContent)->toContain("@section('footer-content')");
-        expect($homeContent)->toContain("__('Follow Us')");
-        expect($homeContent)->toContain("__('Contact')");
+        // F-134: Contact section is now a separate partial
+        expect($homeContent)->toContain("@include('tenant._contact-section'");
     });
 
-    it('has WhatsApp contact link', function () use ($homeContent) {
-        expect($homeContent)->toContain('wa.me');
-        expect($homeContent)->toContain("__('WhatsApp')");
+    it('has WhatsApp floating button (F-134)', function () use ($homeContent) {
+        // F-134: WhatsApp FAB is now a separate partial
+        expect($homeContent)->toContain("@include('tenant._whatsapp-fab'");
     });
 
-    it('has social media links (facebook, instagram, tiktok)', function () use ($homeContent) {
-        expect($homeContent)->toContain("'facebook'");
-        expect($homeContent)->toContain("'instagram'");
-        expect($homeContent)->toContain("'tiktok'");
-        expect($homeContent)->toContain('socialLinks');
+    it('has social media links in contact section partial (F-134)', function () use ($projectRoot) {
+        $contactContent = file_get_contents($projectRoot.'/resources/views/tenant/_contact-section.blade.php');
+        expect($contactContent)->toContain("__('Follow Us')");
+        expect($contactContent)->toContain("__('Contact')");
+        expect($contactContent)->toContain("__('Chat on WhatsApp')");
+        expect($contactContent)->toContain("'facebook'");
+        expect($contactContent)->toContain("'instagram'");
+        expect($contactContent)->toContain("'tiktok'");
+        expect($contactContent)->toContain('socialLinks');
     });
 
     it('uses dark mode variants for all sections (BR-132)', function () use ($homeContent) {

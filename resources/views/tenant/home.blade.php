@@ -339,58 +339,17 @@
         </div>
     </section>
 </div>
+
+{{-- ============================================ --}}
+{{-- F-134: WhatsApp Floating Action Button       --}}
+{{-- BR-204: Always visible, bottom-right corner  --}}
+{{-- BR-205: wa.me link with pre-filled message   --}}
+{{-- BR-212: Does not obstruct other elements     --}}
+{{-- ============================================ --}}
+@include('tenant._whatsapp-fab', ['cookProfile' => $cookProfile])
 @endsection
 
 @section('footer-content')
-    {{-- Quick contact info in footer --}}
-    @if($cookProfile['whatsapp'] || $cookProfile['phone'] || $cookProfile['socialLinks']['facebook'] || $cookProfile['socialLinks']['instagram'] || $cookProfile['socialLinks']['tiktok'])
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
-            {{-- Contact Info --}}
-            <div>
-                <h3 class="text-sm font-semibold text-on-surface-strong uppercase tracking-wider mb-3">
-                    {{ __('Contact') }}
-                </h3>
-                <div class="space-y-2">
-                    @if($cookProfile['whatsapp'])
-                        <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $cookProfile['whatsapp']) }}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-sm text-on-surface hover:text-primary transition-colors duration-200">
-                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                            {{ __('WhatsApp') }}
-                        </a>
-                    @endif
-                    @if($cookProfile['phone'])
-                        <a href="tel:{{ $cookProfile['phone'] }}" class="flex items-center gap-2 text-sm text-on-surface hover:text-primary transition-colors duration-200">
-                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                            {{ $cookProfile['phone'] }}
-                        </a>
-                    @endif
-                </div>
-            </div>
-
-            {{-- Social Links --}}
-            @if($cookProfile['socialLinks']['facebook'] || $cookProfile['socialLinks']['instagram'] || $cookProfile['socialLinks']['tiktok'])
-                <div>
-                    <h3 class="text-sm font-semibold text-on-surface-strong uppercase tracking-wider mb-3">
-                        {{ __('Follow Us') }}
-                    </h3>
-                    <div class="flex gap-3">
-                        @if($cookProfile['socialLinks']['facebook'])
-                            <a href="{{ $cookProfile['socialLinks']['facebook'] }}" target="_blank" rel="noopener noreferrer" class="w-9 h-9 rounded-lg bg-surface dark:bg-surface border border-outline dark:border-outline flex items-center justify-center text-on-surface hover:text-primary hover:border-primary transition-all duration-200" title="Facebook">
-                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
-                            </a>
-                        @endif
-                        @if($cookProfile['socialLinks']['instagram'])
-                            <a href="{{ $cookProfile['socialLinks']['instagram'] }}" target="_blank" rel="noopener noreferrer" class="w-9 h-9 rounded-lg bg-surface dark:bg-surface border border-outline dark:border-outline flex items-center justify-center text-on-surface hover:text-primary hover:border-primary transition-all duration-200" title="Instagram">
-                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line></svg>
-                            </a>
-                        @endif
-                        @if($cookProfile['socialLinks']['tiktok'])
-                            <a href="{{ $cookProfile['socialLinks']['tiktok'] }}" target="_blank" rel="noopener noreferrer" class="w-9 h-9 rounded-lg bg-surface dark:bg-surface border border-outline dark:border-outline flex items-center justify-center text-on-surface hover:text-primary hover:border-primary transition-all duration-200" title="TikTok">
-                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.89 2.89 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.14 15.67 6.34 6.34 0 0 0 9.48 22a6.34 6.34 0 0 0 6.34-6.34V9.39a8.16 8.16 0 0 0 3.77.92V6.69z"></path></svg>
-                            </a>
-                        @endif
-                    </div>
-                </div>
-            @endif
-        </div>
-    @endif
+    {{-- F-134: Enhanced Contact & Social Links Footer --}}
+    @include('tenant._contact-section', ['cookProfile' => $cookProfile])
 @endsection
