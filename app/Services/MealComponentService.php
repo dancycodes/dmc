@@ -310,6 +310,171 @@ class MealComponentService
     }
 
     /**
+     * Update only the quantity settings of a meal component.
+     *
+     * F-124: Meal Component Quantity Settings
+     * BR-334: Minimum quantity default is 0
+     * BR-335: Maximum quantity default is null (unlimited)
+     * BR-336: Available quantity default is null (unlimited)
+     * BR-337: When available quantity reaches 0, auto-toggle to is_available = false
+     * BR-339: Minimum quantity must be >= 0
+     * BR-340: Maximum quantity must be >= minimum quantity (when both are set)
+     * BR-341: Available quantity must be >= 0
+     * BR-345: Quantity changes take immediate effect for new orders
+     * BR-347: Quantity changes are logged via Spatie Activitylog (in controller)
+     *
+     * @param  array{min_quantity?: int|null, max_quantity?: int|null, available_quantity?: int|null}  $data
+     * @return array{success: bool, component?: MealComponent, error?: string, old_values?: array<string, mixed>}
+     */
+    public function updateQuantitySettings(MealComponent $component, array $data): array
+    {
+        $minQuantity = (int) ($data['min_quantity'] ?? 0);
+        $maxQuantity = isset($data['max_quantity']) && $data['max_quantity'] !== '' && $data['max_quantity'] !== null
+            ? (int) $data['max_quantity']
+            : null;
+        $availableQuantity = isset($data['available_quantity']) && $data['available_quantity'] !== '' && $data['available_quantity'] !== null
+            ? (int) $data['available_quantity']
+            : null;
+
+        // BR-340: Max quantity must be >= min quantity when both are set
+        if ($maxQuantity !== null && $minQuantity > $maxQuantity) {
+            return [
+                'success' => false,
+                'error' => __('Minimum quantity cannot be greater than maximum quantity.'),
+            ];
+        }
+
+        // Capture old values for activity logging (BR-347)
+        $oldValues = [
+            'min_quantity' => $component->min_quantity,
+            'max_quantity' => $component->max_quantity,
+            'available_quantity' => $component->available_quantity,
+            'is_available' => $component->is_available,
+        ];
+
+        // BR-337: Auto-toggle to unavailable if available_quantity reaches 0
+        $isAvailable = $component->is_available;
+        if ($availableQuantity !== null && $availableQuantity <= 0) {
+            $availableQuantity = 0;
+            $isAvailable = false;
+        }
+
+        $component->update([
+            'min_quantity' => $minQuantity,
+            'max_quantity' => $maxQuantity,
+            'available_quantity' => $availableQuantity,
+            'is_available' => $isAvailable,
+        ]);
+
+        return [
+            'success' => true,
+            'component' => $component->fresh(),
+            'old_values' => $oldValues,
+        ];
+    }
+
+    /**
+     * Decrement the available quantity of a component after order placement.
+     *
+     * F-124/BR-338: Available quantity decrements on successful order placement
+     * (not on cart add, but on payment confirmation).
+     * BR-337: When available quantity reaches 0, auto-toggle to is_available = false.
+     *
+     * @return array{success: bool, new_quantity: int|null, auto_unavailable: bool}
+     */
+    public function decrementAvailableQuantity(MealComponent $component, int $quantity = 1): array
+    {
+        // Unlimited stock — no decrement needed
+        if ($component->hasUnlimitedAvailableQuantity()) {
+            return [
+                'success' => true,
+                'new_quantity' => null,
+                'auto_unavailable' => false,
+            ];
+        }
+
+        $newQuantity = max(0, $component->available_quantity - $quantity);
+        $autoUnavailable = $newQuantity === 0;
+
+        $updateData = ['available_quantity' => $newQuantity];
+        if ($autoUnavailable) {
+            $updateData['is_available'] = false;
+        }
+
+        $component->update($updateData);
+
+        return [
+            'success' => true,
+            'new_quantity' => $newQuantity,
+            'auto_unavailable' => $autoUnavailable,
+        ];
+    }
+
+    /**
+     * Increment the available quantity of a component (e.g. on order cancellation).
+     *
+     * F-124: Forward-compatible for order cancellation stock restoration.
+     */
+    public function incrementAvailableQuantity(MealComponent $component, int $quantity = 1): array
+    {
+        // Unlimited stock — no increment needed
+        if ($component->hasUnlimitedAvailableQuantity()) {
+            return [
+                'success' => true,
+                'new_quantity' => null,
+            ];
+        }
+
+        $newQuantity = $component->available_quantity + $quantity;
+        $component->update(['available_quantity' => $newQuantity]);
+
+        return [
+            'success' => true,
+            'new_quantity' => $newQuantity,
+        ];
+    }
+
+    /**
+     * Check if this component has low stock (under threshold).
+     */
+    public function isLowStock(MealComponent $component, int $threshold = 5): bool
+    {
+        if ($component->hasUnlimitedAvailableQuantity()) {
+            return false;
+        }
+
+        return $component->available_quantity > 0 && $component->available_quantity <= $threshold;
+    }
+
+    /**
+     * Get the stock status label for a component.
+     *
+     * @return array{label: string, type: string}
+     */
+    public function getStockStatus(MealComponent $component): array
+    {
+        if ($component->hasUnlimitedAvailableQuantity()) {
+            return ['label' => __('Unlimited'), 'type' => 'unlimited'];
+        }
+
+        if ($component->available_quantity === 0) {
+            return ['label' => __('Out of stock'), 'type' => 'out_of_stock'];
+        }
+
+        if ($this->isLowStock($component)) {
+            return [
+                'label' => trans_choice(':count left|:count left', $component->available_quantity, ['count' => $component->available_quantity]),
+                'type' => 'low_stock',
+            ];
+        }
+
+        return [
+            'label' => __(':count in stock', ['count' => $component->available_quantity]),
+            'type' => 'in_stock',
+        ];
+    }
+
+    /**
      * Get components data for a meal (ordered by position).
      *
      * @return array{components: \Illuminate\Database\Eloquent\Collection, count: int}

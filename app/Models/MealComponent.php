@@ -150,6 +150,31 @@ class MealComponent extends Model
     }
 
     /**
+     * F-124: Check if this component has low stock (under threshold).
+     * Low stock warning is shown when available quantity is between 1 and threshold (inclusive).
+     */
+    public function isLowStock(int $threshold = 5): bool
+    {
+        if ($this->hasUnlimitedAvailableQuantity()) {
+            return false;
+        }
+
+        return $this->available_quantity > 0 && $this->available_quantity <= $threshold;
+    }
+
+    /**
+     * F-124: Check if this component is out of stock (available_quantity is 0).
+     */
+    public function isOutOfStock(): bool
+    {
+        if ($this->hasUnlimitedAvailableQuantity()) {
+            return false;
+        }
+
+        return $this->available_quantity <= 0;
+    }
+
+    /**
      * Scope to available components.
      */
     public function scopeAvailable(Builder $query): Builder
