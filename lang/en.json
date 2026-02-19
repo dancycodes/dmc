@@ -1748,5 +1748,16 @@
     "Component updated.": "Component updated.",
     "Edit component": "Edit component",
     "Price changes apply to new orders only.": "Price changes apply to new orders only.",
-    "Meal component created": "Meal component created"
+    "Meal component created": "Meal component created",
+    "Delete Component": "Delete Component",
+    "Delete component": "Delete component",
+    "Component deleted.": "Component deleted.",
+    "Are you sure you want to delete": "Are you sure you want to delete",
+    "This action cannot be undone.": "This action cannot be undone.",
+    "Deleting...": "Deleting...",
+    "Cannot delete the only component of a live meal. Add another component first, or switch the meal to draft.": "Cannot delete the only component of a live meal. Add another component first, or switch the meal to draft.",
+    "Cannot delete the only component of a live meal.": "Cannot delete the only component of a live meal.",
+    "{1} Cannot delete — :count pending order includes this component.|[2,*] Cannot delete — :count pending orders include this component.": "{1} Cannot delete — :count pending order includes this component.|[2,*] Cannot delete — :count pending orders include this component.",
+    "{1} :count pending order includes this component.|[2,*] :count pending orders include this component.": "{1} :count pending order includes this component.|[2,*] :count pending orders include this component.",
+    "Meal component deleted": "Meal component deleted"
 }

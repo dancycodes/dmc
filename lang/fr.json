@@ -1748,5 +1748,16 @@
     "Component updated.": "Composant mis a jour.",
     "Edit component": "Modifier le composant",
     "Price changes apply to new orders only.": "Les changements de prix s'appliquent uniquement aux nouvelles commandes.",
-    "Meal component created": "Composant de repas cree"
+    "Meal component created": "Composant de repas cree",
+    "Delete Component": "Supprimer le composant",
+    "Delete component": "Supprimer le composant",
+    "Component deleted.": "Composant supprime.",
+    "Are you sure you want to delete": "Etes-vous sur de vouloir supprimer",
+    "This action cannot be undone.": "Cette action est irreversible.",
+    "Deleting...": "Suppression en cours...",
+    "Cannot delete the only component of a live meal. Add another component first, or switch the meal to draft.": "Impossible de supprimer le seul composant d'un repas publie. Ajoutez un autre composant ou passez le repas en brouillon.",
+    "Cannot delete the only component of a live meal.": "Impossible de supprimer le seul composant d'un repas publie.",
+    "{1} Cannot delete — :count pending order includes this component.|[2,*] Cannot delete — :count pending orders include this component.": "{1} Impossible de supprimer — :count commande en attente inclut ce composant.|[2,*] Impossible de supprimer — :count commandes en attente incluent ce composant.",
+    "{1} :count pending order includes this component.|[2,*] :count pending orders include this component.": "{1} :count commande en attente inclut ce composant.|[2,*] :count commandes en attente incluent ce composant.",
+    "Meal component deleted": "Composant de repas supprime"
 }

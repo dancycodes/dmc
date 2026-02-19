@@ -255,4 +255,85 @@ class MealComponentController extends Controller
         return redirect($redirectUrl)
             ->with('success', __('Component updated.'));
     }
+
+    /**
+     * Delete a meal component.
+     *
+     * F-120: Meal Component Delete
+     * BR-298: Cannot delete the last component of a live meal
+     * BR-299: Cannot delete a component if pending orders include it
+     * BR-300: Components are hard-deleted
+     * BR-301: Confirmation dialog is shown on the frontend
+     * BR-302: Component deletion is logged via Spatie Activitylog
+     * BR-303: Only users with manage-meals permission
+     * BR-304: Remaining positions are recalculated (service layer)
+     * BR-305: Requirement rules are cleaned up (service layer)
+     */
+    public function destroy(Request $request, int $mealId, int $componentId, MealComponentService $componentService): mixed
+    {
+        $user = $request->user();
+        $tenant = tenant();
+
+        // BR-303: Permission check
+        if (! $user->can('can-manage-meals')) {
+            abort(403);
+        }
+
+        // Meal must belong to current tenant
+        $meal = $tenant->meals()->findOrFail($mealId);
+
+        // Component must belong to meal
+        $component = $meal->components()->findOrFail($componentId);
+
+        // Capture data for activity logging before deletion
+        $componentData = [
+            'name_en' => $component->name_en,
+            'name_fr' => $component->name_fr,
+            'price' => $component->price,
+            'selling_unit' => $component->selling_unit,
+            'position' => $component->position,
+        ];
+
+        // Use service for business logic
+        $result = $componentService->deleteComponent($component);
+
+        if (! $result['success']) {
+            $redirectUrl = url('/dashboard/meals/'.$meal->id.'/edit');
+
+            if ($request->isGale()) {
+                return gale()
+                    ->redirect($redirectUrl)
+                    ->with('error', $result['error']);
+            }
+
+            return redirect($redirectUrl)
+                ->with('error', $result['error']);
+        }
+
+        // BR-302: Activity logging
+        activity('meal_components')
+            ->causedBy($user)
+            ->withProperties([
+                'action' => 'component_deleted',
+                'name_en' => $componentData['name_en'],
+                'name_fr' => $componentData['name_fr'],
+                'price' => $componentData['price'],
+                'selling_unit' => $componentData['selling_unit'],
+                'meal_id' => $meal->id,
+                'meal_name' => $meal->name_en,
+                'tenant_id' => $tenant->id,
+            ])
+            ->log('Meal component deleted');
+
+        $redirectUrl = url('/dashboard/meals/'.$meal->id.'/edit');
+
+        if ($request->isGale()) {
+            return gale()
+                ->redirect($redirectUrl)
+                ->with('success', __('Component deleted.'));
+        }
+
+        return redirect($redirectUrl)
+            ->with('success', __('Component deleted.'));
+    }
 }

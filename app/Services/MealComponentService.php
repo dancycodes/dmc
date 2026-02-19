@@ -161,6 +161,119 @@ class MealComponentService
     }
 
     /**
+     * Delete a meal component.
+     *
+     * F-120: Meal Component Delete
+     * BR-298: Cannot delete the last component of a live meal
+     * BR-299: Cannot delete a component if pending orders include it
+     * BR-300: Hard delete (order line items store snapshot data)
+     * BR-304: Remaining components' positions are recalculated after deletion
+     * BR-305: Requirement rules referencing the deleted component are also removed
+     *
+     * @return array{success: bool, error?: string, entity_name?: string}
+     */
+    public function deleteComponent(MealComponent $component): array
+    {
+        $meal = $component->meal;
+
+        // BR-298: Cannot delete the last component of a live meal
+        $componentCount = $meal->components()->count();
+        if ($componentCount <= 1 && $meal->isLive()) {
+            return [
+                'success' => false,
+                'error' => __('Cannot delete the only component of a live meal. Add another component first, or switch the meal to draft.'),
+            ];
+        }
+
+        // BR-299: Cannot delete a component if pending orders include it
+        $pendingOrderCount = $this->getPendingOrderCountForComponent($component);
+        if ($pendingOrderCount > 0) {
+            return [
+                'success' => false,
+                'error' => trans_choice(
+                    'Cannot delete — :count pending order includes this component.|Cannot delete — :count pending orders include this component.',
+                    $pendingOrderCount,
+                    ['count' => $pendingOrderCount]
+                ),
+            ];
+        }
+
+        $entityName = $component->name;
+        $position = $component->position;
+        $mealId = $component->meal_id;
+
+        // BR-305: Remove requirement rules referencing the deleted component
+        $this->cleanupRequirementRules($component);
+
+        // BR-300: Hard delete
+        $component->delete();
+
+        // BR-304: Recalculate positions for remaining components
+        $this->recalculatePositions($mealId, $position);
+
+        return [
+            'success' => true,
+            'entity_name' => $entityName,
+        ];
+    }
+
+    /**
+     * Get the count of pending orders that include a specific component.
+     *
+     * Forward-compatible: Uses Schema::hasTable for orders table (created by F-151+).
+     */
+    public function getPendingOrderCountForComponent(MealComponent $component): int
+    {
+        // Forward-compatible: orders table created by future features
+        if (! Schema::hasTable('orders')) {
+            return 0;
+        }
+
+        // Forward-compatible: order_items table with component references
+        if (! Schema::hasTable('order_items')) {
+            return 0;
+        }
+
+        // When orders exist, check for pending orders that include this component
+        return \Illuminate\Support\Facades\DB::table('order_items')
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->where('order_items.meal_component_id', $component->id)
+            ->whereIn('orders.status', ['pending_payment', 'paid', 'confirmed', 'preparing', 'ready'])
+            ->count();
+    }
+
+    /**
+     * Clean up requirement rules referencing the deleted component.
+     *
+     * F-120/BR-305: Forward-compatible with F-122 (Meal Component Requirement Rules).
+     */
+    private function cleanupRequirementRules(MealComponent $component): void
+    {
+        // Forward-compatible: component_requirement_rules table created by F-122
+        if (! Schema::hasTable('component_requirement_rules')) {
+            return;
+        }
+
+        // Remove rules where this component is the subject or the required reference
+        \Illuminate\Support\Facades\DB::table('component_requirement_rules')
+            ->where('meal_component_id', $component->id)
+            ->orWhere('required_component_id', $component->id)
+            ->delete();
+    }
+
+    /**
+     * Recalculate positions for remaining components after a deletion.
+     *
+     * BR-304: Ensures contiguous position ordering.
+     */
+    private function recalculatePositions(int $mealId, int $deletedPosition): void
+    {
+        MealComponent::where('meal_id', $mealId)
+            ->where('position', '>', $deletedPosition)
+            ->decrement('position');
+    }
+
+    /**
      * Get available selling units (standard + custom from F-121).
      *
      * @return array<string>
@@ -227,5 +340,38 @@ class MealComponentService
             'components' => $components,
             'count' => $components->count(),
         ];
+    }
+
+    /**
+     * Check if a component can be deleted and return the reason if not.
+     *
+     * F-120: Used by the view to disable the delete button with a tooltip.
+     *
+     * @return array{can_delete: bool, reason?: string}
+     */
+    public function canDeleteComponent(MealComponent $component, Meal $meal, int $componentCount): array
+    {
+        // BR-298: Cannot delete the last component of a live meal
+        if ($componentCount <= 1 && $meal->isLive()) {
+            return [
+                'can_delete' => false,
+                'reason' => __('Cannot delete the only component of a live meal.'),
+            ];
+        }
+
+        // BR-299: Cannot delete a component if pending orders include it
+        $pendingOrderCount = $this->getPendingOrderCountForComponent($component);
+        if ($pendingOrderCount > 0) {
+            return [
+                'can_delete' => false,
+                'reason' => trans_choice(
+                    ':count pending order includes this component.|:count pending orders include this component.',
+                    $pendingOrderCount,
+                    ['count' => $pendingOrderCount]
+                ),
+            ];
+        }
+
+        return ['can_delete' => true];
     }
 }

@@ -464,6 +464,8 @@ Route::middleware('tenant.domain')->group(function () {
         Route::post('/meals/{meal}/components', [MealComponentController::class, 'store'])->name('cook.meals.components.store');
         // F-119: Meal Component Edit
         Route::put('/meals/{meal}/components/{component}', [MealComponentController::class, 'update'])->name('cook.meals.components.update');
+        // F-120: Meal Component Delete
+        Route::delete('/meals/{meal}/components/{component}', [MealComponentController::class, 'destroy'])->name('cook.meals.components.destroy');
 
         // Tag management (F-115: Cook Tag Management)
         // BR-257: Only users with can-manage-meals permission (enforced in controller)
