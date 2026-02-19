@@ -7,12 +7,14 @@ use App\Models\DeliveryArea;
 use App\Models\DeliveryAreaQuarter;
 use App\Models\Meal;
 use App\Models\MealComponent;
+use App\Models\PaymentMethod;
 use App\Models\PickupLocation;
 use App\Models\Quarter;
 use App\Models\QuarterGroup;
 use App\Models\Tenant;
 use App\Models\Town;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * F-140: Delivery/Pickup Choice Selection
@@ -53,7 +55,7 @@ class CheckoutService
     /**
      * Get checkout session data for a tenant.
      *
-     * @return array{delivery_method: string|null, delivery_location: array|null, delivery_fee: int|null, pickup_location_id: int|null, phone: string|null}
+     * @return array{delivery_method: string|null, delivery_location: array|null, delivery_fee: int|null, pickup_location_id: int|null, phone: string|null, payment_provider: string|null, payment_phone: string|null}
      */
     public function getCheckoutData(int $tenantId): array
     {
@@ -63,6 +65,8 @@ class CheckoutService
             'delivery_fee' => null,
             'pickup_location_id' => null,
             'phone' => null,
+            'payment_provider' => null,
+            'payment_phone' => null,
         ]);
     }
 
@@ -734,6 +738,231 @@ class CheckoutService
         return PickupLocation::query()
             ->where('tenant_id', $tenantId)
             ->exists();
+    }
+
+    /**
+     * F-149: Save the selected payment method to checkout session.
+     *
+     * BR-345: Available payment methods: MTN Mobile Money, Orange Money, Wallet Balance.
+     * BR-352: Pay Now triggers F-150 (Flutterwave) for mobile money or F-153 for wallet.
+     */
+    public function setPaymentMethod(int $tenantId, string $provider, ?string $phone = null): void
+    {
+        $data = $this->getCheckoutData($tenantId);
+        $data['payment_provider'] = $provider;
+        $data['payment_phone'] = $phone;
+
+        session([$this->getSessionKey($tenantId) => $data]);
+    }
+
+    /**
+     * F-149: Get the saved payment provider from checkout session.
+     */
+    public function getPaymentProvider(int $tenantId): ?string
+    {
+        $data = $this->getCheckoutData($tenantId);
+
+        return $data['payment_provider'] ?? null;
+    }
+
+    /**
+     * F-149: Get the saved payment phone from checkout session.
+     */
+    public function getPaymentPhone(int $tenantId): ?string
+    {
+        $data = $this->getCheckoutData($tenantId);
+
+        return $data['payment_phone'] ?? null;
+    }
+
+    /**
+     * F-149: Get available payment options for the payment step.
+     *
+     * BR-345: MTN Mobile Money and Orange Money are always available.
+     * BR-346: Wallet Balance is available if admin has enabled it AND balance >= order total.
+     * BR-347: If wallet balance < order total, wallet is visible but disabled.
+     * BR-349: Previously used payment methods are offered as saved options.
+     *
+     * @return array{providers: array, wallet: array, saved_methods: Collection}
+     */
+    public function getPaymentOptions(int $tenantId, int $userId, int $orderTotal): array
+    {
+        // BR-345: Mobile money providers are always available
+        $providers = [
+            [
+                'id' => PaymentMethod::PROVIDER_MTN_MOMO,
+                'label' => 'MTN Mobile Money',
+                'short_label' => 'MTN MoMo',
+                'color' => '#ffcc00',
+                'text_color' => '#000000',
+            ],
+            [
+                'id' => PaymentMethod::PROVIDER_ORANGE_MONEY,
+                'label' => 'Orange Money',
+                'short_label' => 'Orange Money',
+                'color' => '#ff6600',
+                'text_color' => '#ffffff',
+            ],
+        ];
+
+        // BR-346/BR-347: Wallet Balance (forward-compatible with F-166)
+        $wallet = $this->getWalletOption($userId, $orderTotal);
+
+        // BR-349: Get saved payment methods for this user
+        $savedMethods = PaymentMethod::query()
+            ->where('user_id', $userId)
+            ->orderByDesc('is_default')
+            ->orderBy('label')
+            ->get();
+
+        return [
+            'providers' => $providers,
+            'wallet' => $wallet,
+            'saved_methods' => $savedMethods,
+        ];
+    }
+
+    /**
+     * F-149: Build wallet payment option data.
+     *
+     * BR-346: Wallet Balance only available if admin enabled AND balance >= total.
+     * BR-347: If balance < total, visible but disabled with balance shown.
+     *
+     * Forward-compatible: Wallet model (F-166) may not exist yet.
+     *
+     * @return array{enabled: bool, visible: bool, balance: int, sufficient: bool}
+     */
+    private function getWalletOption(int $userId, int $orderTotal): array
+    {
+        $platformSettingService = app(PlatformSettingService::class);
+        $walletEnabled = $platformSettingService->isWalletEnabled();
+
+        // If admin has disabled wallet payments, hide the option entirely
+        if (! $walletEnabled) {
+            return [
+                'enabled' => false,
+                'visible' => false,
+                'balance' => 0,
+                'sufficient' => false,
+            ];
+        }
+
+        // F-166: Forward-compatible wallet balance check
+        $balance = 0;
+        if (Schema::hasTable('wallets')) {
+            $balance = (int) \DB::table('wallets')
+                ->where('user_id', $userId)
+                ->value('balance') ?? 0;
+        }
+
+        $sufficient = $balance >= $orderTotal;
+
+        return [
+            'enabled' => $sufficient,
+            'visible' => true,
+            'balance' => $balance,
+            'sufficient' => $sufficient,
+        ];
+    }
+
+    /**
+     * F-149: Get the pre-filled phone for the payment step.
+     *
+     * BR-348: Mobile money options require a phone number, pre-filled from profile or saved methods.
+     * Priority: checkout session payment phone > user's profile phone.
+     */
+    public function getPaymentPrefillPhone(int $tenantId, ?string $userPhone, ?string $provider = null, ?Collection $savedMethods = null): string
+    {
+        // First priority: already saved payment phone in session
+        $sessionPhone = $this->getPaymentPhone($tenantId);
+        if ($sessionPhone) {
+            return $sessionPhone;
+        }
+
+        // Second priority: default saved method for the selected provider
+        if ($provider && $savedMethods && $savedMethods->isNotEmpty()) {
+            $defaultMethod = $savedMethods
+                ->where('provider', $provider)
+                ->sortByDesc('is_default')
+                ->first();
+
+            if ($defaultMethod) {
+                return $defaultMethod->phone;
+            }
+        }
+
+        // Third priority: user's profile phone
+        return $userPhone ?? '';
+    }
+
+    /**
+     * F-149: Get the back URL for the payment step.
+     *
+     * Payment step comes after order summary (F-146).
+     */
+    public function getPaymentBackUrl(): string
+    {
+        return url('/checkout/summary');
+    }
+
+    /**
+     * F-149: Validate the payment method selection.
+     *
+     * BR-345: Provider must be mtn_momo, orange_money, or wallet.
+     * BR-346: Wallet requires admin enablement and sufficient balance.
+     * BR-351: Phone must match Cameroon format for mobile money.
+     *
+     * @return array{valid: bool, error: string|null}
+     */
+    public function validatePaymentSelection(string $provider, ?string $phone, int $userId, int $orderTotal): array
+    {
+        $validProviders = [PaymentMethod::PROVIDER_MTN_MOMO, PaymentMethod::PROVIDER_ORANGE_MONEY, 'wallet'];
+
+        if (! in_array($provider, $validProviders)) {
+            return [
+                'valid' => false,
+                'error' => __('Invalid payment method selected.'),
+            ];
+        }
+
+        // Wallet validation
+        if ($provider === 'wallet') {
+            $walletOption = $this->getWalletOption($userId, $orderTotal);
+
+            if (! $walletOption['visible']) {
+                return [
+                    'valid' => false,
+                    'error' => __('Wallet payments are not available.'),
+                ];
+            }
+
+            if (! $walletOption['sufficient']) {
+                return [
+                    'valid' => false,
+                    'error' => __('Insufficient wallet balance.'),
+                ];
+            }
+
+            return ['valid' => true, 'error' => null];
+        }
+
+        // Mobile money: phone is required
+        if (! $phone || trim($phone) === '') {
+            return [
+                'valid' => false,
+                'error' => __('Please enter your mobile money phone number.'),
+            ];
+        }
+
+        // BR-351: Validate Cameroon phone format
+        if (! PaymentMethod::isValidCameroonPhone($phone)) {
+            return [
+                'valid' => false,
+                'error' => __('Please enter a valid Cameroon phone number (+237 followed by 9 digits).'),
+            ];
+        }
+
+        return ['valid' => true, 'error' => null];
     }
 
     /**

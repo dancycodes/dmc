@@ -586,4 +586,13 @@ Route::middleware('tenant.domain')->group(function () {
     // BR-325: Proceed to Payment leads to F-149
     Route::get('/checkout/summary', [\App\Http\Controllers\Tenant\CheckoutController::class, 'summary'])
         ->name('tenant.checkout.summary');
+
+    // F-149: Payment Method Selection
+    // BR-345: MTN MoMo, Orange Money, Wallet Balance
+    // BR-350: Total displayed prominently
+    // BR-352: Pay Now triggers F-150 (Flutterwave) or F-153 (wallet)
+    Route::get('/checkout/payment', [\App\Http\Controllers\Tenant\CheckoutController::class, 'paymentMethod'])
+        ->name('tenant.checkout.payment');
+    Route::post('/checkout/payment', [\App\Http\Controllers\Tenant\CheckoutController::class, 'savePaymentMethod'])
+        ->name('tenant.checkout.save-payment');
 });

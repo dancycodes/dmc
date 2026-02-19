@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Models\PaymentMethod;
 use App\Models\Quarter;
 use App\Services\CartService;
 use App\Services\CheckoutService;
@@ -16,12 +17,14 @@ use Illuminate\Http\Request;
  * F-143: Order Phone Number
  * F-146: Order Total Calculation & Summary
  * F-147: Location Not Available Flow
+ * F-149: Payment Method Selection
  *
  * Handles checkout flow on tenant domains via Gale SSE.
  * BR-264: Client must choose delivery or pickup to proceed.
  * BR-272: Requires authentication.
- * BR-273/BR-282/BR-290/BR-297/BR-326: All text localized via __().
+ * BR-273/BR-282/BR-290/BR-297/BR-326/BR-353: All text localized via __().
  * BR-327-BR-334: Location not available messaging and contact options.
+ * BR-345-BR-352: Payment method selection rules.
  */
 class CheckoutController extends Controller
 {
@@ -685,5 +688,175 @@ class CheckoutController extends Controller
             'phone' => $phone,
             'backUrl' => $backUrl,
         ], web: true);
+    }
+
+    /**
+     * F-149: Display the payment method selection step.
+     *
+     * BR-345: Available payment methods: MTN Mobile Money, Orange Money, Wallet Balance.
+     * BR-346: Wallet Balance only if admin enabled AND balance >= total.
+     * BR-347: Wallet visible but disabled if balance < total.
+     * BR-348: Mobile money requires phone number, pre-filled from profile or saved methods.
+     * BR-349: Previously used payment methods offered as saved options.
+     * BR-350: Total to pay displayed prominently.
+     * BR-353: All text localized via __().
+     */
+    public function paymentMethod(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        // Require authentication
+        if (! auth()->check()) {
+            return gale()->redirect(route('login'))
+                ->with('message', __('Please login to proceed with your order.'));
+        }
+
+        // Verify cart is not empty
+        $cart = $this->cartService->getCartWithAvailability($tenant->id);
+        if (empty($cart['items'])) {
+            return gale()->redirect(url('/cart'))
+                ->with('message', __('Your cart is empty.'));
+        }
+
+        // Verify checkout steps are complete
+        $deliveryMethod = $this->checkoutService->getDeliveryMethod($tenant->id);
+        if (! $deliveryMethod) {
+            return gale()->redirect(url('/checkout/delivery-method'))
+                ->with('message', __('Please select a delivery method first.'));
+        }
+
+        $phone = $this->checkoutService->getPhone($tenant->id);
+        if (! $phone) {
+            return gale()->redirect(url('/checkout/phone'))
+                ->with('message', __('Please provide your phone number first.'));
+        }
+
+        // Build order summary for grand total
+        $orderSummary = $this->checkoutService->getOrderSummary($tenant->id, $cart);
+        $grandTotal = $orderSummary['grand_total'];
+
+        // BR-345-BR-349: Get payment options
+        $user = auth()->user();
+        $paymentOptions = $this->checkoutService->getPaymentOptions(
+            $tenant->id,
+            $user->id,
+            $grandTotal
+        );
+
+        // Get current payment selection from session
+        $currentProvider = $this->checkoutService->getPaymentProvider($tenant->id);
+        $currentPaymentPhone = $this->checkoutService->getPaymentPhone($tenant->id);
+
+        // BR-348: Pre-fill phone for mobile money
+        $prefillPhone = $this->checkoutService->getPaymentPrefillPhone(
+            $tenant->id,
+            $user->phone,
+            $currentProvider,
+            $paymentOptions['saved_methods']
+        );
+
+        // Strip +237 prefix for input field
+        $phoneDigits = $prefillPhone;
+        if (str_starts_with($phoneDigits, '+237')) {
+            $phoneDigits = substr($phoneDigits, 4);
+        }
+
+        $backUrl = $this->checkoutService->getPaymentBackUrl();
+
+        return gale()->view('tenant.checkout.payment', [
+            'tenant' => $tenant,
+            'grandTotal' => $grandTotal,
+            'paymentOptions' => $paymentOptions,
+            'currentProvider' => $currentProvider,
+            'phoneDigits' => $phoneDigits,
+            'backUrl' => $backUrl,
+        ], web: true);
+    }
+
+    /**
+     * F-149: Save payment method selection.
+     *
+     * BR-352: Pay Now triggers F-150 (Flutterwave) for mobile money or F-153 for wallet.
+     * BR-351: Phone number for mobile money must match Cameroon format.
+     */
+    public function savePaymentMethod(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        if (! auth()->check()) {
+            return gale()->redirect(route('login'))
+                ->with('message', __('Please login to proceed with your order.'));
+        }
+
+        // Verify cart is not empty
+        $cart = $this->cartService->getCartWithAvailability($tenant->id);
+        if (empty($cart['items'])) {
+            return gale()->redirect(url('/cart'))
+                ->with('message', __('Your cart is empty.'));
+        }
+
+        // Verify checkout steps are complete
+        $deliveryMethod = $this->checkoutService->getDeliveryMethod($tenant->id);
+        if (! $deliveryMethod) {
+            return gale()->redirect(url('/checkout/delivery-method'))
+                ->with('message', __('Please select a delivery method first.'));
+        }
+
+        // Validate provider selection
+        $validated = $request->validateState([
+            'provider' => 'required|string|in:mtn_momo,orange_money,wallet',
+            'payment_phone_digits' => 'nullable|string',
+        ]);
+
+        $provider = $validated['provider'];
+        $paymentPhone = null;
+
+        // For mobile money, normalize the phone number
+        if ($provider !== 'wallet') {
+            $rawPhone = $validated['payment_phone_digits'] ?? '';
+            $paymentPhone = PaymentMethod::normalizePhone($rawPhone);
+        }
+
+        // Build order summary for total
+        $orderSummary = $this->checkoutService->getOrderSummary($tenant->id, $cart);
+        $grandTotal = $orderSummary['grand_total'];
+
+        // Validate payment selection
+        $validation = $this->checkoutService->validatePaymentSelection(
+            $provider,
+            $paymentPhone,
+            auth()->id(),
+            $grandTotal
+        );
+
+        if (! $validation['valid']) {
+            return gale()->messages([
+                'payment_phone_digits' => $validation['error'],
+            ]);
+        }
+
+        // Save to checkout session
+        $this->checkoutService->setPaymentMethod($tenant->id, $provider, $paymentPhone);
+
+        // BR-352: Redirect to payment initiation
+        // F-150 (Flutterwave) for mobile money, F-153 for wallet
+        // Forward-compatible: these routes will be created by F-150/F-153
+        if ($provider === 'wallet') {
+            // F-153: Wallet Balance Payment (forward-compatible stub)
+            return gale()->redirect(url('/checkout/payment/wallet'))
+                ->with('message', __('Processing wallet payment...'));
+        }
+
+        // F-150: Flutterwave Payment Initiation (forward-compatible stub)
+        return gale()->redirect(url('/checkout/payment/initiate'))
+            ->with('message', __('Initiating payment...'));
     }
 }
