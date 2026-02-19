@@ -1907,5 +1907,21 @@
     "Delivery Areas": "Delivery Areas",
     "Pickup Locations": "Pickup Locations",
     "Decrease quantity": "Decrease quantity",
-    "Increase quantity": "Increase quantity"
+    "Increase quantity": "Increase quantity",
+    "Schedule & Availability": "Schedule & Availability",
+    "Available Now - Orders open until :time": "Available Now - Orders open until :time",
+    "Available Now - Closing soon at :time": "Available Now - Closing soon at :time",
+    "Next available: :day at :time": "Next available: :day at :time",
+    "Currently not accepting orders": "Currently not accepting orders",
+    "Schedule not yet available. Contact the cook for ordering information.": "Schedule not yet available. Contact the cook for ordering information.",
+    "Hours TBD": "Hours TBD",
+    ":count slot|:count slots": ":count slot|:count slots",
+    "All times shown in Africa/Douala timezone (WAT)": "All times shown in Africa/Douala timezone (WAT)",
+    "Mon": "Mon",
+    "Tue": "Tue",
+    "Wed": "Wed",
+    "Thu": "Thu",
+    "Fri": "Fri",
+    "Sat": "Sat",
+    "Sun": "Sun"
 }

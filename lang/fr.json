@@ -1907,5 +1907,21 @@
     "Delivery Areas": "Zones de livraison",
     "Pickup Locations": "Points de retrait",
     "Decrease quantity": "Diminuer la quantite",
-    "Increase quantity": "Augmenter la quantite"
+    "Increase quantity": "Augmenter la quantite",
+    "Schedule & Availability": "Horaires et disponibilite",
+    "Available Now - Orders open until :time": "Disponible maintenant - Commandes ouvertes jusqu'a :time",
+    "Available Now - Closing soon at :time": "Disponible maintenant - Fermeture imminente a :time",
+    "Next available: :day at :time": "Prochaine disponibilite : :day a :time",
+    "Currently not accepting orders": "N'accepte pas de commandes actuellement",
+    "Schedule not yet available. Contact the cook for ordering information.": "Horaires pas encore disponibles. Contactez le cuisinier pour plus d'informations.",
+    "Hours TBD": "Horaires a confirmer",
+    ":count slot|:count slots": ":count creneau|:count creneaux",
+    "All times shown in Africa/Douala timezone (WAT)": "Tous les horaires sont en fuseau horaire Africa/Douala (WAT)",
+    "Mon": "Lun",
+    "Tue": "Mar",
+    "Wed": "Mer",
+    "Thu": "Jeu",
+    "Fri": "Ven",
+    "Sat": "Sam",
+    "Sun": "Dim"
 }

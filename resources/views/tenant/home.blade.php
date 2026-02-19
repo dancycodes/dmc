@@ -289,41 +289,26 @@
     {{-- Hidden until F-131 populates with data --}}
 
     {{-- ============================================ --}}
-    {{-- SCHEDULE SECTION (F-132 will populate)       --}}
+    {{-- SCHEDULE SECTION — F-132: Schedule &         --}}
+    {{-- Availability Display                         --}}
+    {{-- BR-186: All 7 days with availability status  --}}
+    {{-- BR-188: Current day highlighted              --}}
+    {{-- BR-189: "Available Now" badge                --}}
+    {{-- BR-190: "Next available" badge               --}}
+    {{-- BR-193: Times in Africa/Douala timezone      --}}
     {{-- ============================================ --}}
     <section id="schedule" class="scroll-mt-16 py-12 sm:py-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-8 sm:mb-12">
                 <h2 class="text-2xl sm:text-3xl font-display font-bold text-on-surface-strong">
-                    {{ __('Schedule') }}
+                    {{ __('Schedule & Availability') }}
                 </h2>
                 <p class="mt-2 text-on-surface max-w-2xl mx-auto">
                     {{ __('Our operating hours and availability.') }}
                 </p>
             </div>
 
-            @if($sections['schedule']['hasData'])
-                {{-- Schedule placeholder — F-132 will replace with actual schedule display --}}
-                <div class="max-w-2xl mx-auto">
-                    <div class="bg-surface-alt dark:bg-surface-alt rounded-lg border border-outline dark:border-outline p-6 animate-pulse">
-                        <div class="space-y-4">
-                            @for($i = 0; $i < 5; $i++)
-                                <div class="flex justify-between items-center">
-                                    <div class="h-4 bg-outline/20 dark:bg-outline/20 rounded w-24"></div>
-                                    <div class="h-4 bg-outline/20 dark:bg-outline/20 rounded w-32"></div>
-                                </div>
-                            @endfor
-                        </div>
-                    </div>
-                </div>
-            @else
-                <div class="text-center py-8">
-                    <div class="w-16 h-16 rounded-full bg-surface-alt dark:bg-surface-alt flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-8 h-8 text-on-surface opacity-40" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>
-                    </div>
-                    <p class="text-on-surface opacity-60">{{ __('Schedule information coming soon.') }}</p>
-                </div>
-            @endif
+            @include('tenant._schedule-section', ['scheduleDisplay' => $scheduleDisplay])
         </div>
     </section>
 

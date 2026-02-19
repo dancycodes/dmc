@@ -308,7 +308,7 @@ describe('Tenant Home View', function () use ($projectRoot) {
     });
 
     it('has Schedule section heading', function () use ($homeContent) {
-        expect($homeContent)->toContain("__('Schedule')");
+        expect($homeContent)->toContain("__('Schedule & Availability')");
     });
 
     it('has Delivery Areas section heading', function () use ($homeContent) {
@@ -320,9 +320,12 @@ describe('Tenant Home View', function () use ($projectRoot) {
         expect($homeContent)->toContain("@include('tenant._meals-grid'");
         $mealsGridContent = file_get_contents(resource_path('views/tenant/_meals-grid.blade.php'));
         expect($mealsGridContent)->toContain("__('No meals available right now.')");
-        // About, schedule, delivery empty states remain in home.blade.php
+        // About, delivery empty states remain in home.blade.php
         expect($homeContent)->toContain("__('More details coming soon.')");
-        expect($homeContent)->toContain("__('Schedule information coming soon.')");
+        // F-132: Schedule empty state is now in the _schedule-section partial
+        expect($homeContent)->toContain("@include('tenant._schedule-section'");
+        $scheduleContent = file_get_contents(resource_path('views/tenant/_schedule-section.blade.php'));
+        expect($scheduleContent)->toContain("__('Schedule not yet available. Contact the cook for ordering information.')");
         expect($homeContent)->toContain("__('Delivery information coming soon.')");
     });
 
