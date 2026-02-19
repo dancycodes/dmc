@@ -171,8 +171,13 @@
                 {{-- Expandable content --}}
                 @if($dayData['isAvailable'])
                     <div x-show="expandedDay === '{{ $dayData['day'] }}'"
-                         x-collapse
-                         class="px-4 pb-4">
+                         x-transition:enter="transition-all ease-out duration-200"
+                         x-transition:enter-start="opacity-0 max-h-0"
+                         x-transition:enter-end="opacity-100 max-h-96"
+                         x-transition:leave="transition-all ease-in duration-150"
+                         x-transition:leave-start="opacity-100 max-h-96"
+                         x-transition:leave-end="opacity-0 max-h-0"
+                         class="px-4 pb-4 overflow-hidden">
                         <div class="space-y-3 pt-2">
                             @foreach($dayData['slots'] as $slot)
                                 @if(count($dayData['slots']) > 1)
