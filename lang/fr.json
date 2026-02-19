@@ -1866,5 +1866,15 @@
     "WhatsApp": "WhatsApp",
     "New Cook": "Nouveau Chef",
     ":count review|:count reviews": ":count avis|:count avis",
-    "Order Now": "Commander"
+    "Order Now": "Commander",
+    "from": "a partir de",
+    "min": "min",
+    "Price TBD": "Prix a determiner",
+    "Load More Meals": "Voir plus de repas",
+    "No meals available right now.": "Aucun repas disponible pour le moment.",
+    "Check back soon!": "Revenez bientot !",
+    "View our schedule": "Voir notre horaire",
+    "available": "disponible(s)",
+    "Back to meals": "Retour aux repas",
+    "Full meal details coming soon.": "Details complets du repas a venir."
 }

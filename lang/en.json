@@ -1866,5 +1866,15 @@
     "WhatsApp": "WhatsApp",
     "New Cook": "New Cook",
     ":count review|:count reviews": ":count review|:count reviews",
-    "Order Now": "Order Now"
+    "Order Now": "Order Now",
+    "from": "from",
+    "min": "min",
+    "Price TBD": "Price TBD",
+    "Load More Meals": "Load More Meals",
+    "No meals available right now.": "No meals available right now.",
+    "Check back soon!": "Check back soon!",
+    "View our schedule": "View our schedule",
+    "available": "available",
+    "Back to meals": "Back to meals",
+    "Full meal details coming soon.": "Full meal details coming soon."
 }

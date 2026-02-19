@@ -39,12 +39,14 @@ describe('TenantLandingService', function () {
         expect(method_exists(TenantLandingService::class, 'getLandingPageData'))->toBeTrue();
     });
 
-    it('getLandingPageData accepts a Tenant parameter', function () {
+    it('getLandingPageData accepts a Tenant parameter and optional page', function () {
         $reflection = new ReflectionMethod(TenantLandingService::class, 'getLandingPageData');
         $params = $reflection->getParameters();
-        expect($params)->toHaveCount(1);
+        expect($params)->toHaveCount(2);
         expect($params[0]->getName())->toBe('tenant');
         expect($params[0]->getType()->getName())->toBe(Tenant::class);
+        expect($params[1]->getName())->toBe('page');
+        expect($params[1]->isOptional())->toBeTrue();
     });
 
     it('has constructor with TenantThemeService dependency', function () {
@@ -314,7 +316,11 @@ describe('Tenant Home View', function () use ($projectRoot) {
     });
 
     it('shows empty states for sections without data', function () use ($homeContent) {
-        expect($homeContent)->toContain("__('No meals available yet. Check back soon!')");
+        // Meals empty state is now in the included _meals-grid partial (F-128)
+        expect($homeContent)->toContain("@include('tenant._meals-grid'");
+        $mealsGridContent = file_get_contents(resource_path('views/tenant/_meals-grid.blade.php'));
+        expect($mealsGridContent)->toContain("__('No meals available right now.')");
+        // About, schedule, delivery empty states remain in home.blade.php
         expect($homeContent)->toContain("__('More details coming soon.')");
         expect($homeContent)->toContain("__('Schedule information coming soon.')");
         expect($homeContent)->toContain("__('Delivery information coming soon.')");
@@ -364,8 +370,11 @@ describe('Tenant Home View', function () use ($projectRoot) {
         expect($homeContent)->toContain('text-on-primary');
     });
 
-    it('uses responsive grid for meals', function () use ($homeContent) {
-        expect($homeContent)->toContain('grid-cols-1 sm:grid-cols-2 lg:grid-cols-3');
+    it('uses responsive grid for meals via included partial', function () use ($homeContent) {
+        // F-128: Grid is now in the included _meals-grid partial
+        expect($homeContent)->toContain("@include('tenant._meals-grid'");
+        $mealsGridContent = file_get_contents(resource_path('views/tenant/_meals-grid.blade.php'));
+        expect($mealsGridContent)->toContain('grid-cols-1 sm:grid-cols-2 lg:grid-cols-3');
     });
 });
 

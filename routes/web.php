@@ -497,5 +497,19 @@ Route::middleware('tenant.domain')->group(function () {
         Route::delete('/selling-units/{unit}', [SellingUnitController::class, 'destroy'])->name('cook.selling-units.destroy');
     });
 
-    // Tenant-specific routes will be added by later features (F-126, etc.)
+    // F-128: Meal detail route (public, on tenant domain)
+    // BR-153: Clicking a meal card navigates to this route via Gale
+    // F-129 will implement the full meal detail view
+    Route::get('/meals/{meal}', function (\Illuminate\Http\Request $request, \App\Models\Meal $meal) {
+        $tenant = tenant();
+        if (! $tenant || $meal->tenant_id !== $tenant->id) {
+            abort(404);
+        }
+
+        // Forward-compatible placeholder for F-129
+        return gale()->view('tenant.meal-detail-placeholder', [
+            'tenant' => $tenant,
+            'meal' => $meal,
+        ], web: true);
+    })->name('tenant.meal.show');
 });
