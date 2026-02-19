@@ -553,4 +553,14 @@ Route::middleware('tenant.domain')->group(function () {
         ->name('tenant.checkout.save-delivery-location');
     Route::post('/checkout/load-quarters', [\App\Http\Controllers\Tenant\CheckoutController::class, 'loadQuarters'])
         ->name('tenant.checkout.load-quarters');
+
+    // F-142: Pickup Location Selection
+    // BR-284: All pickup locations displayed
+    // BR-286: Client must select exactly one
+    // BR-287: Auto-select if only one location
+    // BR-288: Pickup is always free
+    Route::get('/checkout/pickup-location', [\App\Http\Controllers\Tenant\CheckoutController::class, 'pickupLocation'])
+        ->name('tenant.checkout.pickup-location');
+    Route::post('/checkout/pickup-location', [\App\Http\Controllers\Tenant\CheckoutController::class, 'savePickupLocation'])
+        ->name('tenant.checkout.save-pickup-location');
 });

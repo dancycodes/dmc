@@ -2050,5 +2050,14 @@
     "Please select a delivery method first.": "Please select a delivery method first.",
     "The selected quarter is not in the delivery area.": "The selected quarter is not in the delivery area.",
     "The selected quarter does not belong to the selected town.": "The selected quarter does not belong to the selected town.",
-    "Delivery:": "Delivery:"
+    "Delivery:": "Delivery:",
+    "Pickup Location": "Pickup Location",
+    "Where will you pick up your order?": "Where will you pick up your order?",
+    "Pickup at the location below. Confirm and proceed.": "Pickup at the location below. Confirm and proceed.",
+    "Select a pickup location from the options below.": "Select a pickup location from the options below.",
+    "Please select a pickup location.": "Please select a pickup location.",
+    "Pickup Fee": "Pickup Fee",
+    "Pickup location saved.": "Pickup location saved.",
+    "The selected pickup location is no longer available.": "The selected pickup location is no longer available.",
+    "No pickup locations available. Please choose a different delivery method.": "No pickup locations available. Please choose a different delivery method."
 }

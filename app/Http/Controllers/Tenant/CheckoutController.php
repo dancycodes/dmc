@@ -11,11 +11,12 @@ use Illuminate\Http\Request;
 /**
  * F-140: Delivery/Pickup Choice Selection
  * F-141: Delivery Location Selection
+ * F-142: Pickup Location Selection
  *
  * Handles checkout flow on tenant domains via Gale SSE.
  * BR-264: Client must choose delivery or pickup to proceed.
  * BR-272: Requires authentication.
- * BR-273/BR-282: All text localized via __().
+ * BR-273/BR-282/BR-290: All text localized via __().
  */
 class CheckoutController extends Controller
 {
@@ -336,5 +337,132 @@ class CheckoutController extends Controller
         // F-143 will provide the next checkout step (Order Phone Number)
         return gale()->redirect(url('/checkout/phone'))
             ->with('message', __('Delivery location saved.'));
+    }
+
+    /**
+     * F-142: Display the pickup location selection step.
+     *
+     * BR-284: All configured pickup locations for the cook are displayed.
+     * BR-285: Each pickup location shows name, full address, special instructions.
+     * BR-287: If only one pickup location exists, it is pre-selected automatically.
+     * BR-288: Pickup is always free.
+     * BR-290: All text localized via __().
+     * BR-291: Location names displayed in user's current language.
+     */
+    public function pickupLocation(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        // Require authentication
+        if (! auth()->check()) {
+            return gale()->redirect(route('login'))
+                ->with('message', __('Please login to proceed with your order.'));
+        }
+
+        // Verify cart is not empty
+        $cart = $this->cartService->getCart($tenant->id);
+        if (empty($cart['items'])) {
+            return gale()->redirect(url('/cart'))
+                ->with('message', __('Your cart is empty.'));
+        }
+
+        // Verify pickup method is selected
+        $deliveryMethod = $this->checkoutService->getDeliveryMethod($tenant->id);
+        if ($deliveryMethod !== CheckoutService::METHOD_PICKUP) {
+            return gale()->redirect(url('/checkout/delivery-method'))
+                ->with('message', __('Please select a delivery method first.'));
+        }
+
+        // BR-284: Get all pickup locations for this cook
+        $pickupLocations = $this->checkoutService->getPickupLocations($tenant->id);
+
+        // Edge case: No pickup locations (should not be reachable via F-140)
+        if ($pickupLocations->isEmpty()) {
+            return gale()->redirect(url('/checkout/delivery-method'))
+                ->with('message', __('No pickup locations available. Please choose a different delivery method.'));
+        }
+
+        // Get current selection from session
+        $currentPickupLocationId = $this->checkoutService->getPickupLocationId($tenant->id);
+
+        // BR-287: If only one pickup location, pre-select it automatically
+        if (! $currentPickupLocationId && $pickupLocations->count() === 1) {
+            $currentPickupLocationId = $pickupLocations->first()->id;
+        }
+
+        // Validate that previously stored selection is still valid
+        if ($currentPickupLocationId && ! $pickupLocations->contains('id', $currentPickupLocationId)) {
+            $currentPickupLocationId = $pickupLocations->count() === 1 ? $pickupLocations->first()->id : null;
+        }
+
+        return gale()->view('tenant.checkout.pickup-location', [
+            'tenant' => $tenant,
+            'pickupLocations' => $pickupLocations,
+            'currentPickupLocationId' => $currentPickupLocationId,
+            'cartSummary' => $cart['summary'],
+        ], web: true);
+    }
+
+    /**
+     * F-142: Save pickup location selection and proceed to next step.
+     *
+     * BR-286: Client must select exactly one pickup location.
+     * BR-289: The selected pickup location is stored in the checkout session.
+     */
+    public function savePickupLocation(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        if (! auth()->check()) {
+            return gale()->redirect(route('login'))
+                ->with('message', __('Please login to proceed with your order.'));
+        }
+
+        // Verify cart is not empty
+        $cart = $this->cartService->getCart($tenant->id);
+        if (empty($cart['items'])) {
+            return gale()->redirect(url('/cart'))
+                ->with('message', __('Your cart is empty.'));
+        }
+
+        // Verify pickup method is selected
+        $deliveryMethod = $this->checkoutService->getDeliveryMethod($tenant->id);
+        if ($deliveryMethod !== CheckoutService::METHOD_PICKUP) {
+            return gale()->redirect(url('/checkout/delivery-method'))
+                ->with('message', __('Please select a delivery method first.'));
+        }
+
+        // BR-286: Validate pickup location selection
+        $validated = $request->validateState([
+            'pickup_location_id' => 'required|integer',
+        ]);
+
+        $pickupLocationId = (int) $validated['pickup_location_id'];
+
+        // Validate that the pickup location belongs to this cook
+        $validation = $this->checkoutService->validatePickupLocation(
+            $tenant->id,
+            $pickupLocationId
+        );
+
+        if (! $validation['valid']) {
+            return gale()->redirect(url('/checkout/delivery-method'))
+                ->with('message', $validation['error']);
+        }
+
+        // BR-289: Save selection to session
+        $this->checkoutService->setPickupLocation($tenant->id, $pickupLocationId);
+
+        // F-143 will provide the next checkout step (Order Phone Number)
+        return gale()->redirect(url('/checkout/phone'))
+            ->with('message', __('Pickup location saved.'));
     }
 }
