@@ -97,6 +97,11 @@
             neighbourhood = $event.detail.display_name;
         }
     "
+    x-on:location-input.window="
+        if ($event.detail && $event.detail.value !== undefined) {
+            neighbourhood = $event.detail.value;
+        }
+    "
 >
     {{-- Back navigation --}}
     <div class="bg-surface dark:bg-surface border-b border-outline dark:border-outline">

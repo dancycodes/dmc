@@ -178,11 +178,12 @@
         }
     }"
     x-init="
-        /* Sync with parent x-model if applicable */
+        /* Sync with parent via custom event on every query change */
         $watch('query', value => {
-            if ($el.closest('[x-data]') !== $el) {
-                try { {{ $name }} = value; } catch(e) {}
-            }
+            $dispatch('location-input', {
+                value: value,
+                componentId: componentId
+            });
         });
     "
     @click.outside="onClickOutside()"
