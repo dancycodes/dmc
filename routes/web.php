@@ -464,6 +464,8 @@ Route::middleware('tenant.domain')->group(function () {
         Route::post('/meals/{meal}/tags', [MealTagController::class, 'sync'])->name('cook.meals.tags.sync');
         // F-118: Meal Component Creation
         Route::post('/meals/{meal}/components', [MealComponentController::class, 'store'])->name('cook.meals.components.store');
+        // F-125: Meal Component List View — Reorder
+        Route::post('/meals/{meal}/components/reorder', [MealComponentController::class, 'reorder'])->name('cook.meals.components.reorder');
         // F-119: Meal Component Edit
         Route::put('/meals/{meal}/components/{component}', [MealComponentController::class, 'update'])->name('cook.meals.components.update');
         // F-120: Meal Component Delete

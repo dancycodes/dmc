@@ -4,9 +4,12 @@
     F-118: Meal Component Creation
     F-119: Meal Component Edit
     F-120: Meal Component Delete
+    F-125: Meal Component List View
 
     Displays existing components and provides forms to add, edit, or delete them.
     Components are the sellable items (combos) within a meal.
+    F-125 adds drag-and-drop reordering, enhanced list display with quantity badges,
+    rules indicator icons, and drag handles.
 
     Business Rules:
     BR-278: Name required in both EN and FR
@@ -34,6 +37,13 @@
     BR-303: Only users with manage-meals permission
     BR-304: Remaining positions recalculated
     BR-305: Requirement rules cleaned up
+    BR-348: Component list is scoped to the current meal
+    BR-349: Components are displayed in position order
+    BR-350: Drag-and-drop reordering updates position field
+    BR-351: Component list displays: name, price, unit, availability, quantities, rules indicator
+    BR-352: Quick availability toggle follows F-123 rules
+    BR-353: Only users with manage-meals permission
+    BR-354: Position changes persisted immediately via Gale
 --}}
 <div
     class="bg-surface-alt dark:bg-surface-alt border border-outline dark:border-outline rounded-xl shadow-card p-6"
@@ -56,6 +66,9 @@
         edit_comp_available_quantity: '',
         rule_type: 'requires_any_of',
         rule_target_ids: [],
+        component_order: [{{ implode(',', ($componentData['components'] ?? collect())->pluck('id')->toArray()) }}],
+        draggedIndex: null,
+        dragOverIndex: null,
         @if(($componentData['count'] ?? 0) > 0)
             @foreach($componentData['components'] as $comp)
                 showRuleForm_{{ $comp->id }}: false,
@@ -115,9 +128,35 @@
                 this.confirmDeleteId = null;
                 this.confirmDeleteName = '';
             }
+        },
+        /* F-125: Drag-and-drop reorder methods */
+        handleDragStart(index) {
+            this.draggedIndex = index;
+        },
+        handleDragOver(index) {
+            if (this.draggedIndex === null) return;
+            this.dragOverIndex = index;
+        },
+        handleDragEnd() {
+            if (this.draggedIndex !== null && this.dragOverIndex !== null && this.draggedIndex !== this.dragOverIndex) {
+                /* Move element in array */
+                let order = [...this.component_order];
+                let item = order.splice(this.draggedIndex, 1)[0];
+                order.splice(this.dragOverIndex, 0, item);
+                this.component_order = order;
+                /* Persist via Gale */
+                $action('{{ url('/dashboard/meals/' . $meal->id . '/components/reorder') }}', {
+                    include: ['component_order']
+                });
+            }
+            this.draggedIndex = null;
+            this.dragOverIndex = null;
+        },
+        handleDragLeave() {
+            this.dragOverIndex = null;
         }
     }"
-    x-sync="['comp_name_en', 'comp_name_fr', 'comp_price', 'comp_selling_unit', 'comp_min_quantity', 'comp_max_quantity', 'comp_available_quantity', 'edit_comp_name_en', 'edit_comp_name_fr', 'edit_comp_price', 'edit_comp_selling_unit', 'edit_comp_min_quantity', 'edit_comp_max_quantity', 'edit_comp_available_quantity', 'rule_type', 'rule_target_ids']"
+    x-sync="['comp_name_en', 'comp_name_fr', 'comp_price', 'comp_selling_unit', 'comp_min_quantity', 'comp_max_quantity', 'comp_available_quantity', 'edit_comp_name_en', 'edit_comp_name_fr', 'edit_comp_price', 'edit_comp_selling_unit', 'edit_comp_min_quantity', 'edit_comp_max_quantity', 'edit_comp_available_quantity', 'rule_type', 'rule_target_ids', 'component_order']"
 >
     {{-- Section header --}}
     <div class="flex items-center justify-between mb-5">
@@ -326,19 +365,49 @@
         </form>
     </div>
 
-    {{-- Component List --}}
+    {{-- F-125: Component List with drag-and-drop reordering --}}
     @if(($componentData['count'] ?? 0) > 0)
         <div class="space-y-3">
-            @foreach($componentData['components'] as $component)
-                <div class="rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface transition-colors duration-200">
-                    {{-- Component display row --}}
+            @foreach($componentData['components'] as $index => $component)
+                @php
+                    $rules = isset($componentRulesData[$component->id]) ? ($componentRulesData[$component->id]['rules'] ?? collect()) : collect();
+                    $hasRules = $rules->count() > 0;
+                    $stockStatus = $componentStockStatus[$component->id] ?? ['label' => __('Unlimited'), 'type' => 'unlimited'];
+                    $deleteInfo = $componentDeleteInfo[$component->id] ?? ['can_delete' => true];
+                    $canDelete = $deleteInfo['can_delete'];
+                    $deleteReason = $deleteInfo['reason'] ?? '';
+                @endphp
+                <div
+                    class="rounded-lg border transition-all duration-200"
+                    :class="dragOverIndex === {{ $index }} && draggedIndex !== {{ $index }}
+                        ? 'border-primary bg-primary-subtle/20 shadow-md'
+                        : (draggedIndex === {{ $index }} ? 'border-outline/50 opacity-50' : 'border-outline dark:border-outline bg-surface dark:bg-surface')"
+                    draggable="true"
+                    x-on:dragstart="handleDragStart({{ $index }})"
+                    x-on:dragover.prevent="handleDragOver({{ $index }})"
+                    x-on:dragleave="handleDragLeave()"
+                    x-on:drop.prevent="handleDragEnd()"
+                    x-on:dragend="handleDragEnd()"
+                >
+                    {{-- Component display row with drag handle --}}
                     <div
                         x-show="editingComponentId !== {{ $component->id }}"
-                        class="flex items-center justify-between p-3 hover:bg-surface-alt dark:hover:bg-surface-alt rounded-lg transition-colors duration-200"
+                        class="flex items-start gap-2 p-3"
                     >
+                        {{-- F-125: Drag handle --}}
+                        <div
+                            class="shrink-0 mt-1 cursor-grab active:cursor-grabbing p-1 rounded text-on-surface/30 hover:text-on-surface/60 hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors duration-200"
+                            title="{{ __('Drag to reorder') }}"
+                        >
+                            {{-- Lucide: grip-vertical (sm=16) --}}
+                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+                        </div>
+
+                        {{-- Component info --}}
                         <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2 mb-1">
-                                <h4 class="text-sm font-medium text-on-surface-strong truncate">
+                            {{-- Row 1: Name + badges --}}
+                            <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                <h4 class="text-sm font-medium text-on-surface-strong truncate max-w-[200px] sm:max-w-none">
                                     {{ $component->name }}
                                 </h4>
                                 @if(!$component->is_available)
@@ -346,36 +415,66 @@
                                         {{ __('Sold Out') }}
                                     </span>
                                 @endif
+                                {{-- F-125/BR-351: Rules indicator --}}
+                                @if($hasRules)
+                                    <span class="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-info-subtle text-info flex items-center gap-0.5" title="{{ trans_choice(':count rule|:count rules', $rules->count(), ['count' => $rules->count()]) }}">
+                                        {{-- Lucide: link (xs=14) --}}
+                                        <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                                        {{ $rules->count() }}
+                                    </span>
+                                @endif
                             </div>
-                            <div class="flex flex-wrap items-center gap-3 text-xs text-on-surface/60">
+
+                            {{-- Row 2: Price / Unit / Stock info --}}
+                            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-on-surface/60">
+                                {{-- Price --}}
                                 <span class="font-medium text-on-surface-strong">
                                     {{ $component->formatted_price }}
                                 </span>
+                                {{-- Unit --}}
                                 <span class="flex items-center gap-1">
                                     {{-- Lucide: package (xs=14) --}}
                                     <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
                                     {{ __('per :unit', ['unit' => $component->unit_label]) }}
                                 </span>
-                                {{-- F-124: Stock status badge --}}
-                                @php
-                                    $stockStatus = $componentStockStatus[$component->id] ?? ['label' => __('Unlimited'), 'type' => 'unlimited'];
-                                @endphp
-                                @if($stockStatus['type'] === 'low_stock')
-                                    <span class="flex items-center gap-0.5 text-warning font-medium">
-                                        <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-                                        {{ $stockStatus['label'] }}
+                            </div>
+
+                            {{-- Row 3: Quantity badges (Min | Max | Stock) --}}
+                            <div class="flex flex-wrap items-center gap-2 mt-1.5">
+                                {{-- Min badge --}}
+                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-surface-alt dark:bg-surface-alt text-on-surface/60 border border-outline/30">
+                                    {{ __('Min') }}: {{ $component->min_quantity > 0 ? $component->min_quantity : '0' }}
+                                </span>
+                                {{-- Max badge --}}
+                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-surface-alt dark:bg-surface-alt text-on-surface/60 border border-outline/30">
+                                    {{ __('Max') }}: {{ $component->hasUnlimitedMaxQuantity() ? __('Unlimited') : $component->max_quantity }}
+                                </span>
+                                {{-- Stock badge --}}
+                                @if($stockStatus['type'] === 'out_of_stock')
+                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-danger-subtle text-danger">
+                                        {{ __('Stock') }}: 0
                                     </span>
-                                @elseif($stockStatus['type'] === 'out_of_stock')
-                                    <span class="text-danger font-medium">{{ $stockStatus['label'] }}</span>
+                                @elseif($stockStatus['type'] === 'low_stock')
+                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-warning-subtle text-warning">
+                                        {{-- Lucide: alert-triangle (xs=14) --}}
+                                        <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                                        {{ __('Stock') }}: {{ $component->available_quantity }}
+                                    </span>
                                 @elseif($stockStatus['type'] === 'in_stock')
-                                    <span>{{ $stockStatus['label'] }}</span>
+                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-success-subtle text-success">
+                                        {{ __('Stock') }}: {{ $component->available_quantity }}
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-info-subtle text-info">
+                                        {{ __('Stock') }}: {{ __('Unlimited') }}
+                                    </span>
                                 @endif
                             </div>
                         </div>
 
                         {{-- Action buttons --}}
-                        <div class="flex items-center gap-1 ml-3 shrink-0">
-                            {{-- F-123: Availability Toggle --}}
+                        <div class="flex items-center gap-1 shrink-0">
+                            {{-- F-123/BR-352: Availability Toggle --}}
                             <button
                                 type="button"
                                 @click="$action('{{ url('/dashboard/meals/' . $meal->id . '/components/' . $component->id . '/toggle-availability') }}', { method: 'PATCH' })"
@@ -408,11 +507,6 @@
                             </button>
 
                             {{-- Delete (F-120) --}}
-                            @php
-                                $deleteInfo = $componentDeleteInfo[$component->id] ?? ['can_delete' => true];
-                                $canDelete = $deleteInfo['can_delete'];
-                                $deleteReason = $deleteInfo['reason'] ?? '';
-                            @endphp
                             <button
                                 type="button"
                                 @if($canDelete)
@@ -653,7 +747,16 @@
                 <svg class="w-6 h-6 text-on-surface/30" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
             </div>
             <p class="text-sm text-on-surface/60 mb-1">{{ __('No components yet') }}</p>
-            <p class="text-xs text-on-surface/40">{{ __('Add at least one component before going live.') }}</p>
+            <p class="text-xs text-on-surface/40 mb-3">{{ __('Add your first component to get started.') }}</p>
+            <button
+                type="button"
+                @click="toggleAddForm()"
+                class="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-on-primary hover:bg-primary-hover shadow-sm transition-colors duration-200 inline-flex items-center gap-1.5"
+            >
+                {{-- Lucide: plus (sm=16) --}}
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                {{ __('Add Component') }}
+            </button>
         </div>
     @endif
 
