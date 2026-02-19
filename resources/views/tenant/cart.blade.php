@@ -186,7 +186,7 @@
                                                 {{-- BR-255: Quantity +/- controls --}}
                                                 <div class="inline-flex items-center border border-outline dark:border-outline rounded-lg overflow-hidden">
                                                     <button
-                                                        @click="$root.decrement(item.component_id, item.quantity)"
+                                                        @click="decrement(item.component_id, item.quantity)"
                                                         class="w-8 h-8 flex items-center justify-center text-on-surface hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors duration-200 cursor-pointer"
                                                         :disabled="$fetching()"
                                                         :aria-label="'{{ __('Decrease quantity') }}'"
@@ -195,7 +195,7 @@
                                                     </button>
                                                     <span class="w-10 h-8 flex items-center justify-center text-sm font-semibold text-on-surface-strong bg-surface-alt dark:bg-surface-alt border-x border-outline dark:border-outline" x-text="item.quantity"></span>
                                                     <button
-                                                        @click="$root.increment(item.component_id, item.quantity, item.max_quantity || 50)"
+                                                        @click="increment(item.component_id, item.quantity, item.max_quantity || 50)"
                                                         class="w-8 h-8 flex items-center justify-center text-on-surface hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors duration-200 cursor-pointer"
                                                         :disabled="$fetching() || item.quantity >= (item.max_quantity || 50)"
                                                         :class="item.quantity >= (item.max_quantity || 50) ? 'opacity-30 cursor-not-allowed' : ''"
@@ -213,7 +213,7 @@
                                         {{-- Remove button --}}
                                         <div class="mt-2 flex justify-end">
                                             <button
-                                                @click="$root.removeItem(item.component_id)"
+                                                @click="removeItem(item.component_id)"
                                                 class="inline-flex items-center gap-1 text-xs font-medium text-danger hover:text-danger/80 transition-colors duration-200 cursor-pointer"
                                                 :disabled="$fetching()"
                                             >
