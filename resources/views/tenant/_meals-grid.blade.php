@@ -10,14 +10,13 @@
     BR-220: Empty search results show descriptive message with search term
     Edge case: 50+ meals use "Load More" pagination (12 per page)
 --}}
-@php
-    /** @var \Illuminate\Contracts\Pagination\LengthAwarePaginator $meals */
-    $landingService = app(\App\Services\TenantLandingService::class);
-    $currentSearch = $searchQuery ?? '';
-@endphp
-
 @fragment('meals-grid-fragment')
 <div id="meals-grid-fragment">
+    @php
+        /** @var \Illuminate\Contracts\Pagination\LengthAwarePaginator $meals */
+        $landingService = app(\App\Services\TenantLandingService::class);
+        $currentSearch = $searchQuery ?? '';
+    @endphp
     @if($meals->total() > 0)
         {{-- BR-152: Responsive grid --}}
         <div id="meals-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
