@@ -374,6 +374,48 @@ class MealComponentService
     }
 
     /**
+     * Reorder meal components by updating their positions.
+     *
+     * F-125: Meal Component List View
+     * BR-350: Drag-and-drop reordering updates the `position` field on all affected components
+     * BR-354: Position changes are persisted immediately via Gale
+     *
+     * @param  array<int>  $componentIds  Ordered array of component IDs
+     * @return array{success: bool, error?: string}
+     */
+    public function reorderComponents(Meal $meal, array $componentIds): array
+    {
+        // Validate that all provided IDs belong to this meal
+        $mealComponentIds = $meal->components()->pluck('id')->toArray();
+        $invalidIds = array_diff($componentIds, $mealComponentIds);
+
+        if (! empty($invalidIds)) {
+            return [
+                'success' => false,
+                'error' => __('Invalid component IDs provided.'),
+            ];
+        }
+
+        // Validate that all meal components are included
+        $missingIds = array_diff($mealComponentIds, $componentIds);
+        if (! empty($missingIds)) {
+            return [
+                'success' => false,
+                'error' => __('All components must be included in the reorder.'),
+            ];
+        }
+
+        // Update positions in order
+        foreach ($componentIds as $position => $componentId) {
+            MealComponent::where('id', $componentId)
+                ->where('meal_id', $meal->id)
+                ->update(['position' => $position + 1]);
+        }
+
+        return ['success' => true];
+    }
+
+    /**
      * Decrement the available quantity of a component after order placement.
      *
      * F-124/BR-338: Available quantity decrements on successful order placement

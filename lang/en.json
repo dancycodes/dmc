@@ -1835,5 +1835,12 @@
     "Min :qty": "Min :qty",
     "Max :qty": "Max :qty",
     "Hide": "Hide",
-    "Component quantity settings updated": "Component quantity settings updated"
+    "Component quantity settings updated": "Component quantity settings updated",
+    "Drag to reorder": "Drag to reorder",
+    "Add your first component to get started.": "Add your first component to get started.",
+    "Component order updated.": "Component order updated.",
+    "Component order is required.": "Component order is required.",
+    "Component order must be an array.": "Component order must be an array.",
+    "Invalid component IDs provided.": "Invalid component IDs provided.",
+    "All components must be included in the reorder.": "All components must be included in the reorder."
 }

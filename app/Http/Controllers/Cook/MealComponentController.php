@@ -440,6 +440,84 @@ class MealComponentController extends Controller
     }
 
     /**
+     * Reorder meal components via drag-and-drop.
+     *
+     * F-125: Meal Component List View
+     * BR-350: Drag-and-drop reordering updates the `position` field on all affected components
+     * BR-353: Only users with manage-meals permission can manage the component list
+     * BR-354: Position changes are persisted immediately via Gale
+     */
+    public function reorder(Request $request, int $mealId, MealComponentService $componentService): mixed
+    {
+        $user = $request->user();
+        $tenant = tenant();
+
+        // BR-353: Permission check
+        if (! $user->can('can-manage-meals')) {
+            abort(403);
+        }
+
+        // Meal must belong to current tenant
+        $meal = $tenant->meals()->findOrFail($mealId);
+
+        // Dual Gale/HTTP validation pattern
+        if ($request->isGale()) {
+            $validated = $request->validateState([
+                'component_order' => ['required', 'array', 'min:1'],
+                'component_order.*' => ['required', 'integer'],
+            ], [
+                'component_order.required' => __('Component order is required.'),
+                'component_order.array' => __('Component order must be an array.'),
+            ]);
+
+            $componentIds = array_map('intval', $validated['component_order']);
+        } else {
+            $validated = $request->validate([
+                'component_order' => ['required', 'array', 'min:1'],
+                'component_order.*' => ['required', 'integer'],
+            ]);
+
+            $componentIds = array_map('intval', $validated['component_order']);
+        }
+
+        $result = $componentService->reorderComponents($meal, $componentIds);
+
+        if (! $result['success']) {
+            if ($request->isGale()) {
+                return gale()->messages([
+                    'component_order' => $result['error'],
+                ]);
+            }
+
+            return redirect()->back()
+                ->withErrors(['component_order' => $result['error']]);
+        }
+
+        // Activity logging
+        activity('meal_components')
+            ->causedBy($user)
+            ->withProperties([
+                'action' => 'components_reordered',
+                'meal_id' => $meal->id,
+                'meal_name' => $meal->name_en,
+                'tenant_id' => $tenant->id,
+                'new_order' => $componentIds,
+            ])
+            ->log('Meal components reordered');
+
+        $redirectUrl = url('/dashboard/meals/'.$meal->id.'/edit');
+
+        if ($request->isGale()) {
+            return gale()
+                ->redirect($redirectUrl)
+                ->with('success', __('Component order updated.'));
+        }
+
+        return redirect($redirectUrl)
+            ->with('success', __('Component order updated.'));
+    }
+
+    /**
      * Delete a meal component.
      *
      * F-120: Meal Component Delete
