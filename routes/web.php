@@ -540,4 +540,17 @@ Route::middleware('tenant.domain')->group(function () {
         ->name('tenant.checkout.delivery-method');
     Route::post('/checkout/delivery-method', [\App\Http\Controllers\Tenant\CheckoutController::class, 'saveDeliveryMethod'])
         ->name('tenant.checkout.save-delivery-method');
+
+    // F-141: Delivery Location Selection
+    // BR-274: Town dropdown from cook's delivery areas
+    // BR-275: Quarter dropdown filtered by selected town
+    // BR-276: Neighbourhood with OpenStreetMap autocomplete
+    // BR-278: Saved addresses as quick-select options
+    // BR-281: All fields required for delivery orders
+    Route::get('/checkout/delivery-location', [\App\Http\Controllers\Tenant\CheckoutController::class, 'deliveryLocation'])
+        ->name('tenant.checkout.delivery-location');
+    Route::post('/checkout/delivery-location', [\App\Http\Controllers\Tenant\CheckoutController::class, 'saveDeliveryLocation'])
+        ->name('tenant.checkout.save-delivery-location');
+    Route::post('/checkout/load-quarters', [\App\Http\Controllers\Tenant\CheckoutController::class, 'loadQuarters'])
+        ->name('tenant.checkout.load-quarters');
 });

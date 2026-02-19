@@ -3,17 +3,19 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Models\Quarter;
 use App\Services\CartService;
 use App\Services\CheckoutService;
 use Illuminate\Http\Request;
 
 /**
  * F-140: Delivery/Pickup Choice Selection
+ * F-141: Delivery Location Selection
  *
  * Handles checkout flow on tenant domains via Gale SSE.
  * BR-264: Client must choose delivery or pickup to proceed.
  * BR-272: Requires authentication.
- * BR-273: All text localized via __().
+ * BR-273/BR-282: All text localized via __().
  */
 class CheckoutController extends Controller
 {
@@ -132,5 +134,207 @@ class CheckoutController extends Controller
         // F-142 will provide the pickup location selection route
         return gale()->redirect(url('/checkout/pickup-location'))
             ->with('message', __('Choose your pickup location.'));
+    }
+
+    /**
+     * F-141: Display the delivery location selection step.
+     *
+     * BR-274: Town dropdown shows only towns where cook has delivery areas.
+     * BR-275: Quarter dropdown filtered by selected town.
+     * BR-276: Neighbourhood is a free-text field with OSM autocomplete.
+     * BR-278: Saved addresses matching cook's areas shown as quick-select.
+     * BR-279: If saved address in available area, pre-selected by default.
+     * BR-281: All fields (town, quarter, neighbourhood) required.
+     * BR-282: All form labels and text localized via __().
+     * BR-283: Town/quarter names displayed in user's current language.
+     */
+    public function deliveryLocation(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        // Require authentication
+        if (! auth()->check()) {
+            return gale()->redirect(route('login'))
+                ->with('message', __('Please login to proceed with your order.'));
+        }
+
+        // Verify cart is not empty
+        $cart = $this->cartService->getCart($tenant->id);
+        if (empty($cart['items'])) {
+            return gale()->redirect(url('/cart'))
+                ->with('message', __('Your cart is empty.'));
+        }
+
+        // Verify delivery method is selected
+        $deliveryMethod = $this->checkoutService->getDeliveryMethod($tenant->id);
+        if ($deliveryMethod !== CheckoutService::METHOD_DELIVERY) {
+            return gale()->redirect(url('/checkout/delivery-method'))
+                ->with('message', __('Please select a delivery method first.'));
+        }
+
+        // BR-274: Get cook's delivery towns
+        $towns = $this->checkoutService->getDeliveryTowns($tenant->id);
+
+        // BR-278/BR-279: Get matching saved addresses
+        $savedAddresses = $this->checkoutService->getMatchingSavedAddresses(
+            $tenant->id,
+            auth()->id()
+        );
+
+        // Get current delivery location from session (for persistence)
+        $currentLocation = $this->checkoutService->getDeliveryLocation($tenant->id);
+
+        // BR-279: Pre-select first matching saved address if no location saved yet
+        $preSelectedAddress = null;
+        if (! $currentLocation && $savedAddresses->isNotEmpty()) {
+            $preSelectedAddress = $savedAddresses->first();
+            $currentLocation = [
+                'town_id' => $preSelectedAddress->town_id,
+                'quarter_id' => $preSelectedAddress->quarter_id,
+                'neighbourhood' => $preSelectedAddress->neighbourhood ?? '',
+            ];
+        }
+
+        // Edge case: If only 1 town, pre-select it
+        if (! $currentLocation && $towns->count() === 1) {
+            $currentLocation = [
+                'town_id' => $towns->first()->id,
+                'quarter_id' => null,
+                'neighbourhood' => '',
+            ];
+        }
+
+        // Load quarters for currently selected town (if any)
+        $quarters = collect();
+        if ($currentLocation && $currentLocation['town_id']) {
+            $quarters = $this->checkoutService->getDeliveryQuarters(
+                $tenant->id,
+                $currentLocation['town_id']
+            );
+
+            // Edge case: If only 1 quarter in town, pre-select it
+            if (! ($currentLocation['quarter_id'] ?? null) && $quarters->count() === 1) {
+                $currentLocation['quarter_id'] = $quarters->first()['id'];
+            }
+        }
+
+        return gale()->view('tenant.checkout.delivery-location', [
+            'tenant' => $tenant,
+            'towns' => $towns,
+            'quarters' => $quarters,
+            'savedAddresses' => $savedAddresses,
+            'currentLocation' => $currentLocation,
+            'preSelectedAddress' => $preSelectedAddress,
+            'cartSummary' => $cart['summary'],
+        ], web: true);
+    }
+
+    /**
+     * F-141: Load quarters for a selected town (Gale action endpoint).
+     *
+     * BR-275: Quarter dropdown filtered by selected town.
+     * Returns quarters as JSON via Gale state update.
+     */
+    public function loadQuarters(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        if (! auth()->check()) {
+            return gale()->redirect(route('login'));
+        }
+
+        $validated = $request->validateState([
+            'town_id' => 'required|integer|exists:towns,id',
+        ]);
+
+        $quarters = $this->checkoutService->getDeliveryQuarters(
+            $tenant->id,
+            (int) $validated['town_id']
+        );
+
+        return gale()
+            ->state('quarters', $quarters->toArray())
+            ->state('quarter_id', $quarters->count() === 1 ? (string) $quarters->first()['id'] : '')
+            ->state('neighbourhood', '');
+    }
+
+    /**
+     * F-141: Save delivery location and proceed to next step.
+     *
+     * BR-281: All fields (town, quarter, neighbourhood) are required.
+     * BR-280: Selected quarter determines delivery fee (F-145).
+     */
+    public function saveDeliveryLocation(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        if (! auth()->check()) {
+            return gale()->redirect(route('login'))
+                ->with('message', __('Please login to proceed with your order.'));
+        }
+
+        // Verify cart is not empty
+        $cart = $this->cartService->getCart($tenant->id);
+        if (empty($cart['items'])) {
+            return gale()->redirect(url('/cart'))
+                ->with('message', __('Your cart is empty.'));
+        }
+
+        // Verify delivery method is selected
+        $deliveryMethod = $this->checkoutService->getDeliveryMethod($tenant->id);
+        if ($deliveryMethod !== CheckoutService::METHOD_DELIVERY) {
+            return gale()->redirect(url('/checkout/delivery-method'))
+                ->with('message', __('Please select a delivery method first.'));
+        }
+
+        // BR-281: Validate all required fields
+        $validated = $request->validateState([
+            'town_id' => 'required|integer|exists:towns,id',
+            'quarter_id' => 'required|integer|exists:quarters,id',
+            'neighbourhood' => 'required|string|max:500',
+        ]);
+
+        // Validate that the quarter is in the cook's delivery areas
+        $validation = $this->checkoutService->validateDeliveryQuarter(
+            $tenant->id,
+            (int) $validated['quarter_id']
+        );
+
+        if (! $validation['valid']) {
+            return gale()->messages([
+                'quarter_id' => $validation['error'],
+            ]);
+        }
+
+        // Validate that the quarter belongs to the selected town
+        $quarter = Quarter::find((int) $validated['quarter_id']);
+        if ($quarter && $quarter->town_id !== (int) $validated['town_id']) {
+            return gale()->messages([
+                'quarter_id' => __('The selected quarter does not belong to the selected town.'),
+            ]);
+        }
+
+        // Save delivery location to session
+        $this->checkoutService->setDeliveryLocation($tenant->id, [
+            'town_id' => (int) $validated['town_id'],
+            'quarter_id' => (int) $validated['quarter_id'],
+            'neighbourhood' => trim($validated['neighbourhood']),
+        ]);
+
+        // F-143 will provide the next checkout step (Order Phone Number)
+        return gale()->redirect(url('/checkout/phone'))
+            ->with('message', __('Delivery location saved.'));
     }
 }
