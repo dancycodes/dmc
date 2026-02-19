@@ -1,10 +1,14 @@
 {{--
-    F-129: Meal Detail View — Component Card
+    F-129: Meal Detail View -- Component Card
+    F-138: Meal Component Selection & Cart Add
     BR-158: Shows name, price, unit, availability status
     BR-159: Availability: Available, Low Stock (X left), Sold Out
     BR-160: Requirement rules in plain language
     BR-161: Quantity selector with min/max limits
     BR-162: Add to Cart disabled for sold-out
+    BR-243: Quantity min 1, max lesser of stock or cook-defined max
+    BR-244: Requirement rules enforced via server + client hints
+    BR-248: Same component updates quantity
 --}}
 @php
     $isDisabled = !$component['isAvailable'];
@@ -20,20 +24,55 @@
         'danger' => 'bg-danger',
     ];
     $dotClass = $dotColorMap[$component['availabilityColor']] ?? 'bg-success';
+
+    // F-138: Check if component is already in cart
+    $inCart = isset($cartComponentsForMeal[$component['id']]);
+    $cartQty = $cartComponentsForMeal[$component['id']] ?? 0;
+
+    // F-138: Build requirement rule data for client-side enforcement
+    $requiresAnyOf = [];
+    $requiresAllOf = [];
+    $incompatibleWith = [];
+    foreach ($component['requirements'] as $rule) {
+        if ($rule['type'] === 'requires_any_of') {
+            $requiresAnyOf[] = $rule;
+        } elseif ($rule['type'] === 'requires_all_of') {
+            $requiresAllOf[] = $rule;
+        } elseif ($rule['type'] === 'incompatible_with') {
+            $incompatibleWith[] = $rule;
+        }
+    }
+    $hasRequirements = !empty($requiresAnyOf) || !empty($requiresAllOf);
 @endphp
 
 <div
     class="bg-surface-alt dark:bg-surface-alt rounded-lg border border-outline dark:border-outline p-4 transition-colors duration-200 {{ $isDisabled ? 'opacity-60' : '' }}"
     x-data="{
-        quantity: {{ $component['minQuantity'] }},
+        quantity: {{ $inCart ? $cartQty : $component['minQuantity'] }},
         min: {{ $component['minQuantity'] }},
         max: {{ $component['maxSelectable'] }},
         disabled: {{ $isDisabled ? 'true' : 'false' }},
+        inCart: {{ $inCart ? 'true' : 'false' }},
+        adding: false,
         increment() {
             if (this.quantity < this.max) this.quantity++;
         },
         decrement() {
             if (this.quantity > this.min) this.quantity--;
+        },
+        addToCart() {
+            if (this.disabled || this.adding) return;
+            this.adding = true;
+            /* Use $dispatch to communicate with parent x-data for $action call */
+            $dispatch('add-to-cart', {
+                id: {{ $component['id'] }},
+                name: {{ json_encode($component['name']) }},
+                price: {{ $component['price'] }},
+                unit: {{ json_encode($component['unit']) }},
+                qty: this.quantity
+            });
+            /* Reset adding state after brief delay (SSE will update state) */
+            setTimeout(() => { this.adding = false; this.inCart = true; }, 800);
         }
     }"
 >
@@ -56,6 +95,19 @@
                 {{ $component['availabilityStatus'] }}
             </div>
 
+            {{-- In Cart indicator --}}
+            <div x-show="inCart" x-cloak class="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-success">
+                <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><path d="m9 11 3 3L22 4"></path></svg>
+                {{ __('In cart') }}
+            </div>
+
+            {{-- Stock limit message --}}
+            @if($component['maxSelectable'] < 99 && !$isDisabled && $component['availabilityColor'] === 'warning')
+                <p class="mt-1.5 text-xs text-on-surface/60">
+                    {{ __('Only :count available', ['count' => $component['maxSelectable']]) }}
+                </p>
+            @endif
+
             {{-- BR-160: Requirement Rules --}}
             @if(!empty($component['requirements']))
                 <div class="mt-2 space-y-1">
@@ -76,7 +128,7 @@
         {{-- Quantity Selector + Add to Cart --}}
         <div class="shrink-0 flex flex-col items-end gap-2">
             @if(!$isDisabled)
-                {{-- BR-161: Quantity selector --}}
+                {{-- BR-161/BR-243: Quantity selector --}}
                 <div class="flex items-center gap-1 bg-surface dark:bg-surface border border-outline dark:border-outline rounded-lg">
                     <button
                         @click="decrement()"
@@ -97,13 +149,30 @@
                     </button>
                 </div>
 
-                {{-- BR-163: Add to Cart button --}}
+                {{-- Max quantity hint --}}
+                <p x-show="quantity >= max && max < 99" x-cloak class="text-xs text-warning font-medium">
+                    {{ __('Only :count available', ['count' => $component['maxSelectable']]) }}
+                </p>
+
+                {{-- BR-163/BR-251: Add to Cart button (fires Gale $action via parent) --}}
                 <button
-                    @click="$dispatch('add-to-cart', { id: {{ $component['id'] }}, name: {{ json_encode($component['name']) }}, price: {{ $component['price'] }}, unit: {{ json_encode($component['unit']) }}, qty: quantity })"
-                    class="h-8 px-3 bg-primary hover:bg-primary-hover text-on-primary text-xs font-semibold rounded-lg shadow-sm transition-all duration-200 cursor-pointer inline-flex items-center gap-1.5"
+                    @click="addToCart()"
+                    :disabled="adding"
+                    class="h-8 px-3 bg-primary hover:bg-primary-hover text-on-primary text-xs font-semibold rounded-lg shadow-sm transition-all duration-200 cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-wait"
                 >
-                    <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
-                    {{ __('Add') }}
+                    <template x-if="!adding">
+                        <span class="inline-flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+                            <span x-show="!inCart">{{ __('Add') }}</span>
+                            <span x-show="inCart" x-cloak>{{ __('Update') }}</span>
+                        </span>
+                    </template>
+                    <template x-if="adding">
+                        <span class="inline-flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5 animate-spin-slow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+                            {{ __('Adding...') }}
+                        </span>
+                    </template>
                 </button>
             @else
                 {{-- BR-162: Disabled add button for sold-out --}}

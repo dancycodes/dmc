@@ -1958,5 +1958,18 @@
     "No meals found for ':query' with your filters.": "Aucun plat trouv\u00e9 pour ':query' avec vos filtres.",
     "Try adjusting your filters or search with a different keyword.": "Essayez d'ajuster vos filtres ou recherchez avec un autre mot-cl\u00e9.",
     "No meals match your selected filters.": "Aucun plat ne correspond \u00e0 vos filtres.",
-    "Try adjusting your filters to see more results.": "Essayez d'ajuster vos filtres pour voir plus de r\u00e9sultats."
+    "Try adjusting your filters to see more results.": "Essayez d'ajuster vos filtres pour voir plus de r\u00e9sultats.",
+    "In cart": "Dans le panier",
+    "Update": "Mettre \u00e0 jour",
+    "Adding...": "Ajout en cours...",
+    "Only :count available": "Seulement :count disponible(s)",
+    ":qty x :name added to cart": ":qty x :name ajout\u00e9(s) au panier",
+    "This meal is no longer available.": "Ce plat n'est plus disponible.",
+    "This item is no longer available.": "Cet article n'est plus disponible.",
+    "This item is sold out.": "Cet article est \u00e9puis\u00e9.",
+    "Cart is full. Maximum :max items allowed.": "Le panier est plein. Maximum :max articles autoris\u00e9s.",
+    "Item not found in cart.": "Article non trouv\u00e9 dans le panier.",
+    ":component requires at least one of: :targets": ":component n\u00e9cessite au moins un de : :targets",
+    ":component requires: :targets": ":component n\u00e9cessite : :targets",
+    ":component is incompatible with: :targets": ":component est incompatible avec : :targets"
 }

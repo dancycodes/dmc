@@ -508,4 +508,15 @@ Route::middleware('tenant.domain')->group(function () {
     // BR-156: Displays name, description, images, components, schedule, locations
     Route::get('/meals/{meal}', [\App\Http\Controllers\Tenant\MealDetailController::class, 'show'])
         ->name('tenant.meal.show');
+
+    // F-138: Meal Component Selection & Cart Add (public, on tenant domain)
+    // BR-246: Cart state in session, accessible across tenant site
+    // BR-247: Guest carts work via session without authentication
+    // BR-251: Cart updates use Gale (no page reload)
+    Route::post('/cart/add', [\App\Http\Controllers\Tenant\CartController::class, 'addToCart'])
+        ->name('tenant.cart.add');
+    Route::post('/cart/remove', [\App\Http\Controllers\Tenant\CartController::class, 'removeFromCart'])
+        ->name('tenant.cart.remove');
+    Route::post('/cart/get', [\App\Http\Controllers\Tenant\CartController::class, 'getCart'])
+        ->name('tenant.cart.get');
 });
