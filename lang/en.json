@@ -2059,5 +2059,14 @@
     "Pickup Fee": "Pickup Fee",
     "Pickup location saved.": "Pickup location saved.",
     "The selected pickup location is no longer available.": "The selected pickup location is no longer available.",
-    "No pickup locations available. Please choose a different delivery method.": "No pickup locations available. Please choose a different delivery method."
+    "No pickup locations available. Please choose a different delivery method.": "No pickup locations available. Please choose a different delivery method.",
+    "Phone Number": "Phone Number",
+    "Your contact phone number": "Your contact phone number",
+    "This number will be used by the cook to contact you about your order.": "This number will be used by the cook to contact you about your order.",
+    "Cameroon mobile number": "Cameroon mobile number",
+    "Number:": "Number:",
+    "Same as my profile": "Same as my profile",
+    "Changing the number here will not update your profile. This number is used for this order only.": "Changing the number here will not update your profile. This number is used for this order only.",
+    "Phone number saved.": "Phone number saved.",
+    "Phone": "Phone"
 }

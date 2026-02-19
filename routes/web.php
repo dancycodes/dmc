@@ -563,4 +563,14 @@ Route::middleware('tenant.domain')->group(function () {
         ->name('tenant.checkout.pickup-location');
     Route::post('/checkout/pickup-location', [\App\Http\Controllers\Tenant\CheckoutController::class, 'savePickupLocation'])
         ->name('tenant.checkout.save-pickup-location');
+
+    // F-143: Order Phone Number
+    // BR-292: Pre-filled from user's profile phone
+    // BR-293: Client can override per order
+    // BR-295: Cameroon phone format validation
+    // BR-296: Required field
+    Route::get('/checkout/phone', [\App\Http\Controllers\Tenant\CheckoutController::class, 'phoneNumber'])
+        ->name('tenant.checkout.phone');
+    Route::post('/checkout/phone', [\App\Http\Controllers\Tenant\CheckoutController::class, 'savePhoneNumber'])
+        ->name('tenant.checkout.save-phone');
 });

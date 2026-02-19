@@ -48,7 +48,7 @@ class CheckoutService
     /**
      * Get checkout session data for a tenant.
      *
-     * @return array{delivery_method: string|null, delivery_location: array|null, pickup_location_id: int|null}
+     * @return array{delivery_method: string|null, delivery_location: array|null, pickup_location_id: int|null, phone: string|null}
      */
     public function getCheckoutData(int $tenantId): array
     {
@@ -56,6 +56,7 @@ class CheckoutService
             'delivery_method' => null,
             'delivery_location' => null,
             'pickup_location_id' => null,
+            'phone' => null,
         ]);
     }
 
@@ -391,6 +392,64 @@ class CheckoutService
             'error' => null,
             'pickup_location' => $pickupLocation,
         ];
+    }
+
+    /**
+     * F-143: Save phone number to checkout session.
+     *
+     * BR-292: Pre-filled from user profile.
+     * BR-293: Client can override per order.
+     * BR-298: Phone stored with the order for delivery/communication.
+     */
+    public function setPhone(int $tenantId, string $phone): void
+    {
+        $data = $this->getCheckoutData($tenantId);
+        $data['phone'] = $phone;
+
+        session([$this->getSessionKey($tenantId) => $data]);
+    }
+
+    /**
+     * F-143: Get the saved phone number from checkout session.
+     */
+    public function getPhone(int $tenantId): ?string
+    {
+        $data = $this->getCheckoutData($tenantId);
+
+        return $data['phone'] ?? null;
+    }
+
+    /**
+     * F-143: Get the phone number to pre-fill the form.
+     *
+     * BR-292: Pre-filled from the authenticated user's profile phone number.
+     * Returns the session-stored phone if already set, otherwise the user's profile phone.
+     */
+    public function getPrefilledPhone(int $tenantId, ?string $userPhone): string
+    {
+        $sessionPhone = $this->getPhone($tenantId);
+
+        if ($sessionPhone) {
+            return $sessionPhone;
+        }
+
+        return $userPhone ?? '';
+    }
+
+    /**
+     * F-143: Get the appropriate back URL based on the selected delivery method.
+     *
+     * Phone step comes after delivery location (F-141) or pickup location (F-142).
+     */
+    public function getPhoneStepBackUrl(int $tenantId): string
+    {
+        $method = $this->getDeliveryMethod($tenantId);
+
+        if ($method === self::METHOD_PICKUP) {
+            return url('/checkout/pickup-location');
+        }
+
+        return url('/checkout/delivery-location');
     }
 
     /**
