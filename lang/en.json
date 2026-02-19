@@ -1810,5 +1810,12 @@
     "At least one target component is required.": "At least one target component is required.",
     "A component cannot reference itself in a rule.": "A component cannot reference itself in a rule.",
     "All target components must belong to the same meal.": "All target components must belong to the same meal.",
-    "Circular dependency detected: :target already requires this component.": "Circular dependency detected: :target already requires this component."
+    "Circular dependency detected: :target already requires this component.": "Circular dependency detected: :target already requires this component.",
+    "Sold Out": "Sold Out",
+    "Click to mark unavailable": "Click to mark unavailable",
+    "Click to mark available": "Click to mark available",
+    "Mark component unavailable": "Mark component unavailable",
+    "Mark component available": "Mark component available",
+    "Component \":name\" is now available.": "Component \":name\" is now available.",
+    "Component \":name\" is now unavailable.": "Component \":name\" is now unavailable."
 }

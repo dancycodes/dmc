@@ -257,6 +257,70 @@ class MealComponentController extends Controller
     }
 
     /**
+     * Toggle a meal component's availability.
+     *
+     * F-123: Meal Component Availability Toggle
+     * BR-326: Component availability is independent of meal availability (F-113)
+     * BR-327: Unavailable components display a "Sold Out" badge to clients
+     * BR-329: Toggling availability does not affect pending orders
+     * BR-330: Availability toggle has immediate effect
+     * BR-331: Availability changes are logged via Spatie Activitylog
+     * BR-332: Only users with manage-meals permission can toggle availability
+     */
+    public function toggleAvailability(Request $request, int $mealId, int $componentId, MealComponentService $componentService): mixed
+    {
+        $user = $request->user();
+        $tenant = tenant();
+
+        // BR-332: Permission check
+        if (! $user->can('can-manage-meals')) {
+            abort(403);
+        }
+
+        // Meal must belong to current tenant
+        $meal = $tenant->meals()->findOrFail($mealId);
+
+        // Component must belong to meal
+        $component = $meal->components()->findOrFail($componentId);
+
+        // Use service for business logic
+        $result = $componentService->toggleAvailability($component);
+
+        // BR-331: Activity logging
+        activity('meal_components')
+            ->performedOn($result['component'])
+            ->causedBy($user)
+            ->withProperties([
+                'action' => 'component_availability_toggled',
+                'old_availability' => $result['old_availability'],
+                'new_availability' => $result['new_availability'],
+                'name_en' => $result['component']->name_en,
+                'name_fr' => $result['component']->name_fr,
+                'meal_id' => $meal->id,
+                'meal_name' => $meal->name_en,
+                'tenant_id' => $tenant->id,
+            ])
+            ->log('Component availability changed from '.($result['old_availability'] ? 'available' : 'unavailable').' to '.($result['new_availability'] ? 'available' : 'unavailable'));
+
+        // Toast message based on new availability
+        $componentName = $result['component']->name;
+        $toastMessage = $result['new_availability']
+            ? __('Component ":name" is now available.', ['name' => $componentName])
+            : __('Component ":name" is now unavailable.', ['name' => $componentName]);
+
+        $redirectUrl = url('/dashboard/meals/'.$meal->id.'/edit');
+
+        if ($request->isGale()) {
+            return gale()
+                ->redirect($redirectUrl)
+                ->with('success', $toastMessage);
+        }
+
+        return redirect($redirectUrl)
+            ->with('success', $toastMessage);
+    }
+
+    /**
      * Delete a meal component.
      *
      * F-120: Meal Component Delete
