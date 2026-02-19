@@ -105,6 +105,17 @@
 
                 {{-- Desktop Right Section --}}
                 <div class="hidden lg:flex items-center gap-3">
+                    {{-- F-139: Cart icon with badge (tenant domain nav) --}}
+                    @php
+                        $cartSummary = app(\App\Services\CartService::class)->getCartSummary(tenant()?->id ?? 0);
+                    @endphp
+                    <a href="{{ url('/cart') }}" class="relative w-10 h-10 flex items-center justify-center rounded-lg text-on-surface hover:bg-surface-alt transition-colors duration-200" x-navigate aria-label="{{ __('Cart') }}">
+                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>
+                        @if($cartSummary['count'] > 0)
+                            <span class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-primary text-on-primary text-[10px] font-bold flex items-center justify-center px-1">{{ $cartSummary['count'] }}</span>
+                        @endif
+                    </a>
+
                     <x-theme-switcher />
                     <x-language-switcher />
 
@@ -168,8 +179,15 @@
                     @endauth
                 </div>
 
-                {{-- Mobile: Theme/Language + Hamburger --}}
+                {{-- Mobile: Cart + Theme/Language + Hamburger --}}
                 <div class="flex items-center gap-2 lg:hidden">
+                    {{-- F-139: Mobile cart icon --}}
+                    <a href="{{ url('/cart') }}" class="relative w-10 h-10 flex items-center justify-center rounded-lg text-on-surface hover:bg-surface-alt transition-colors duration-200" x-navigate aria-label="{{ __('Cart') }}">
+                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>
+                        @if($cartSummary['count'] > 0)
+                            <span class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-primary text-on-primary text-[10px] font-bold flex items-center justify-center px-1">{{ $cartSummary['count'] }}</span>
+                        @endif
+                    </a>
                     <x-theme-switcher />
                     <x-language-switcher />
                     <button

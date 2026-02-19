@@ -519,4 +519,17 @@ Route::middleware('tenant.domain')->group(function () {
         ->name('tenant.cart.remove');
     Route::post('/cart/get', [\App\Http\Controllers\Tenant\CartController::class, 'getCart'])
         ->name('tenant.cart.get');
+
+    // F-139: Order Cart Management (public, on tenant domain)
+    // BR-253: Cart items displayed grouped by meal
+    // BR-259: Cart persists in server-side session
+    // BR-262: All cart interactions use Gale
+    Route::get('/cart', [\App\Http\Controllers\Tenant\CartController::class, 'index'])
+        ->name('tenant.cart.index');
+    Route::post('/cart/update-quantity', [\App\Http\Controllers\Tenant\CartController::class, 'updateQuantity'])
+        ->name('tenant.cart.update-quantity');
+    Route::post('/cart/clear', [\App\Http\Controllers\Tenant\CartController::class, 'clearCart'])
+        ->name('tenant.cart.clear');
+    Route::post('/cart/checkout', [\App\Http\Controllers\Tenant\CartController::class, 'checkout'])
+        ->name('tenant.cart.checkout');
 });

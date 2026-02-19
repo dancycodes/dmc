@@ -436,6 +436,99 @@ class CartService
     }
 
     /**
+     * Maximum quantity per component in the cart.
+     *
+     * Edge case: very large quantities capped at 50 (F-139).
+     */
+    public const MAX_QUANTITY_PER_COMPONENT = 50;
+
+    /**
+     * Get cart enriched with availability warnings.
+     *
+     * F-139: Validates cart items against current DB state.
+     * Edge cases: sold-out components, deactivated meals.
+     *
+     * @return array{items: array, meals: array, summary: array{count: int, total: int}, warnings: array}
+     */
+    public function getCartWithAvailability(int $tenantId): array
+    {
+        $cart = $this->getCart($tenantId);
+
+        if (empty($cart['items'])) {
+            return array_merge($cart, ['warnings' => []]);
+        }
+
+        $componentIds = array_column($cart['items'], 'component_id');
+        $mealIds = array_unique(array_column($cart['items'], 'meal_id'));
+
+        $components = MealComponent::query()
+            ->whereIn('id', $componentIds)
+            ->get()
+            ->keyBy('id');
+
+        $meals = Meal::query()
+            ->whereIn('id', $mealIds)
+            ->get()
+            ->keyBy('id');
+
+        $warnings = [];
+        $enrichedMeals = [];
+
+        foreach ($cart['meals'] as $mealGroup) {
+            $meal = $meals->get($mealGroup['meal_id']);
+            $mealAvailable = $meal
+                && $meal->status === Meal::STATUS_LIVE
+                && $meal->is_available;
+
+            $enrichedItems = [];
+            foreach ($mealGroup['items'] as $item) {
+                $component = $components->get($item['component_id']);
+                $itemWarning = null;
+                $itemAvailable = true;
+
+                if (! $mealAvailable) {
+                    $itemWarning = __('This meal is no longer available');
+                    $itemAvailable = false;
+                } elseif (! $component) {
+                    $itemWarning = __('This item is no longer available');
+                    $itemAvailable = false;
+                } elseif (! $component->is_available || $component->isOutOfStock()) {
+                    $itemWarning = __('Limited availability');
+                    $itemAvailable = false;
+                }
+
+                $maxQty = $component ? $this->getMaxSelectableQuantity($component) : 1;
+                $maxQty = min($maxQty, self::MAX_QUANTITY_PER_COMPONENT);
+
+                $enrichedItems[] = array_merge($item, [
+                    'warning' => $itemWarning,
+                    'available' => $itemAvailable,
+                    'max_quantity' => $maxQty,
+                ]);
+
+                if ($itemWarning) {
+                    $warnings[] = [
+                        'component_id' => $item['component_id'],
+                        'message' => $itemWarning,
+                    ];
+                }
+            }
+
+            $enrichedMeals[] = array_merge($mealGroup, [
+                'items' => $enrichedItems,
+                'meal_available' => $mealAvailable,
+            ]);
+        }
+
+        return [
+            'items' => $cart['items'],
+            'meals' => $enrichedMeals,
+            'summary' => $cart['summary'],
+            'warnings' => $warnings,
+        ];
+    }
+
+    /**
      * Format price for display.
      */
     public static function formatPrice(int $amount): string
