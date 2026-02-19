@@ -145,8 +145,8 @@ class CartController extends Controller
                 ->state('cartError', __('Your cart is empty.'));
         }
 
-        // F-140 will handle the next step — stub redirect for now
-        return gale()->redirect(url('/checkout'))->with('message', __('Proceeding to checkout...'));
+        // F-140: Redirect to delivery method selection
+        return gale()->redirect(url('/checkout/delivery-method'));
     }
 
     /**
