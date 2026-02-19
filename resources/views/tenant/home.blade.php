@@ -100,7 +100,7 @@
                             <div class="mt-4 sm:mt-6 flex flex-col sm:flex-row items-center sm:items-end gap-4">
                                 {{-- BR-140: CTA button scrolls to #meals --}}
                                 <button
-                                    @click="$root.scrollTo('meals')"
+                                    @click="document.getElementById('meals')?.scrollIntoView({ behavior: 'smooth', block: 'start' })"
                                     class="inline-flex items-center gap-2 h-12 px-8 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg shadow-card transition-all duration-200 cursor-pointer"
                                 >
                                     <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect></svg>
@@ -183,7 +183,7 @@
                     <div class="mt-8 flex flex-col items-center gap-4">
                         {{-- BR-140: CTA button --}}
                         <button
-                            @click="$root.scrollTo('meals')"
+                            @click="document.getElementById('meals')?.scrollIntoView({ behavior: 'smooth', block: 'start' })"
                             class="inline-flex items-center gap-2 h-12 px-8 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg shadow-card transition-all duration-200 cursor-pointer"
                         >
                             <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect></svg>
