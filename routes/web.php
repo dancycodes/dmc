@@ -16,6 +16,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Cook\BrandProfileController;
+use App\Http\Controllers\Cook\ComponentRequirementRuleController;
 use App\Http\Controllers\Cook\CookScheduleController;
 use App\Http\Controllers\Cook\CoverImageController;
 use App\Http\Controllers\Cook\DeliveryFeeController;
@@ -467,6 +468,9 @@ Route::middleware('tenant.domain')->group(function () {
         Route::put('/meals/{meal}/components/{component}', [MealComponentController::class, 'update'])->name('cook.meals.components.update');
         // F-120: Meal Component Delete
         Route::delete('/meals/{meal}/components/{component}', [MealComponentController::class, 'destroy'])->name('cook.meals.components.destroy');
+        // F-122: Meal Component Requirement Rules
+        Route::post('/meals/{meal}/components/{component}/rules', [ComponentRequirementRuleController::class, 'store'])->name('cook.meals.components.rules.store');
+        Route::delete('/meals/{meal}/components/{component}/rules/{rule}', [ComponentRequirementRuleController::class, 'destroy'])->name('cook.meals.components.rules.destroy');
 
         // Tag management (F-115: Cook Tag Management)
         // BR-257: Only users with can-manage-meals permission (enforced in controller)

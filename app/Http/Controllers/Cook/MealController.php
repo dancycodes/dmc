@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Cook\StoreMealRequest;
 use App\Http\Requests\Cook\UpdateMealRequest;
 use App\Models\Meal;
+use App\Services\ComponentRequirementRuleService;
 use App\Services\CookScheduleService;
 use App\Services\MealComponentService;
 use App\Services\MealImageService;
@@ -198,6 +199,7 @@ class MealController extends Controller
         MealImageService $imageService,
         MealTagService $mealTagService,
         MealComponentService $componentService,
+        ComponentRequirementRuleService $ruleService,
     ): mixed {
         $user = $request->user();
         $tenant = tenant();
@@ -260,6 +262,8 @@ class MealController extends Controller
 
         // F-120: Compute delete eligibility per component for UI
         $componentDeleteInfo = [];
+        // F-122: Compute requirement rules per component for UI
+        $componentRulesData = [];
         if ($componentData && $componentData['count'] > 0) {
             foreach ($componentData['components'] as $comp) {
                 $componentDeleteInfo[$comp->id] = $componentService->canDeleteComponent(
@@ -267,6 +271,10 @@ class MealController extends Controller
                     $meal,
                     $componentData['count']
                 );
+                $componentRulesData[$comp->id] = [
+                    'rules' => $ruleService->getRulesForComponent($comp),
+                    'available_targets' => $ruleService->getAvailableTargets($comp),
+                ];
             }
         }
 
@@ -285,6 +293,7 @@ class MealController extends Controller
             'componentData' => $componentData,
             'availableUnits' => $availableUnits,
             'componentDeleteInfo' => $componentDeleteInfo,
+            'componentRulesData' => $componentRulesData,
         ], web: true);
     }
 

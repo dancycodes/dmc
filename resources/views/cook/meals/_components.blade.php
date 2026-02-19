@@ -54,6 +54,13 @@
         edit_comp_min_quantity: '',
         edit_comp_max_quantity: '',
         edit_comp_available_quantity: '',
+        rule_type: 'requires_any_of',
+        rule_target_ids: [],
+        @if(($componentData['count'] ?? 0) > 0)
+            @foreach($componentData['components'] as $comp)
+                showRuleForm_{{ $comp->id }}: false,
+            @endforeach
+        @endif
         toggleAddForm() {
             this.showAddForm = !this.showAddForm;
             if (this.showAddForm) {
@@ -69,6 +76,10 @@
             this.comp_min_quantity = '';
             this.comp_max_quantity = '';
             this.comp_available_quantity = '';
+        },
+        resetRuleForm() {
+            this.rule_type = 'requires_any_of';
+            this.rule_target_ids = [];
         },
         startEdit(component) {
             this.editingComponentId = component.id;
@@ -102,7 +113,7 @@
             }
         }
     }"
-    x-sync="['comp_name_en', 'comp_name_fr', 'comp_price', 'comp_selling_unit', 'comp_min_quantity', 'comp_max_quantity', 'comp_available_quantity', 'edit_comp_name_en', 'edit_comp_name_fr', 'edit_comp_price', 'edit_comp_selling_unit', 'edit_comp_min_quantity', 'edit_comp_max_quantity', 'edit_comp_available_quantity']"
+    x-sync="['comp_name_en', 'comp_name_fr', 'comp_price', 'comp_selling_unit', 'comp_min_quantity', 'comp_max_quantity', 'comp_available_quantity', 'edit_comp_name_en', 'edit_comp_name_fr', 'edit_comp_price', 'edit_comp_selling_unit', 'edit_comp_min_quantity', 'edit_comp_max_quantity', 'edit_comp_available_quantity', 'rule_type', 'rule_target_ids']"
 >
     {{-- Section header --}}
     <div class="flex items-center justify-between mb-5">
@@ -394,6 +405,16 @@
                             </button>
                         </div>
                     </div>
+
+                    {{-- F-122: Requirement Rules Section --}}
+                    @if(isset($componentRulesData[$component->id]))
+                        <div x-show="editingComponentId !== {{ $component->id }}" class="px-3 pb-3">
+                            @include('cook.meals._requirement-rules', [
+                                'component' => $component,
+                                'rulesInfo' => $componentRulesData[$component->id],
+                            ])
+                        </div>
+                    @endif
 
                     {{-- F-119: Inline Edit Form --}}
                     <div

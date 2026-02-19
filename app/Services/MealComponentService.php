@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Meal;
 use App\Models\MealComponent;
-use App\Models\SellingUnit;
 use App\Models\Tenant;
 use Illuminate\Support\Facades\Schema;
 
@@ -246,20 +245,11 @@ class MealComponentService
     /**
      * Clean up requirement rules referencing the deleted component.
      *
-     * F-120/BR-305: Forward-compatible with F-122 (Meal Component Requirement Rules).
+     * F-122/BR-321: Delegates to ComponentRequirementRuleService for proper cleanup.
      */
     private function cleanupRequirementRules(MealComponent $component): void
     {
-        // Forward-compatible: component_requirement_rules table created by F-122
-        if (! Schema::hasTable('component_requirement_rules')) {
-            return;
-        }
-
-        // Remove rules where this component is the subject or the required reference
-        \Illuminate\Support\Facades\DB::table('component_requirement_rules')
-            ->where('meal_component_id', $component->id)
-            ->orWhere('required_component_id', $component->id)
-            ->delete();
+        app(ComponentRequirementRuleService::class)->cleanupRulesForComponent($component);
     }
 
     /**
