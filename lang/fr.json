@@ -1744,6 +1744,9 @@
     "Available: :qty": "Disponible: :qty",
     "No components yet": "Aucun composant",
     "Add at least one component before going live.": "Ajoutez au moins un composant avant de publier.",
-    "Edit coming soon": "Modification bientot disponible",
+    "Edit Component": "Modifier le composant",
+    "Component updated.": "Composant mis a jour.",
+    "Edit component": "Modifier le composant",
+    "Price changes apply to new orders only.": "Les changements de prix s'appliquent uniquement aux nouvelles commandes.",
     "Meal component created": "Composant de repas cree"
 }

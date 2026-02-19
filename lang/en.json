@@ -1744,6 +1744,9 @@
     "Available: :qty": "Available: :qty",
     "No components yet": "No components yet",
     "Add at least one component before going live.": "Add at least one component before going live.",
-    "Edit coming soon": "Edit coming soon",
+    "Edit Component": "Edit Component",
+    "Component updated.": "Component updated.",
+    "Edit component": "Edit component",
+    "Price changes apply to new orders only.": "Price changes apply to new orders only.",
     "Meal component created": "Meal component created"
 }

@@ -80,6 +80,87 @@ class MealComponentService
     }
 
     /**
+     * Update an existing meal component.
+     *
+     * F-119: Meal Component Edit
+     * BR-292: All validation rules from F-118 apply to edits
+     * BR-293: Price changes apply to new orders only (handled at order time)
+     * BR-294: Name, selling unit, and quantity changes take effect immediately
+     * BR-295: Component edits are logged via Spatie Activitylog (in controller)
+     * BR-297: If available quantity is edited to 0, auto-toggle to unavailable
+     *
+     * @param  array{name_en: string, name_fr: string, price: int, selling_unit: string, min_quantity?: int, max_quantity?: int|null, available_quantity?: int|null}  $data
+     * @return array{success: bool, component?: MealComponent, error?: string, old_values?: array<string, mixed>}
+     */
+    public function updateComponent(MealComponent $component, array $data): array
+    {
+        $nameEn = trim($data['name_en']);
+        $nameFr = trim($data['name_fr']);
+        $price = (int) $data['price'];
+        $sellingUnit = $data['selling_unit'];
+        $minQuantity = (int) ($data['min_quantity'] ?? 0);
+        $maxQuantity = isset($data['max_quantity']) && $data['max_quantity'] !== '' && $data['max_quantity'] !== null
+            ? (int) $data['max_quantity']
+            : null;
+        $availableQuantity = isset($data['available_quantity']) && $data['available_quantity'] !== '' && $data['available_quantity'] !== null
+            ? (int) $data['available_quantity']
+            : null;
+
+        // Edge case: min quantity > max quantity
+        if ($maxQuantity !== null && $minQuantity > $maxQuantity) {
+            return [
+                'success' => false,
+                'error' => __('Minimum quantity cannot be greater than maximum quantity.'),
+            ];
+        }
+
+        // Validate selling unit is in allowed list
+        $tenant = $component->meal->tenant ?? tenant();
+        $allowedUnits = $this->getAvailableUnits($tenant);
+        if (! in_array($sellingUnit, $allowedUnits)) {
+            return [
+                'success' => false,
+                'error' => __('Invalid selling unit selected.'),
+            ];
+        }
+
+        // Capture old values for activity logging (BR-295)
+        $oldValues = [
+            'name_en' => $component->name_en,
+            'name_fr' => $component->name_fr,
+            'price' => $component->price,
+            'selling_unit' => $component->selling_unit,
+            'min_quantity' => $component->min_quantity,
+            'max_quantity' => $component->max_quantity,
+            'available_quantity' => $component->available_quantity,
+            'is_available' => $component->is_available,
+        ];
+
+        // BR-297: Auto-toggle to unavailable if available_quantity is 0
+        $isAvailable = $component->is_available;
+        if ($availableQuantity === 0) {
+            $isAvailable = false;
+        }
+
+        $component->update([
+            'name_en' => $nameEn,
+            'name_fr' => $nameFr,
+            'price' => $price,
+            'selling_unit' => $sellingUnit,
+            'min_quantity' => $minQuantity,
+            'max_quantity' => $maxQuantity,
+            'available_quantity' => $availableQuantity,
+            'is_available' => $isAvailable,
+        ]);
+
+        return [
+            'success' => true,
+            'component' => $component->fresh(),
+            'old_values' => $oldValues,
+        ];
+    }
+
+    /**
      * Get available selling units (standard + custom from F-121).
      *
      * @return array<string>
