@@ -29,6 +29,7 @@ use App\Http\Controllers\Cook\PickupLocationController;
 use App\Http\Controllers\Cook\QuarterController;
 use App\Http\Controllers\Cook\QuarterGroupController;
 use App\Http\Controllers\Cook\ScheduleTemplateController;
+use App\Http\Controllers\Cook\SellingUnitController;
 use App\Http\Controllers\Cook\SetupWizardController;
 use App\Http\Controllers\Cook\TagController;
 use App\Http\Controllers\Cook\TownController;
@@ -473,6 +474,13 @@ Route::middleware('tenant.domain')->group(function () {
         Route::post('/tags', [TagController::class, 'store'])->name('cook.tags.store');
         Route::put('/tags/{tag}', [TagController::class, 'update'])->name('cook.tags.update');
         Route::delete('/tags/{tag}', [TagController::class, 'destroy'])->name('cook.tags.destroy');
+
+        // Selling unit management (F-121: Custom Selling Unit Definition)
+        // BR-312: Only users with can-manage-meals permission (enforced in controller)
+        Route::get('/selling-units', [SellingUnitController::class, 'index'])->name('cook.selling-units.index');
+        Route::post('/selling-units', [SellingUnitController::class, 'store'])->name('cook.selling-units.store');
+        Route::put('/selling-units/{unit}', [SellingUnitController::class, 'update'])->name('cook.selling-units.update');
+        Route::delete('/selling-units/{unit}', [SellingUnitController::class, 'destroy'])->name('cook.selling-units.destroy');
     });
 
     // Tenant-specific routes will be added by later features (F-126, etc.)

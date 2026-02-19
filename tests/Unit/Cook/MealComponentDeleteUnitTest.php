@@ -22,6 +22,7 @@ uses(Tests\TestCase::class, RefreshDatabase::class);
 
 beforeEach(function () {
     $this->seedRolesAndPermissions();
+    $this->seedSellingUnits();
     $result = createTenantWithCook();
     $this->tenant = $result['tenant'];
     $this->cook = $result['cook'];

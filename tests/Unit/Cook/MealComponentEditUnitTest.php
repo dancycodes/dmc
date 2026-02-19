@@ -2,6 +2,7 @@
 
 use App\Models\Meal;
 use App\Models\MealComponent;
+use App\Models\SellingUnit;
 use App\Models\User;
 use App\Services\MealComponentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,6 +23,7 @@ uses(Tests\TestCase::class, RefreshDatabase::class);
 
 beforeEach(function () {
     $this->seedRolesAndPermissions();
+    $this->seedSellingUnits();
     $result = createTenantWithCook();
     $this->tenant = $result['tenant'];
     $this->cook = $result['cook'];
@@ -71,20 +73,22 @@ test('updateComponent updates price', function () {
 
 test('updateComponent updates selling unit', function () {
     $meal = Meal::factory()->create(['tenant_id' => $this->tenant->id]);
+    $plateUnit = SellingUnit::where('name_en', 'Plate')->where('is_standard', true)->first();
+    $bowlUnit = SellingUnit::where('name_en', 'Bowl')->where('is_standard', true)->first();
     $component = MealComponent::factory()->create([
         'meal_id' => $meal->id,
-        'selling_unit' => 'plate',
+        'selling_unit' => (string) $plateUnit->id,
     ]);
 
     $result = $this->componentService->updateComponent($component, [
         'name_en' => $component->name_en,
         'name_fr' => $component->name_fr,
         'price' => $component->price,
-        'selling_unit' => 'bowl',
+        'selling_unit' => (string) $bowlUnit->id,
     ]);
 
     expect($result['success'])->toBeTrue();
-    expect($result['component']->selling_unit)->toBe('bowl');
+    expect($result['component']->selling_unit)->toBe((string) $bowlUnit->id);
 });
 
 test('updateComponent updates quantity limits', function () {
@@ -231,19 +235,20 @@ test('updateComponent allows null available_quantity for unlimited', function ()
 
 test('updateComponent succeeds with same values (no-op)', function () {
     $meal = Meal::factory()->create(['tenant_id' => $this->tenant->id]);
+    $plateUnit = SellingUnit::where('name_en', 'Plate')->where('is_standard', true)->first();
     $component = MealComponent::factory()->create([
         'meal_id' => $meal->id,
         'name_en' => 'Test EN',
         'name_fr' => 'Test FR',
         'price' => 1000,
-        'selling_unit' => 'plate',
+        'selling_unit' => (string) $plateUnit->id,
     ]);
 
     $result = $this->componentService->updateComponent($component, [
         'name_en' => 'Test EN',
         'name_fr' => 'Test FR',
         'price' => 1000,
-        'selling_unit' => 'plate',
+        'selling_unit' => (string) $plateUnit->id,
     ]);
 
     expect($result['success'])->toBeTrue();
@@ -286,22 +291,22 @@ test('updateComponent handles empty string for max_quantity as null', function (
 
 test('updateComponent handles all standard selling units', function () {
     $meal = Meal::factory()->create(['tenant_id' => $this->tenant->id]);
+    $standardUnits = SellingUnit::where('is_standard', true)->get();
 
-    foreach (MealComponent::STANDARD_UNITS as $unit) {
+    foreach ($standardUnits as $unitModel) {
         $component = MealComponent::factory()->create([
             'meal_id' => $meal->id,
-            'selling_unit' => 'plate',
         ]);
 
         $result = $this->componentService->updateComponent($component, [
             'name_en' => $component->name_en,
             'name_fr' => $component->name_fr,
             'price' => $component->price,
-            'selling_unit' => $unit,
+            'selling_unit' => (string) $unitModel->id,
         ]);
 
         expect($result['success'])->toBeTrue();
-        expect($result['component']->selling_unit)->toBe($unit);
+        expect($result['component']->selling_unit)->toBe((string) $unitModel->id);
     }
 });
 

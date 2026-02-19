@@ -66,3 +66,14 @@ function createTenantWithCook(array $tenantAttributes = [], array $cookAttribute
 {
     return test()->createTenantWithCook($tenantAttributes, $cookAttributes);
 }
+
+/**
+ * Seed standard selling units if not already seeded.
+ *
+ * F-121: Required by any test that creates meal components,
+ * since selling_unit validation now checks the selling_units table.
+ */
+function seedSellingUnits(): void
+{
+    test()->seedSellingUnits();
+}

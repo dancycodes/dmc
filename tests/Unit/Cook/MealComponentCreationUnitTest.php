@@ -2,6 +2,7 @@
 
 use App\Models\Meal;
 use App\Models\MealComponent;
+use App\Models\SellingUnit;
 use App\Models\User;
 use App\Services\MealComponentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,6 +23,7 @@ uses(Tests\TestCase::class, RefreshDatabase::class);
 
 beforeEach(function () {
     $this->seedRolesAndPermissions();
+    $this->seedSellingUnits();
     $result = createTenantWithCook();
     $this->tenant = $result['tenant'];
     $this->cook = $result['cook'];
@@ -183,12 +185,13 @@ test('unit label accessor capitalizes unknown units', function () {
 
 test('service creates component with valid data', function () {
     $meal = Meal::factory()->create(['tenant_id' => $this->tenant->id]);
+    $plateUnit = SellingUnit::where('name_en', 'Plate')->where('is_standard', true)->first();
 
     $result = $this->componentService->createComponent($meal, [
         'name_en' => 'Ndole + Plantain',
         'name_fr' => 'Ndole + Plantain',
         'price' => 1000,
-        'selling_unit' => 'plate',
+        'selling_unit' => (string) $plateUnit->id,
         'min_quantity' => 0,
         'max_quantity' => null,
         'available_quantity' => null,
@@ -198,7 +201,7 @@ test('service creates component with valid data', function () {
         ->and($result['component'])->toBeInstanceOf(MealComponent::class)
         ->and($result['component']->name_en)->toBe('Ndole + Plantain')
         ->and($result['component']->price)->toBe(1000)
-        ->and($result['component']->selling_unit)->toBe('plate')
+        ->and($result['component']->selling_unit)->toBe((string) $plateUnit->id)
         ->and($result['component']->min_quantity)->toBe(0)
         ->and($result['component']->max_quantity)->toBeNull()
         ->and($result['component']->available_quantity)->toBeNull()
@@ -208,12 +211,13 @@ test('service creates component with valid data', function () {
 
 test('service creates component with quantity limits', function () {
     $meal = Meal::factory()->create(['tenant_id' => $this->tenant->id]);
+    $potUnit = SellingUnit::where('name_en', 'Pot')->where('is_standard', true)->first();
 
     $result = $this->componentService->createComponent($meal, [
         'name_en' => 'Special Pot',
         'name_fr' => 'Marmite speciale',
         'price' => 5000,
-        'selling_unit' => 'pot',
+        'selling_unit' => (string) $potUnit->id,
         'min_quantity' => 1,
         'max_quantity' => 3,
         'available_quantity' => 10,
@@ -261,19 +265,21 @@ test('service fails with invalid selling unit', function () {
 
 test('service auto-increments position for each new component', function () {
     $meal = Meal::factory()->create(['tenant_id' => $this->tenant->id]);
+    $plateUnit = SellingUnit::where('name_en', 'Plate')->where('is_standard', true)->first();
+    $bowlUnit = SellingUnit::where('name_en', 'Bowl')->where('is_standard', true)->first();
 
     $result1 = $this->componentService->createComponent($meal, [
         'name_en' => 'First',
         'name_fr' => 'Premier',
         'price' => 500,
-        'selling_unit' => 'plate',
+        'selling_unit' => (string) $plateUnit->id,
     ]);
 
     $result2 = $this->componentService->createComponent($meal, [
         'name_en' => 'Second',
         'name_fr' => 'Deuxieme',
         'price' => 750,
-        'selling_unit' => 'bowl',
+        'selling_unit' => (string) $bowlUnit->id,
     ]);
 
     expect($result1['component']->position)->toBe(1)
@@ -282,12 +288,13 @@ test('service auto-increments position for each new component', function () {
 
 test('service treats empty string max quantity as unlimited', function () {
     $meal = Meal::factory()->create(['tenant_id' => $this->tenant->id]);
+    $plateUnit = SellingUnit::where('name_en', 'Plate')->where('is_standard', true)->first();
 
     $result = $this->componentService->createComponent($meal, [
         'name_en' => 'Test',
         'name_fr' => 'Test',
         'price' => 1000,
-        'selling_unit' => 'plate',
+        'selling_unit' => (string) $plateUnit->id,
         'max_quantity' => '',
         'available_quantity' => '',
     ]);
@@ -299,12 +306,13 @@ test('service treats empty string max quantity as unlimited', function () {
 
 test('service trims component names', function () {
     $meal = Meal::factory()->create(['tenant_id' => $this->tenant->id]);
+    $plateUnit = SellingUnit::where('name_en', 'Plate')->where('is_standard', true)->first();
 
     $result = $this->componentService->createComponent($meal, [
         'name_en' => '  Spaced Name  ',
         'name_fr' => '  Nom Espace  ',
         'price' => 1000,
-        'selling_unit' => 'plate',
+        'selling_unit' => (string) $plateUnit->id,
     ]);
 
     expect($result['success'])->toBeTrue()
@@ -314,12 +322,13 @@ test('service trims component names', function () {
 
 test('service accepts very high price', function () {
     $meal = Meal::factory()->create(['tenant_id' => $this->tenant->id]);
+    $potUnit = SellingUnit::where('name_en', 'Pot')->where('is_standard', true)->first();
 
     $result = $this->componentService->createComponent($meal, [
         'name_en' => 'Expensive Item',
         'name_fr' => 'Article cher',
         'price' => 1000000,
-        'selling_unit' => 'pot',
+        'selling_unit' => (string) $potUnit->id,
     ]);
 
     expect($result['success'])->toBeTrue()
@@ -328,29 +337,36 @@ test('service accepts very high price', function () {
 
 test('service allows same name components in same meal', function () {
     $meal = Meal::factory()->create(['tenant_id' => $this->tenant->id]);
+    $plateUnit = SellingUnit::where('name_en', 'Plate')->where('is_standard', true)->first();
+    $bowlUnit = SellingUnit::where('name_en', 'Bowl')->where('is_standard', true)->first();
 
     $result1 = $this->componentService->createComponent($meal, [
         'name_en' => 'Same Name',
         'name_fr' => 'Meme Nom',
         'price' => 1000,
-        'selling_unit' => 'plate',
+        'selling_unit' => (string) $plateUnit->id,
     ]);
 
     $result2 = $this->componentService->createComponent($meal, [
         'name_en' => 'Same Name',
         'name_fr' => 'Meme Nom',
         'price' => 1500,
-        'selling_unit' => 'bowl',
+        'selling_unit' => (string) $bowlUnit->id,
     ]);
 
     expect($result1['success'])->toBeTrue()
         ->and($result2['success'])->toBeTrue();
 });
 
-test('service get available units returns all standard units', function () {
+test('service get available units returns all standard unit IDs', function () {
     $units = $this->componentService->getAvailableUnits($this->tenant);
 
-    expect($units)->toBe(MealComponent::STANDARD_UNITS);
+    // F-121: getAvailableUnits now returns string IDs from the selling_units table
+    expect($units)->toHaveCount(8);
+    foreach ($units as $unitId) {
+        expect($unitId)->toBeString();
+        expect(is_numeric($unitId))->toBeTrue();
+    }
 });
 
 test('service get available units with labels returns labeled units', function () {
@@ -358,9 +374,10 @@ test('service get available units with labels returns labeled units', function (
     $units = $this->componentService->getAvailableUnitsWithLabels($this->tenant);
 
     expect($units)->toHaveCount(8);
-    expect($units[0])->toHaveKeys(['value', 'label']);
-    expect($units[0]['value'])->toBe('plate');
-    expect($units[0]['label'])->toBe('Plate');
+    expect($units[0])->toHaveKeys(['value', 'label', 'is_standard']);
+    // F-121: value is now the selling_unit ID as a string
+    expect(is_numeric($units[0]['value']))->toBeTrue();
+    expect($units[0]['is_standard'])->toBeTrue();
 });
 
 test('service get components data returns ordered components', function () {
@@ -380,11 +397,14 @@ test('meal component factory creates valid component', function () {
     $meal = Meal::factory()->create(['tenant_id' => $this->tenant->id]);
     $component = MealComponent::factory()->create(['meal_id' => $meal->id]);
 
+    // F-121: selling_unit is now a numeric ID referencing selling_units table
+    $validUnitIds = SellingUnit::where('is_standard', true)->pluck('id')->map(fn ($id) => (string) $id)->toArray();
+
     expect($component)->toBeInstanceOf(MealComponent::class)
         ->and($component->name_en)->not->toBeEmpty()
         ->and($component->name_fr)->not->toBeEmpty()
         ->and($component->price)->toBeGreaterThanOrEqual(1)
-        ->and($component->selling_unit)->toBeIn(MealComponent::STANDARD_UNITS)
+        ->and($component->selling_unit)->toBeIn($validUnitIds)
         ->and($component->is_available)->toBeTrue();
 });
 
@@ -416,6 +436,7 @@ test('meal component factory with unit works', function () {
 test('store route returns 403 without permission', function () {
     $user = User::factory()->create();
     $user->assignRole('client');
+    $plateUnit = SellingUnit::where('name_en', 'Plate')->where('is_standard', true)->first();
 
     $meal = Meal::factory()->create(['tenant_id' => $this->tenant->id]);
 
@@ -427,13 +448,14 @@ test('store route returns 403 without permission', function () {
             'name_en' => 'Test',
             'name_fr' => 'Test',
             'price' => 1000,
-            'selling_unit' => 'plate',
+            'selling_unit' => (string) $plateUnit->id,
         ])
         ->assertForbidden();
 });
 
 test('store route creates component with cook permission', function () {
     $meal = Meal::factory()->create(['tenant_id' => $this->tenant->id]);
+    $plateUnit = SellingUnit::where('name_en', 'Plate')->where('is_standard', true)->first();
 
     $mainDomain = config('app.url');
     $tenantUrl = str_replace('://', '://'.$this->tenant->slug.'.', $mainDomain);
@@ -443,14 +465,14 @@ test('store route creates component with cook permission', function () {
             'name_en' => 'Test Component',
             'name_fr' => 'Composant Test',
             'price' => 1000,
-            'selling_unit' => 'plate',
+            'selling_unit' => (string) $plateUnit->id,
         ]);
 
     $this->assertDatabaseHas('meal_components', [
         'meal_id' => $meal->id,
         'name_en' => 'Test Component',
         'price' => 1000,
-        'selling_unit' => 'plate',
+        'selling_unit' => (string) $plateUnit->id,
     ]);
 });
 
@@ -474,6 +496,7 @@ test('store route validates required fields', function () {
 
 test('component creation is logged in activity log', function () {
     $meal = Meal::factory()->create(['tenant_id' => $this->tenant->id]);
+    $bowlUnit = SellingUnit::where('name_en', 'Bowl')->where('is_standard', true)->first();
 
     $mainDomain = config('app.url');
     $tenantUrl = str_replace('://', '://'.$this->tenant->slug.'.', $mainDomain);
@@ -483,7 +506,7 @@ test('component creation is logged in activity log', function () {
             'name_en' => 'Logged Component',
             'name_fr' => 'Composant enregistre',
             'price' => 2000,
-            'selling_unit' => 'bowl',
+            'selling_unit' => (string) $bowlUnit->id,
         ]);
 
     $this->assertDatabaseHas('activity_log', [
@@ -521,12 +544,13 @@ test('meal component count is used for go-live check', function () {
 
 test('component name with accents is stored correctly', function () {
     $meal = Meal::factory()->create(['tenant_id' => $this->tenant->id]);
+    $plateUnit = SellingUnit::where('name_en', 'Plate')->where('is_standard', true)->first();
 
     $result = $this->componentService->createComponent($meal, [
         'name_en' => 'Pate with legumes',
         'name_fr' => 'Pate aux legumes',
         'price' => 1500,
-        'selling_unit' => 'plate',
+        'selling_unit' => (string) $plateUnit->id,
     ]);
 
     expect($result['success'])->toBeTrue()
