@@ -1,5 +1,6 @@
 {{--
     F-135: Meal Search Bar
+    F-136: Integration with Meal Filters
     BR-214: Searches meal names, descriptions, component names, tag names
     BR-215: Case-insensitive search
     BR-216: 300ms debounce to avoid excessive requests
@@ -8,13 +9,31 @@
     BR-219: Clearing search restores full meals grid
     BR-221: Minimum 2 characters to trigger search
     BR-222: All text localized via __()
+    BR-232: Combinable with filters (F-136)
 --}}
+@php
+    $hasFilters = ($filterData['hasTags'] ?? false) || ($filterData['hasPriceRange'] ?? false);
+@endphp
 <div
     x-data="{
         query: '{{ addslashes($searchQuery ?? '') }}',
+        hasFilters: {{ $hasFilters ? 'true' : 'false' }},
+        triggerSearch() {
+            if (this.hasFilters) {
+                /* F-136: Delegate to filter component which builds the full URL */
+                $dispatch('apply-filters');
+            } else {
+                /* F-135: No filters — search directly */
+                if (this.query.length >= 2) {
+                    $navigate('/meals/search?q=' + encodeURIComponent(this.query), { key: 'meal-search', merge: false, replace: true });
+                } else if (this.query.length === 0) {
+                    $navigate('/meals/search', { key: 'meal-search', merge: false, replace: true });
+                }
+            }
+        },
         clearSearch() {
             this.query = '';
-            $navigate('/meals/search', { key: 'meal-search', merge: false, replace: true });
+            this.triggerSearch();
         }
     }"
     class="mb-8"
@@ -29,7 +48,8 @@
         <input
             type="text"
             x-model="query"
-            x-on:input.debounce.300ms="if (query.length >= 2 || query.length === 0) { $navigate('/meals/search?q=' + encodeURIComponent(query), { key: 'meal-search', merge: false, replace: true }) }"
+            x-on:input.debounce.300ms="if (query.length >= 2 || query.length === 0) { triggerSearch() }"
+            data-meal-search-input
             placeholder="{{ __('Search meals...') }}"
             class="w-full h-12 pl-12 pr-12 bg-surface-alt dark:bg-surface-alt border border-outline dark:border-outline rounded-lg text-on-surface-strong placeholder:text-on-surface/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 font-sans text-base"
             maxlength="50"
