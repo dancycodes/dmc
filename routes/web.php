@@ -532,4 +532,12 @@ Route::middleware('tenant.domain')->group(function () {
         ->name('tenant.cart.clear');
     Route::post('/cart/checkout', [\App\Http\Controllers\Tenant\CartController::class, 'checkout'])
         ->name('tenant.cart.checkout');
+
+    // F-140: Delivery/Pickup Choice Selection
+    // BR-264: Client must choose delivery or pickup
+    // BR-272: Requires authentication
+    Route::get('/checkout/delivery-method', [\App\Http\Controllers\Tenant\CheckoutController::class, 'deliveryMethod'])
+        ->name('tenant.checkout.delivery-method');
+    Route::post('/checkout/delivery-method', [\App\Http\Controllers\Tenant\CheckoutController::class, 'saveDeliveryMethod'])
+        ->name('tenant.checkout.save-delivery-method');
 });
