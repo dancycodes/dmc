@@ -253,6 +253,7 @@
                         x-model="quarter_id"
                         x-name="quarter_id"
                         @change="onQuarterChange()"
+                        x-init="$nextTick(() => { if (quarter_id) $el.value = quarter_id })"
                         class="w-full appearance-none pl-3 pr-9 py-2.5 rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface-strong text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         :disabled="!town_id || quarters.length === 0"
                         required
