@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Cook;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cook\StoreMealComponentRequest;
+use App\Http\Requests\Cook\UpdateMealComponentRequest;
 use App\Services\MealComponentService;
 use Illuminate\Http\Request;
 
@@ -119,5 +120,139 @@ class MealComponentController extends Controller
 
         return redirect($redirectUrl)
             ->with('success', __('Component added.'));
+    }
+
+    /**
+     * Update an existing meal component.
+     *
+     * F-119: Meal Component Edit
+     * BR-292: All validation rules from F-118 apply to edits
+     * BR-293: Price changes apply to new orders only
+     * BR-294: Name, selling unit, and quantity changes take effect immediately
+     * BR-295: Component edits are logged via Spatie Activitylog with old and new values
+     * BR-296: Only users with manage-meals permission
+     * BR-297: If available quantity is edited to 0, auto-toggle to unavailable
+     */
+    public function update(Request $request, int $mealId, int $componentId, MealComponentService $componentService): mixed
+    {
+        $user = $request->user();
+        $tenant = tenant();
+
+        // BR-296: Permission check
+        if (! $user->can('can-manage-meals')) {
+            abort(403);
+        }
+
+        // Meal must belong to current tenant
+        $meal = $tenant->meals()->findOrFail($mealId);
+
+        // Component must belong to meal
+        $component = $meal->components()->findOrFail($componentId);
+
+        // Dual Gale/HTTP validation pattern
+        if ($request->isGale()) {
+            $validated = $request->validateState([
+                'edit_comp_name_en' => ['required', 'string', 'max:150'],
+                'edit_comp_name_fr' => ['required', 'string', 'max:150'],
+                'edit_comp_price' => ['required', 'integer', 'min:1'],
+                'edit_comp_selling_unit' => ['required', 'string', 'max:50'],
+                'edit_comp_min_quantity' => ['nullable', 'integer', 'min:0'],
+                'edit_comp_max_quantity' => ['nullable', 'integer', 'min:1'],
+                'edit_comp_available_quantity' => ['nullable', 'integer', 'min:0'],
+            ], [
+                'edit_comp_name_en.required' => __('Component name is required in English.'),
+                'edit_comp_name_en.max' => __('Component name must not exceed :max characters.'),
+                'edit_comp_name_fr.required' => __('Component name is required in French.'),
+                'edit_comp_name_fr.max' => __('Component name must not exceed :max characters.'),
+                'edit_comp_price.required' => __('Price is required.'),
+                'edit_comp_price.integer' => __('Price must be a whole number.'),
+                'edit_comp_price.min' => __('Price must be at least 1 XAF.'),
+                'edit_comp_selling_unit.required' => __('Selling unit is required.'),
+                'edit_comp_min_quantity.integer' => __('Minimum quantity must be a whole number.'),
+                'edit_comp_min_quantity.min' => __('Minimum quantity cannot be negative.'),
+                'edit_comp_max_quantity.integer' => __('Maximum quantity must be a whole number.'),
+                'edit_comp_max_quantity.min' => __('Maximum quantity must be at least 1.'),
+                'edit_comp_available_quantity.integer' => __('Available quantity must be a whole number.'),
+                'edit_comp_available_quantity.min' => __('Available quantity cannot be negative.'),
+            ]);
+
+            // Map prefixed keys to service data format
+            $data = [
+                'name_en' => $validated['edit_comp_name_en'],
+                'name_fr' => $validated['edit_comp_name_fr'],
+                'price' => $validated['edit_comp_price'],
+                'selling_unit' => $validated['edit_comp_selling_unit'],
+                'min_quantity' => $validated['edit_comp_min_quantity'] ?? 0,
+                'max_quantity' => $validated['edit_comp_max_quantity'] ?? null,
+                'available_quantity' => $validated['edit_comp_available_quantity'] ?? null,
+            ];
+        } else {
+            $formRequest = app(UpdateMealComponentRequest::class);
+            $data = $formRequest->validated();
+        }
+
+        // Use service for business logic
+        $result = $componentService->updateComponent($component, $data);
+
+        if (! $result['success']) {
+            if ($request->isGale()) {
+                return gale()->messages([
+                    'edit_comp_price' => $result['error'],
+                ]);
+            }
+
+            return redirect()->back()
+                ->withErrors(['price' => $result['error']])
+                ->withInput();
+        }
+
+        $updatedComponent = $result['component'];
+        $oldValues = $result['old_values'];
+
+        // BR-295: Activity logging with old and new values
+        $newValues = [
+            'name_en' => $updatedComponent->name_en,
+            'name_fr' => $updatedComponent->name_fr,
+            'price' => $updatedComponent->price,
+            'selling_unit' => $updatedComponent->selling_unit,
+            'min_quantity' => $updatedComponent->min_quantity,
+            'max_quantity' => $updatedComponent->max_quantity,
+            'available_quantity' => $updatedComponent->available_quantity,
+            'is_available' => $updatedComponent->is_available,
+        ];
+
+        // Only log if there are actual changes
+        $changes = array_diff_assoc(
+            array_map('strval', $newValues),
+            array_map('strval', array_map(fn ($v) => $v ?? '', $oldValues))
+        );
+
+        if (! empty($changes)) {
+            $logProperties = [
+                'action' => 'component_updated',
+                'meal_id' => $meal->id,
+                'meal_name' => $meal->name_en,
+                'tenant_id' => $tenant->id,
+                'old' => array_intersect_key($oldValues, $changes),
+                'new' => array_intersect_key($newValues, $changes),
+            ];
+
+            activity('meal_components')
+                ->performedOn($updatedComponent)
+                ->causedBy($user)
+                ->withProperties($logProperties)
+                ->log('Meal component updated');
+        }
+
+        $redirectUrl = url('/dashboard/meals/'.$meal->id.'/edit');
+
+        if ($request->isGale()) {
+            return gale()
+                ->redirect($redirectUrl)
+                ->with('success', __('Component updated.'));
+        }
+
+        return redirect($redirectUrl)
+            ->with('success', __('Component updated.'));
     }
 }
