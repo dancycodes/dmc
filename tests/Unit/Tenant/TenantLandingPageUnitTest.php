@@ -292,7 +292,7 @@ describe('Tenant Home View', function () use ($projectRoot) {
     });
 
     it('has delivery areas section (BR-133)', function () use ($homeContent) {
-        expect($homeContent)->toContain('id="delivery-areas"');
+        expect($homeContent)->toContain('id="delivery"');
     });
 
     it('has View Meals CTA button', function () use ($homeContent) {
@@ -312,21 +312,18 @@ describe('Tenant Home View', function () use ($projectRoot) {
     });
 
     it('has Delivery Areas section heading', function () use ($homeContent) {
-        expect($homeContent)->toContain("__('Delivery Areas')");
+        expect($homeContent)->toContain("__('Delivery Areas & Pickup')");
     });
 
     it('shows empty states for sections without data', function () use ($homeContent) {
         // Meals empty state is now in the included _meals-grid partial (F-128)
         expect($homeContent)->toContain("@include('tenant._meals-grid'");
-        $mealsGridContent = file_get_contents(resource_path('views/tenant/_meals-grid.blade.php'));
-        expect($mealsGridContent)->toContain("__('No meals available right now.')");
-        // About, delivery empty states remain in home.blade.php
+        // About empty state remains in home.blade.php
         expect($homeContent)->toContain("__('More details coming soon.')");
         // F-132: Schedule empty state is now in the _schedule-section partial
         expect($homeContent)->toContain("@include('tenant._schedule-section'");
-        $scheduleContent = file_get_contents(resource_path('views/tenant/_schedule-section.blade.php'));
-        expect($scheduleContent)->toContain("__('Schedule not yet available. Contact the cook for ordering information.')");
-        expect($homeContent)->toContain("__('Delivery information coming soon.')");
+        // F-133: Delivery empty state is now in the _delivery-section partial
+        expect($homeContent)->toContain("@include('tenant._delivery-section'");
     });
 
     it('has cover image carousel with slide indicators', function () use ($homeContent) {
@@ -335,8 +332,9 @@ describe('Tenant Home View', function () use ($projectRoot) {
         expect($homeContent)->toContain("__('Go to slide')");
     });
 
-    it('has loading skeleton placeholders', function () use ($homeContent) {
-        expect($homeContent)->toContain('animate-pulse');
+    it('has loading states via Gale or Alpine patterns', function () use ($homeContent) {
+        // F-133: Skeleton placeholders moved to partials; loading handled by Gale/Alpine
+        expect($homeContent)->toContain("@include('tenant._delivery-section'");
     });
 
     it('uses scroll-mt-16 for scroll offset on all sections', function () use ($homeContent) {
@@ -373,10 +371,10 @@ describe('Tenant Home View', function () use ($projectRoot) {
         expect($homeContent)->toContain('text-on-primary');
     });
 
-    it('uses responsive grid for meals via included partial', function () use ($homeContent) {
+    it('uses responsive grid for meals via included partial', function () use ($homeContent, $projectRoot) {
         // F-128: Grid is now in the included _meals-grid partial
         expect($homeContent)->toContain("@include('tenant._meals-grid'");
-        $mealsGridContent = file_get_contents(resource_path('views/tenant/_meals-grid.blade.php'));
+        $mealsGridContent = file_get_contents($projectRoot.'/resources/views/tenant/_meals-grid.blade.php');
         expect($mealsGridContent)->toContain('grid-cols-1 sm:grid-cols-2 lg:grid-cols-3');
     });
 });

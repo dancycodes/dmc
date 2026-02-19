@@ -313,41 +313,29 @@
     </section>
 
     {{-- ============================================ --}}
-    {{-- DELIVERY AREAS SECTION (F-133 will populate) --}}
+    {{-- DELIVERY AREAS SECTION — F-133: Delivery    --}}
+    {{-- Areas & Fees Display                         --}}
+    {{-- BR-195: Hierarchical town > quarter > fee    --}}
+    {{-- BR-196: Free delivery for 0 fee              --}}
+    {{-- BR-197: Grouped quarters shown together      --}}
+    {{-- BR-198: Pickup locations with addresses       --}}
+    {{-- BR-199: Pickup always "Free"                  --}}
+    {{-- BR-200: Fallback with WhatsApp contact        --}}
+    {{-- BR-201: Expandable/collapsible on mobile      --}}
+    {{-- BR-202/BR-203: Localized text and names       --}}
     {{-- ============================================ --}}
-    <section id="delivery-areas" class="scroll-mt-16 py-12 sm:py-16 bg-surface-alt dark:bg-surface-alt">
+    <section id="delivery" class="scroll-mt-16 py-12 sm:py-16 bg-surface-alt dark:bg-surface-alt">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-8 sm:mb-12">
                 <h2 class="text-2xl sm:text-3xl font-display font-bold text-on-surface-strong">
-                    {{ __('Delivery Areas') }}
+                    {{ __('Delivery Areas & Pickup') }}
                 </h2>
                 <p class="mt-2 text-on-surface max-w-2xl mx-auto">
                     {{ __('Find out if we deliver to your area.') }}
                 </p>
             </div>
 
-            @if($sections['delivery']['hasData'])
-                {{-- Delivery areas placeholder — F-133 will replace --}}
-                <div class="max-w-2xl mx-auto">
-                    <div class="bg-surface dark:bg-surface rounded-lg border border-outline dark:border-outline p-6 animate-pulse">
-                        <div class="space-y-4">
-                            @for($i = 0; $i < 3; $i++)
-                                <div class="flex justify-between items-center">
-                                    <div class="h-4 bg-outline/20 dark:bg-outline/20 rounded w-32"></div>
-                                    <div class="h-4 bg-outline/20 dark:bg-outline/20 rounded w-20"></div>
-                                </div>
-                            @endfor
-                        </div>
-                    </div>
-                </div>
-            @else
-                <div class="text-center py-8">
-                    <div class="w-16 h-16 rounded-full bg-surface dark:bg-surface flex items-center justify-center mx-auto mb-4 border border-outline dark:border-outline">
-                        <svg class="w-8 h-8 text-on-surface opacity-40" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                    </div>
-                    <p class="text-on-surface opacity-60">{{ __('Delivery information coming soon.') }}</p>
-                </div>
-            @endif
+            @include('tenant._delivery-section', ['deliveryDisplay' => $deliveryDisplay])
         </div>
     </section>
 </div>

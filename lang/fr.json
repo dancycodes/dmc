@@ -1923,5 +1923,10 @@
     "Thu": "Jeu",
     "Fri": "Ven",
     "Sat": "Sam",
-    "Sun": "Dim"
+    "Sun": "Dim",
+    "Delivery Areas & Pickup": "Zones de livraison et retrait",
+    "Don't see your area? Contact the cook to ask about delivery to your location.": "Votre quartier n'est pas list\u00e9 ? Contactez le cuisinier pour demander la livraison dans votre zone.",
+    "Contact via WhatsApp": "Contacter via WhatsApp",
+    "Delivery areas not yet configured. Contact the cook.": "Zones de livraison pas encore configur\u00e9es. Contactez le cuisinier.",
+    ":count quarter|:count quarters": ":count quartier|:count quartiers"
 }
