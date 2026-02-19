@@ -15,11 +15,13 @@ use Illuminate\Support\Collection;
 /**
  * F-140: Delivery/Pickup Choice Selection
  * F-141: Delivery Location Selection
+ * F-142: Pickup Location Selection
  *
- * Manages checkout session state including delivery method and location selection.
+ * Manages checkout session state including delivery method, location, and pickup selection.
  * BR-264: Client must choose delivery or pickup to proceed.
  * BR-271: Choice persists across navigation via session.
  * BR-274-BR-283: Delivery location selection rules.
+ * BR-284-BR-291: Pickup location selection rules.
  */
 class CheckoutService
 {
@@ -46,13 +48,14 @@ class CheckoutService
     /**
      * Get checkout session data for a tenant.
      *
-     * @return array{delivery_method: string|null, delivery_location: array|null}
+     * @return array{delivery_method: string|null, delivery_location: array|null, pickup_location_id: int|null}
      */
     public function getCheckoutData(int $tenantId): array
     {
         return session($this->getSessionKey($tenantId), [
             'delivery_method' => null,
             'delivery_location' => null,
+            'pickup_location_id' => null,
         ]);
     }
 
@@ -313,6 +316,80 @@ class CheckoutService
         return [
             'valid' => true,
             'error' => null,
+        ];
+    }
+
+    /**
+     * F-142: Get cook's pickup locations.
+     *
+     * BR-284: All configured pickup locations for the cook are displayed.
+     * BR-285: Each pickup location shows name, full address (quarter, town), special instructions.
+     * BR-291: Location names and addresses displayed in the user's current language.
+     *
+     * @return Collection<int, PickupLocation>
+     */
+    public function getPickupLocations(int $tenantId): Collection
+    {
+        $locale = app()->getLocale();
+        $nameColumn = 'name_'.$locale;
+
+        return PickupLocation::query()
+            ->where('tenant_id', $tenantId)
+            ->with(['town', 'quarter'])
+            ->get()
+            ->sortBy(fn (PickupLocation $p) => $p->{$nameColumn} ?? $p->name_en)
+            ->values();
+    }
+
+    /**
+     * F-142: Save selected pickup location to checkout session.
+     *
+     * BR-289: The selected pickup location is stored in the checkout session/order draft.
+     */
+    public function setPickupLocation(int $tenantId, int $pickupLocationId): void
+    {
+        $data = $this->getCheckoutData($tenantId);
+        $data['pickup_location_id'] = $pickupLocationId;
+
+        session([$this->getSessionKey($tenantId) => $data]);
+    }
+
+    /**
+     * F-142: Get the saved pickup location ID from checkout session.
+     */
+    public function getPickupLocationId(int $tenantId): ?int
+    {
+        $data = $this->getCheckoutData($tenantId);
+
+        return $data['pickup_location_id'] ?? null;
+    }
+
+    /**
+     * F-142: Validate that a pickup location exists and belongs to the cook.
+     *
+     * BR-286: Client must select exactly one pickup location.
+     *
+     * @return array{valid: bool, error: string|null, pickup_location: PickupLocation|null}
+     */
+    public function validatePickupLocation(int $tenantId, int $pickupLocationId): array
+    {
+        $pickupLocation = PickupLocation::query()
+            ->where('tenant_id', $tenantId)
+            ->where('id', $pickupLocationId)
+            ->first();
+
+        if (! $pickupLocation) {
+            return [
+                'valid' => false,
+                'error' => __('The selected pickup location is no longer available.'),
+                'pickup_location' => null,
+            ];
+        }
+
+        return [
+            'valid' => true,
+            'error' => null,
+            'pickup_location' => $pickupLocation,
         ];
     }
 

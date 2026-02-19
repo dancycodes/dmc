@@ -2050,5 +2050,14 @@
     "Please select a delivery method first.": "Veuillez d'abord s\u00e9lectionner un mode de livraison.",
     "The selected quarter is not in the delivery area.": "Le quartier s\u00e9lectionn\u00e9 n'est pas dans la zone de livraison.",
     "The selected quarter does not belong to the selected town.": "Le quartier s\u00e9lectionn\u00e9 n'appartient pas \u00e0 la ville s\u00e9lectionn\u00e9e.",
-    "Delivery:": "Livraison :"
+    "Delivery:": "Livraison :",
+    "Pickup Location": "Lieu de retrait",
+    "Where will you pick up your order?": "O\u00f9 allez-vous retirer votre commande ?",
+    "Pickup at the location below. Confirm and proceed.": "Retrait au lieu ci-dessous. Confirmez et continuez.",
+    "Select a pickup location from the options below.": "S\u00e9lectionnez un lieu de retrait parmi les options ci-dessous.",
+    "Please select a pickup location.": "Veuillez s\u00e9lectionner un lieu de retrait.",
+    "Pickup Fee": "Frais de retrait",
+    "Pickup location saved.": "Lieu de retrait enregistr\u00e9.",
+    "The selected pickup location is no longer available.": "Le lieu de retrait s\u00e9lectionn\u00e9 n'est plus disponible.",
+    "No pickup locations available. Please choose a different delivery method.": "Aucun lieu de retrait disponible. Veuillez choisir un autre mode de livraison."
 }
