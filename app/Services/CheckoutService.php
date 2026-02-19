@@ -16,12 +16,15 @@ use Illuminate\Support\Collection;
  * F-140: Delivery/Pickup Choice Selection
  * F-141: Delivery Location Selection
  * F-142: Pickup Location Selection
+ * F-145: Delivery Fee Calculation
  *
- * Manages checkout session state including delivery method, location, and pickup selection.
+ * Manages checkout session state including delivery method, location, pickup selection,
+ * and delivery fee calculation.
  * BR-264: Client must choose delivery or pickup to proceed.
  * BR-271: Choice persists across navigation via session.
  * BR-274-BR-283: Delivery location selection rules.
  * BR-284-BR-291: Pickup location selection rules.
+ * BR-307-BR-315: Delivery fee calculation rules.
  */
 class CheckoutService
 {
@@ -48,13 +51,14 @@ class CheckoutService
     /**
      * Get checkout session data for a tenant.
      *
-     * @return array{delivery_method: string|null, delivery_location: array|null, pickup_location_id: int|null, phone: string|null}
+     * @return array{delivery_method: string|null, delivery_location: array|null, delivery_fee: int|null, pickup_location_id: int|null, phone: string|null}
      */
     public function getCheckoutData(int $tenantId): array
     {
         return session($this->getSessionKey($tenantId), [
             'delivery_method' => null,
             'delivery_location' => null,
+            'delivery_fee' => null,
             'pickup_location_id' => null,
             'phone' => null,
         ]);
@@ -85,19 +89,28 @@ class CheckoutService
 
     /**
      * F-141: Save delivery location to checkout session.
+     * F-145: Also calculates and stores the delivery fee.
      *
      * BR-281: All fields (town, quarter, neighbourhood) required.
+     * BR-307: Delivery fee is determined by the selected quarter.
+     * BR-308: If the quarter belongs to a fee group, the group fee is used.
+     * BR-309: If the quarter has an individual fee (no group), the individual fee is used.
      *
      * @param  array{town_id: int, quarter_id: int, neighbourhood: string}  $location
      */
     public function setDeliveryLocation(int $tenantId, array $location): void
     {
         $data = $this->getCheckoutData($tenantId);
+        $quarterId = (int) $location['quarter_id'];
+
         $data['delivery_location'] = [
             'town_id' => (int) $location['town_id'],
-            'quarter_id' => (int) $location['quarter_id'],
+            'quarter_id' => $quarterId,
             'neighbourhood' => trim($location['neighbourhood']),
         ];
+
+        // F-145: Calculate and store the delivery fee alongside the location
+        $data['delivery_fee'] = $this->calculateDeliveryFee($tenantId, $quarterId);
 
         session([$this->getSessionKey($tenantId) => $data]);
     }
@@ -112,6 +125,102 @@ class CheckoutService
         $data = $this->getCheckoutData($tenantId);
 
         return $data['delivery_location'] ?? null;
+    }
+
+    /**
+     * F-145: Calculate the delivery fee for a given quarter.
+     *
+     * BR-307: Delivery fee is determined by the selected quarter.
+     * BR-308: If the quarter belongs to a fee group, the group fee is used.
+     * BR-309: If the quarter has an individual fee (no group), the individual fee is used.
+     * BR-314: Pickup orders have no delivery fee (always 0).
+     */
+    public function calculateDeliveryFee(int $tenantId, int $quarterId): int
+    {
+        $validation = $this->validateDeliveryQuarter($tenantId, $quarterId);
+
+        if (! $validation['valid']) {
+            return 0;
+        }
+
+        return $validation['delivery_fee'] ?? 0;
+    }
+
+    /**
+     * F-145: Get the stored delivery fee from checkout session.
+     *
+     * BR-313: The delivery fee is added to the order total (F-146).
+     * BR-314: Pickup orders have no delivery fee (always 0).
+     *
+     * Returns 0 for pickup orders and when no fee is stored.
+     */
+    public function getStoredDeliveryFee(int $tenantId): int
+    {
+        $data = $this->getCheckoutData($tenantId);
+        $method = $data['delivery_method'] ?? null;
+
+        // BR-314: Pickup orders have no delivery fee
+        if ($method === self::METHOD_PICKUP) {
+            return 0;
+        }
+
+        return $data['delivery_fee'] ?? 0;
+    }
+
+    /**
+     * F-145: Get delivery fee display data for the checkout UI.
+     *
+     * BR-310: A fee of 0 XAF is displayed as "Free delivery".
+     * BR-311: The fee is displayed in the format: "Delivery to {quarter}: {fee} XAF".
+     * BR-314: Pickup orders have no delivery fee.
+     *
+     * @return array{fee: int, quarter_name: string|null, is_free: bool, display_text: string}
+     */
+    public function getDeliveryFeeDisplayData(int $tenantId): array
+    {
+        $data = $this->getCheckoutData($tenantId);
+        $method = $data['delivery_method'] ?? null;
+
+        // BR-314: Pickup orders always show 0 fee
+        if ($method === self::METHOD_PICKUP) {
+            return [
+                'fee' => 0,
+                'quarter_name' => null,
+                'is_free' => true,
+                'display_text' => __('Pickup - No delivery fee'),
+            ];
+        }
+
+        $fee = $data['delivery_fee'] ?? 0;
+        $location = $data['delivery_location'] ?? null;
+        $quarterName = null;
+
+        if ($location && isset($location['quarter_id'])) {
+            $locale = app()->getLocale();
+            $nameColumn = 'name_'.$locale;
+            $quarter = Quarter::find($location['quarter_id']);
+            $quarterName = $quarter ? ($quarter->{$nameColumn} ?? $quarter->name_en) : null;
+        }
+
+        $isFree = $fee === 0;
+
+        // BR-311: Format display text
+        if ($quarterName) {
+            $displayText = $isFree
+                ? __('Delivery to :quarter: Free delivery', ['quarter' => $quarterName])
+                : __('Delivery to :quarter: :fee XAF', ['quarter' => $quarterName, 'fee' => number_format($fee, 0, '.', ',')]);
+        } else {
+            $displayText = $isFree
+                ? __('Free delivery')
+                : number_format($fee, 0, '.', ',').' XAF';
+        }
+
+        return [
+            'fee' => $fee,
+            'quarter_name' => $quarterName,
+            'is_free' => $isFree,
+            'display_text' => $displayText,
+        ];
     }
 
     /**
