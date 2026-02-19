@@ -15,11 +15,13 @@ use Illuminate\Http\Request;
  * F-142: Pickup Location Selection
  * F-143: Order Phone Number
  * F-146: Order Total Calculation & Summary
+ * F-147: Location Not Available Flow
  *
  * Handles checkout flow on tenant domains via Gale SSE.
  * BR-264: Client must choose delivery or pickup to proceed.
  * BR-272: Requires authentication.
  * BR-273/BR-282/BR-290/BR-297/BR-326: All text localized via __().
+ * BR-327-BR-334: Location not available messaging and contact options.
  */
 class CheckoutController extends Controller
 {
@@ -226,6 +228,10 @@ class CheckoutController extends Controller
             }
         }
 
+        // F-147: Get cook contact info for "location not available" flow
+        $cookContact = $this->checkoutService->getCookContactInfo($tenant);
+        $hasPickupLocations = $this->checkoutService->hasPickupLocations($tenant->id);
+
         return gale()->view('tenant.checkout.delivery-location', [
             'tenant' => $tenant,
             'towns' => $towns,
@@ -234,6 +240,8 @@ class CheckoutController extends Controller
             'currentLocation' => $currentLocation,
             'preSelectedAddress' => $preSelectedAddress,
             'cartSummary' => $cart['summary'],
+            'cookContact' => $cookContact,
+            'hasPickupLocations' => $hasPickupLocations,
         ], web: true);
     }
 
@@ -340,6 +348,38 @@ class CheckoutController extends Controller
         // F-143 will provide the next checkout step (Order Phone Number)
         return gale()->redirect(url('/checkout/phone'))
             ->with('message', __('Delivery location saved.'));
+    }
+
+    /**
+     * F-147: Switch delivery method to pickup and redirect to pickup location selection.
+     *
+     * BR-331: A "Switch to Pickup" option is provided if the cook has pickup locations.
+     * This is triggered from the "location not available" warning card.
+     */
+    public function switchToPickup(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        if (! auth()->check()) {
+            return gale()->redirect(route('login'))
+                ->with('message', __('Please login to proceed with your order.'));
+        }
+
+        // Verify cook has pickup locations
+        if (! $this->checkoutService->hasPickupLocations($tenant->id)) {
+            return gale()->redirect(url('/checkout/delivery-method'))
+                ->with('message', __('Pickup is not available for this cook.'));
+        }
+
+        // Switch delivery method to pickup
+        $this->checkoutService->setDeliveryMethod($tenant->id, CheckoutService::METHOD_PICKUP);
+
+        return gale()->redirect(url('/checkout/pickup-location'))
+            ->with('message', __('Switched to pickup. Choose your pickup location.'));
     }
 
     /**

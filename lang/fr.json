@@ -2090,5 +2090,14 @@
     "Please provide your phone number first.": "Veuillez d'abord fournir votre num\u00e9ro de t\u00e9l\u00e9phone.",
     "Some prices have changed": "Certains prix ont chang\u00e9",
     "The total below reflects the current prices. Please review before continuing.": "Le total ci-dessous refl\u00e8te les prix actuels. Veuillez v\u00e9rifier avant de continuer.",
-    "Promo": "Promo"
+    "Promo": "Promo",
+    "is not currently available.": "n'est pas disponible actuellement.",
+    "Contact :cook to inquire about delivery to your area": "Contactez :cook pour vous renseigner sur la livraison dans votre quartier",
+    "Hi :brand, I'd like to order from DancyMeals but I'm in :quarter, :town. Is delivery to my area possible?": "Bonjour :brand, j'aimerais commander sur DancyMeals mais je suis \u00e0 :quarter, :town. La livraison dans mon quartier est-elle possible ?",
+    "WhatsApp": "WhatsApp",
+    "Please contact the cook through their social media.": "Veuillez contacter le cuisinier via ses r\u00e9seaux sociaux.",
+    "Switch to Pickup": "Passer au retrait",
+    "Delivery to this quarter is not available. Please select a different quarter or switch to pickup.": "La livraison dans ce quartier n'est pas disponible. Veuillez s\u00e9lectionner un autre quartier ou passer au retrait.",
+    "N/A": "N/D",
+    "Switched to pickup. Choose your pickup location.": "Pass\u00e9 au retrait. Choisissez votre lieu de retrait."
 }
