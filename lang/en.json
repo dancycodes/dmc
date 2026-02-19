@@ -1958,5 +1958,18 @@
     "No meals found for ':query' with your filters.": "No meals found for ':query' with your filters.",
     "Try adjusting your filters or search with a different keyword.": "Try adjusting your filters or search with a different keyword.",
     "No meals match your selected filters.": "No meals match your selected filters.",
-    "Try adjusting your filters to see more results.": "Try adjusting your filters to see more results."
+    "Try adjusting your filters to see more results.": "Try adjusting your filters to see more results.",
+    "In cart": "In cart",
+    "Update": "Update",
+    "Adding...": "Adding...",
+    "Only :count available": "Only :count available",
+    ":qty x :name added to cart": ":qty x :name added to cart",
+    "This meal is no longer available.": "This meal is no longer available.",
+    "This item is no longer available.": "This item is no longer available.",
+    "This item is sold out.": "This item is sold out.",
+    "Cart is full. Maximum :max items allowed.": "Cart is full. Maximum :max items allowed.",
+    "Item not found in cart.": "Item not found in cart.",
+    ":component requires at least one of: :targets": ":component requires at least one of: :targets",
+    ":component requires: :targets": ":component requires: :targets",
+    ":component is incompatible with: :targets": ":component is incompatible with: :targets"
 }

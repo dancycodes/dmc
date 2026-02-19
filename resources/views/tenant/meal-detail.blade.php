@@ -1,5 +1,6 @@
 {{--
     F-129: Meal Detail View
+    F-138: Meal Component Selection & Cart Add
     BR-156: Displays name, description, images, components, schedule, locations
     BR-157: Image carousel up to 3 images with manual navigation
     BR-158: Each component shows name, price, unit, availability status
@@ -7,75 +8,66 @@
     BR-160: Requirement rules in plain language
     BR-161: Quantity selector respects min/max/stock limits
     BR-162: Add to Cart disabled for sold-out components
-    BR-163: Adding to cart updates reactively via Gale (Alpine state)
-    BR-164: Schedule with day/time information
-    BR-165: Delivery towns and pickup locations listed
-    BR-166: All text localized via __()
+    BR-163/BR-251: Cart updates reactively via Gale SSE (server-side session)
+    BR-243: Quantity min 1, max lesser of stock or cook-defined max
+    BR-244: Requirement rules enforced
+    BR-245: Running total updates reactively
+    BR-246: Cart state in session
+    BR-247: Guest carts work via session
+    BR-248: Same component updates quantity (no duplicates)
+    BR-249: Cart items grouped by meal
+    BR-250: All prices XAF integer
+    BR-252: All text localized via __()
 --}}
 @extends('layouts.tenant-public')
 
 @section('title', $mealData['name'] . ' - ' . ($tenant?->name ?? config('app.name')))
 
 @section('content')
-<div class="min-h-screen" x-data="{
-    cart: JSON.parse(localStorage.getItem('dmc-cart-{{ $tenant->id }}') || '{}'),
-    cartCount: 0,
-    cartTotal: 0,
-    descExpanded: false,
-    addToCart(componentId, name, price, unit, qty) {
-        const key = String(componentId);
-        if (this.cart[key]) {
-            this.cart[key].quantity += qty;
-        } else {
-            this.cart[key] = {
-                id: componentId,
-                mealId: {{ $meal->id }},
-                mealName: {{ json_encode($mealData['name']) }},
-                name: name,
-                price: price,
-                unit: unit,
-                quantity: qty
-            };
+<div class="min-h-screen"
+    x-data="{
+        component_id: 0,
+        meal_id: {{ $meal->id }},
+        quantity: 1,
+        cartCount: {{ $cart['summary']['count'] }},
+        cartTotal: {{ $cart['summary']['total'] }},
+        cartItems: {{ json_encode($cart['items']) }},
+        cartMeals: {{ json_encode($cart['meals']) }},
+        cartError: '',
+        cartSuccess: '',
+        descExpanded: false,
+        toastVisible: false,
+        toastTimeout: null,
+        formatPrice(amount) {
+            return new Intl.NumberFormat('en').format(amount) + ' XAF';
+        },
+        showToast() {
+            if (this.cartSuccess) {
+                this.toastVisible = true;
+                clearTimeout(this.toastTimeout);
+                this.toastTimeout = setTimeout(() => { this.toastVisible = false; }, 3000);
+                /* Notify child components of successful add */
+                this.$dispatch('cart-updated', { componentId: this.component_id, success: true });
+            }
+            if (this.cartError) {
+                /* Notify child of failed add so it does not show In cart */
+                this.$dispatch('cart-updated', { componentId: this.component_id, success: false });
+            }
+        },
+        doAddToCart(id, qty) {
+            this.component_id = id;
+            this.quantity = qty;
+            this.$nextTick(() => {
+                $action('{{ route('tenant.cart.add') }}', {
+                    include: ['component_id', 'meal_id', 'quantity']
+                });
+            });
         }
-        this.saveCart();
-        this.showCartToast(name, qty, unit);
-    },
-    removeFromCart(componentId) {
-        const key = String(componentId);
-        delete this.cart[key];
-        this.saveCart();
-    },
-    saveCart() {
-        localStorage.setItem('dmc-cart-{{ $tenant->id }}', JSON.stringify(this.cart));
-        this.updateCartSummary();
-    },
-    updateCartSummary() {
-        let count = 0;
-        let total = 0;
-        Object.values(this.cart).forEach(item => {
-            count += item.quantity;
-            total += item.price * item.quantity;
-        });
-        this.cartCount = count;
-        this.cartTotal = total;
-    },
-    showCartToast(name, qty, unit) {
-        /* BR-163: Visual feedback on add */
-        const toast = document.getElementById('cart-toast');
-        if (toast) {
-            toast.querySelector('[data-toast-message]').textContent =
-                qty + ' x ' + name + ' {{ __('added to cart') }}';
-            toast.classList.remove('hidden');
-            setTimeout(() => toast.classList.add('hidden'), 3000);
-        }
-    },
-    formatPrice(amount) {
-        return new Intl.NumberFormat('en').format(amount) + ' XAF';
-    },
-    init() {
-        this.updateCartSummary();
-    }
-}" @add-to-cart.window="addToCart($event.detail.id, $event.detail.name, $event.detail.price, $event.detail.unit, $event.detail.qty)">
+    }"
+    x-sync="['cartCount', 'cartTotal', 'cartItems', 'cartMeals', 'cartError', 'cartSuccess']"
+    x-effect="showToast()"
+    x-on:add-to-cart.window="doAddToCart($event.detail.id, $event.detail.qty)"
+>
     {{-- Back navigation --}}
     <div class="bg-surface dark:bg-surface border-b border-outline dark:border-outline">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -164,6 +156,12 @@
                 {{-- Divider --}}
                 <div class="border-t border-outline dark:border-outline my-6"></div>
 
+                {{-- Cart error message --}}
+                <div x-show="cartError" x-cloak class="mb-4 flex items-center gap-2 bg-danger-subtle text-danger rounded-lg px-4 py-3 text-sm font-medium">
+                    <svg class="w-4 h-4 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>
+                    <span x-text="cartError"></span>
+                </div>
+
                 {{-- Components Section --}}
                 <div>
                     <h2 class="text-lg font-semibold text-on-surface-strong mb-4">
@@ -179,7 +177,12 @@
                     @else
                         <div class="space-y-3">
                             @foreach($components as $index => $component)
-                                @include('tenant._meal-detail-component', ['component' => $component, 'components' => $components])
+                                @include('tenant._meal-detail-component', [
+                                    'component' => $component,
+                                    'components' => $components,
+                                    'cartComponentsForMeal' => $cartComponentsForMeal,
+                                    'mealId' => $meal->id,
+                                ])
                             @endforeach
                         </div>
                     @endif
@@ -298,14 +301,21 @@
 
     {{-- Cart toast notification --}}
     <div
-        id="cart-toast"
-        class="hidden fixed bottom-4 right-4 left-4 sm:left-auto sm:w-80 z-50 bg-success text-on-success rounded-lg shadow-dropdown px-4 py-3 flex items-center gap-3 animate-slide-in-right"
+        x-show="toastVisible"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 translate-y-2"
+        x-transition:enter-end="opacity-100 translate-y-0"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100 translate-y-0"
+        x-transition:leave-end="opacity-0 translate-y-2"
+        class="fixed bottom-4 right-4 left-4 sm:left-auto sm:w-80 z-50 bg-success text-on-success rounded-lg shadow-dropdown px-4 py-3 flex items-center gap-3"
+        x-cloak
     >
         <svg class="w-5 h-5 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><path d="m9 11 3 3L22 4"></path></svg>
-        <span data-toast-message class="text-sm font-medium"></span>
+        <span class="text-sm font-medium" x-text="cartSuccess"></span>
     </div>
 
-    {{-- Mobile sticky "Add to Cart" bar --}}
+    {{-- Mobile sticky "View Cart" bar --}}
     <div
         class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface dark:bg-surface border-t border-outline dark:border-outline px-4 py-3 shadow-dropdown"
         x-show="cartCount > 0"
@@ -324,7 +334,7 @@
                 </p>
                 <p class="text-lg font-bold text-primary" x-text="formatPrice(cartTotal)"></p>
             </div>
-            {{-- F-138 will wire this to the actual cart/checkout flow --}}
+            {{-- F-139 will wire this to the actual cart page --}}
             <button
                 class="h-11 px-6 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg shadow-card transition-all duration-200 cursor-pointer inline-flex items-center gap-2"
                 disabled
