@@ -1931,5 +1931,12 @@
     ":count quarter|:count quarters": ":count quartier|:count quartiers",
     "Get in Touch": "Nous contacter",
     "Hi :name, I'm interested in ordering from DancyMeals!": "Bonjour :name, je suis int\u00e9ress\u00e9(e) par une commande sur DancyMeals !",
-    "Phone number copied!": "Num\u00e9ro de t\u00e9l\u00e9phone copi\u00e9 !"
+    "Phone number copied!": "Num\u00e9ro de t\u00e9l\u00e9phone copi\u00e9 !",
+    "Search meals...": "Rechercher des plats...",
+    "Search meals": "Rechercher des plats",
+    "Clear search": "Effacer la recherche",
+    "No meals found for ':query'. Try a different search.": "Aucun plat trouv\u00e9 pour ':query'. Essayez une autre recherche.",
+    "Try searching with a different keyword or browse all meals.": "Essayez avec un autre mot-cl\u00e9 ou parcourez tous les plats.",
+    ":count result|:count results": ":count r\u00e9sultat|:count r\u00e9sultats",
+    "for": "pour"
 }

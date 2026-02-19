@@ -497,6 +497,12 @@ Route::middleware('tenant.domain')->group(function () {
         Route::delete('/selling-units/{unit}', [SellingUnitController::class, 'destroy'])->name('cook.selling-units.destroy');
     });
 
+    // F-135: Meal Search Bar (public, on tenant domain)
+    // BR-214: Search across meal names, descriptions, component names, tag names
+    // BR-217: Returns Gale fragment for real-time grid updates
+    Route::get('/meals/search', [\App\Http\Controllers\Tenant\MealSearchController::class, 'search'])
+        ->name('tenant.meal.search');
+
     // F-129: Meal Detail View (public, on tenant domain)
     // BR-153: Clicking a meal card navigates to this route via Gale
     // BR-156: Displays name, description, images, components, schedule, locations

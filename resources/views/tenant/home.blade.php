@@ -238,7 +238,10 @@
                 </p>
             </div>
 
-            @include('tenant._meals-grid', ['meals' => $meals, 'sections' => $sections])
+            {{-- F-135: Meal Search Bar --}}
+            @include('tenant._meal-search', ['searchQuery' => ''])
+
+            @include('tenant._meals-grid', ['meals' => $meals, 'sections' => $sections, 'searchQuery' => ''])
         </div>
     </section>
 
