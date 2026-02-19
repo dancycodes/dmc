@@ -75,7 +75,7 @@
     init() {
         this.updateCartSummary();
     }
-}">
+}" @add-to-cart.window="addToCart($event.detail.id, $event.detail.name, $event.detail.price, $event.detail.unit, $event.detail.qty)">
     {{-- Back navigation --}}
     <div class="bg-surface dark:bg-surface border-b border-outline dark:border-outline">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

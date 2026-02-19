@@ -99,7 +99,7 @@
 
                 {{-- BR-163: Add to Cart button --}}
                 <button
-                    @click="$root.addToCart({{ $component['id'] }}, {{ json_encode($component['name']) }}, {{ $component['price'] }}, {{ json_encode($component['unit']) }}, quantity)"
+                    @click="$dispatch('add-to-cart', { id: {{ $component['id'] }}, name: {{ json_encode($component['name']) }}, price: {{ $component['price'] }}, unit: {{ json_encode($component['unit']) }}, qty: quantity })"
                     class="h-8 px-3 bg-primary hover:bg-primary-hover text-on-primary text-xs font-semibold rounded-lg shadow-sm transition-all duration-200 cursor-pointer inline-flex items-center gap-1.5"
                 >
                     <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
