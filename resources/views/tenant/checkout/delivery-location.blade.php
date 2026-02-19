@@ -89,7 +89,7 @@
                 /* BR-310: Free delivery */
                 return '{{ __('Delivery to') }} ' + name + ': {{ __('Free delivery') }}';
             }
-            /* BR-311: "Delivery to {quarter}: {fee} XAF" */
+            /* BR-311: Delivery to quarter - fee XAF */
             return '{{ __('Delivery to') }} ' + name + ': ' + this.formatPrice(fee);
         },
 
