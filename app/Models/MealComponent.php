@@ -105,21 +105,24 @@ class MealComponent extends Model
 
     /**
      * Get the localized unit label for display.
+     *
+     * F-121: Selling unit is now stored as an ID referencing the selling_units table.
+     * Falls back to UNIT_LABELS constants for backward compatibility with
+     * string-based selling_unit values from before F-121.
      */
     public function getUnitLabelAttribute(): string
     {
         $locale = app()->getLocale();
         $unit = $this->selling_unit;
 
-        // Check standard units first
+        // Check standard units by key first (backward compatibility)
         if (isset(self::UNIT_LABELS[$unit])) {
             return self::UNIT_LABELS[$unit][$locale] ?? self::UNIT_LABELS[$unit]['en'];
         }
 
-        // Forward-compatible: custom units from F-121
-        // When selling_units table exists, look up the label from there
-        if (\Illuminate\Support\Facades\Schema::hasTable('selling_units')) {
-            $sellingUnit = \App\Models\SellingUnit::where('slug', $unit)->first();
+        // Look up by ID in selling_units table (F-121)
+        if (\Illuminate\Support\Facades\Schema::hasTable('selling_units') && is_numeric($unit)) {
+            $sellingUnit = SellingUnit::find((int) $unit);
             if ($sellingUnit) {
                 return $sellingUnit->{'name_'.$locale} ?? $sellingUnit->name_en;
             }

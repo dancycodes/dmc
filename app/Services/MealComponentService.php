@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Meal;
 use App\Models\MealComponent;
+use App\Models\SellingUnit;
 use App\Models\Tenant;
 use Illuminate\Support\Facades\Schema;
 
@@ -274,57 +275,23 @@ class MealComponentService
     }
 
     /**
-     * Get available selling units (standard + custom from F-121).
+     * Get available selling unit IDs (standard + custom from F-121).
      *
      * @return array<string>
      */
     public function getAvailableUnits(Tenant $tenant): array
     {
-        $units = MealComponent::STANDARD_UNITS;
-
-        // Forward-compatible: merge custom units from F-121 when available
-        if (Schema::hasTable('selling_units')) {
-            $customUnits = \App\Models\SellingUnit::where('tenant_id', $tenant->id)
-                ->pluck('slug')
-                ->toArray();
-            $units = array_merge($units, $customUnits);
-        }
-
-        return $units;
+        return app(SellingUnitService::class)->getValidUnitIds($tenant);
     }
 
     /**
      * Get available selling units with labels for display in forms.
      *
-     * @return array<array{value: string, label: string}>
+     * @return array<array{value: string, label: string, is_standard: bool}>
      */
     public function getAvailableUnitsWithLabels(Tenant $tenant): array
     {
-        $locale = app()->getLocale();
-        $units = [];
-
-        // Standard units with translated labels
-        foreach (MealComponent::STANDARD_UNITS as $unit) {
-            $labels = MealComponent::UNIT_LABELS[$unit] ?? ['en' => ucfirst($unit), 'fr' => ucfirst($unit)];
-            $units[] = [
-                'value' => $unit,
-                'label' => $labels[$locale] ?? $labels['en'],
-            ];
-        }
-
-        // Forward-compatible: custom units from F-121
-        if (Schema::hasTable('selling_units')) {
-            $customUnits = \App\Models\SellingUnit::where('tenant_id', $tenant->id)
-                ->get();
-            foreach ($customUnits as $customUnit) {
-                $units[] = [
-                    'value' => $customUnit->slug,
-                    'label' => $customUnit->{'name_'.$locale} ?? $customUnit->name_en,
-                ];
-            }
-        }
-
-        return $units;
+        return app(SellingUnitService::class)->getUnitsWithLabels($tenant);
     }
 
     /**

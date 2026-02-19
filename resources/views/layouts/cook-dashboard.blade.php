@@ -57,6 +57,12 @@
                     'permission' => 'can-manage-meals',
                 ],
                 [
+                    'url' => '/dashboard/selling-units',
+                    'icon' => '<path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/>',
+                    'label' => __('Selling Units'),
+                    'permission' => 'can-manage-meals',
+                ],
+                [
                     'url' => '/dashboard/orders',
                     'icon' => '<path d="M16 3h5v5"></path><path d="M8 3H3v5"></path><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"></path><path d="m15 9 6-6"></path>',
                     'label' => __('Orders'),

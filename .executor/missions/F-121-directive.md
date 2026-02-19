@@ -1,7 +1,7 @@
-# Mission Directive: F-120 -- Meal Component Delete
+# Mission Directive: F-121 -- Custom Selling Unit Definition
 
 - **Spec Skill**: dancymeals-specs
-- **Feature File**: references/F-120.md
+- **Feature File**: references/F-121.md
 - **Project Dir**: C:/Users/pc/Herd/dmc
 - **App URL**: https://dmc.test
 - **Test Mode**: full

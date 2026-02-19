@@ -4,7 +4,9 @@ namespace Database\Factories;
 
 use App\Models\Meal;
 use App\Models\MealComponent;
+use App\Models\SellingUnit;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\MealComponent>
@@ -46,7 +48,7 @@ class MealComponentFactory extends Factory
             'description_en' => null,
             'description_fr' => null,
             'price' => fake()->randomElement([500, 750, 1000, 1500, 2000, 2500, 3000, 5000]),
-            'selling_unit' => fake()->randomElement(MealComponent::STANDARD_UNITS),
+            'selling_unit' => $this->resolveSellingUnit(),
             'min_quantity' => 0,
             'max_quantity' => null,
             'available_quantity' => null,
@@ -116,5 +118,24 @@ class MealComponentFactory extends Factory
             'description_en' => 'Fresh and locally sourced',
             'description_fr' => 'Frais et d\'origine locale',
         ]);
+    }
+
+    /**
+     * Resolve a selling unit value for factory-created components.
+     *
+     * F-121: If selling_units table exists and has data, use a random standard
+     * unit ID (as string). Otherwise fall back to string keys for backward
+     * compatibility with tests that don't seed selling units.
+     */
+    private function resolveSellingUnit(): string
+    {
+        if (Schema::hasTable('selling_units')) {
+            $standardUnit = SellingUnit::where('is_standard', true)->inRandomOrder()->first();
+            if ($standardUnit) {
+                return (string) $standardUnit->id;
+            }
+        }
+
+        return fake()->randomElement(MealComponent::STANDARD_UNITS);
     }
 }

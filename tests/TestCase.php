@@ -2,9 +2,11 @@
 
 namespace Tests;
 
+use App\Models\SellingUnit;
 use App\Models\Tenant;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
+use Database\Seeders\SellingUnitSeeder;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Spatie\Permission\Models\Role;
 
@@ -58,6 +60,19 @@ abstract class TestCase extends BaseTestCase
     {
         if (Role::count() === 0) {
             $this->seed(RoleAndPermissionSeeder::class);
+        }
+    }
+
+    /**
+     * Seed standard selling units if they haven't been seeded yet.
+     *
+     * F-121: Required by any test that creates meal components,
+     * since selling_unit validation now checks the selling_units table.
+     */
+    protected function seedSellingUnits(): void
+    {
+        if (SellingUnit::count() === 0) {
+            $this->seed(SellingUnitSeeder::class);
         }
     }
 }
