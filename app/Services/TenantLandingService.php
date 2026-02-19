@@ -5,10 +5,12 @@ namespace App\Services;
 use App\Models\ComponentRequirementRule;
 use App\Models\CookSchedule;
 use App\Models\DeliveryArea;
+use App\Models\DeliveryAreaQuarter;
 use App\Models\Meal;
 use App\Models\MealComponent;
 use App\Models\MealSchedule;
 use App\Models\PickupLocation;
+use App\Models\QuarterGroup;
 use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -35,7 +37,7 @@ class TenantLandingService
      * BR-126: Only renders on tenant domains
      * BR-127: Cook's selected theme applied dynamically
      *
-     * @return array{tenant: Tenant, themeConfig: array, sections: array, cookProfile: array, meals: LengthAwarePaginator, scheduleDisplay: array}
+     * @return array{tenant: Tenant, themeConfig: array, sections: array, cookProfile: array, meals: LengthAwarePaginator, scheduleDisplay: array, deliveryDisplay: array}
      */
     public function getLandingPageData(Tenant $tenant, int $page = 1): array
     {
@@ -44,6 +46,7 @@ class TenantLandingService
         $meals = $this->getAvailableMeals($tenant, $page);
         $sections = $this->buildSections($tenant);
         $scheduleDisplay = $this->getScheduleDisplayData($tenant);
+        $deliveryDisplay = $this->getDeliveryDisplayData($tenant);
 
         return [
             'tenant' => $tenant,
@@ -52,6 +55,7 @@ class TenantLandingService
             'sections' => $sections,
             'meals' => $meals,
             'scheduleDisplay' => $scheduleDisplay,
+            'deliveryDisplay' => $deliveryDisplay,
         ];
     }
 
@@ -952,6 +956,135 @@ class TenantLandingService
     }
 
     /**
+     * Build the delivery areas display data for the tenant landing page.
+     *
+     * F-133: Delivery Areas & Fees Display
+     * BR-195: Delivery areas organized hierarchically: town > quarters with fees
+     * BR-196: Fee of 0 shows "Free delivery"
+     * BR-197: Quarters with the same group fee are visually grouped
+     * BR-198: Pickup locations listed separately with full address
+     * BR-199: Pickup is always "Free"
+     * BR-200: Fallback message for unlisted areas with WhatsApp contact
+     * BR-201: Towns expandable/collapsible (all expanded on desktop)
+     * BR-202: All text localized via __()
+     * BR-203: Town/quarter names in user's current language
+     *
+     * @return array{hasDeliveryAreas: bool, towns: array, pickupLocations: array, hasPickupLocations: bool, whatsappLink: string|null}
+     */
+    public function getDeliveryDisplayData(Tenant $tenant): array
+    {
+        $locale = app()->getLocale();
+        $orderColumn = 'name_'.$locale;
+
+        // Get delivery areas with towns and quarters
+        $deliveryAreas = DeliveryArea::query()
+            ->where('tenant_id', $tenant->id)
+            ->with(['town', 'deliveryAreaQuarters.quarter'])
+            ->join('towns', 'delivery_areas.town_id', '=', 'towns.id')
+            ->orderBy('towns.'.$orderColumn)
+            ->select('delivery_areas.*')
+            ->get();
+
+        $towns = [];
+
+        foreach ($deliveryAreas as $area) {
+            if (! $area->town) {
+                continue;
+            }
+
+            $townName = $area->town->{'name_'.$locale} ?? $area->town->name_en;
+            $quarters = [];
+
+            // Sort quarters alphabetically in current locale
+            $sortedQuarters = $area->deliveryAreaQuarters
+                ->sortBy(fn (DeliveryAreaQuarter $daq) => mb_strtolower($daq->quarter->{'name_'.$locale} ?? $daq->quarter->name_en));
+
+            foreach ($sortedQuarters as $daq) {
+                if (! $daq->quarter) {
+                    continue;
+                }
+
+                $quarterName = $daq->quarter->{'name_'.$locale} ?? $daq->quarter->name_en;
+
+                // BR-197: Check for group membership and group fee override
+                $group = QuarterGroup::query()
+                    ->where('tenant_id', $tenant->id)
+                    ->whereHas('quarters', function ($q) use ($daq) {
+                        $q->where('quarters.id', $daq->quarter_id);
+                    })
+                    ->first();
+
+                $effectiveFee = $group ? $group->delivery_fee : $daq->delivery_fee;
+                $groupName = $group?->name;
+                $groupId = $group?->id;
+
+                $quarters[] = [
+                    'name' => $quarterName,
+                    'fee' => $effectiveFee,
+                    'formattedFee' => $effectiveFee === 0
+                        ? __('Free delivery')
+                        : self::formatPrice($effectiveFee),
+                    'isFree' => $effectiveFee === 0,
+                    'groupName' => $groupName,
+                    'groupId' => $groupId,
+                ];
+            }
+
+            if (! empty($quarters)) {
+                $towns[] = [
+                    'id' => $area->id,
+                    'name' => $townName,
+                    'quarters' => $quarters,
+                    'quarterCount' => count($quarters),
+                ];
+            }
+        }
+
+        // Get pickup locations
+        $pickupLocations = PickupLocation::query()
+            ->where('tenant_id', $tenant->id)
+            ->with(['town', 'quarter'])
+            ->orderBy('name_'.$locale)
+            ->get()
+            ->map(function (PickupLocation $pickup) use ($locale) {
+                $name = $pickup->{'name_'.$locale} ?? $pickup->name_en;
+                $townName = $pickup->town
+                    ? ($pickup->town->{'name_'.$locale} ?? $pickup->town->name_en)
+                    : '';
+                $quarterName = $pickup->quarter
+                    ? ($pickup->quarter->{'name_'.$locale} ?? $pickup->quarter->name_en)
+                    : '';
+
+                // Build full address string
+                $addressParts = array_filter([$quarterName, $pickup->address, $townName]);
+
+                return [
+                    'name' => $name,
+                    'fullAddress' => implode(', ', $addressParts),
+                    'town' => $townName,
+                    'quarter' => $quarterName,
+                    'address' => $pickup->address,
+                ];
+            })
+            ->toArray();
+
+        // Build WhatsApp link for fallback message
+        $whatsappLink = null;
+        if ($tenant->whatsapp) {
+            $cleanPhone = preg_replace('/[^0-9]/', '', $tenant->whatsapp);
+            $whatsappLink = 'https://wa.me/'.$cleanPhone;
+        }
+
+        return [
+            'hasDeliveryAreas' => ! empty($towns),
+            'towns' => $towns,
+            'pickupLocations' => $pickupLocations,
+            'hasPickupLocations' => ! empty($pickupLocations),
+            'whatsappLink' => $whatsappLink,
+        ];
+    }
+
+    /**
      * Build the sections configuration for the landing page.
      *
      * BR-133: Sections render in order: hero, meals grid, about/bio,
@@ -968,7 +1101,8 @@ class TenantLandingService
         $hasCoverImages = $tenant->getMedia('cover-images')->isNotEmpty();
         $hasMeals = $tenant->meals()->where('status', 'live')->where('is_active', true)->exists();
         $hasSchedule = $tenant->cookSchedules()->exists();
-        $hasDeliveryAreas = $tenant->deliveryAreas()->exists();
+        $hasDeliveryAreas = $tenant->deliveryAreas()->exists()
+            || PickupLocation::where('tenant_id', $tenant->id)->exists();
 
         return [
             'hero' => [
