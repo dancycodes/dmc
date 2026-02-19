@@ -79,14 +79,16 @@ class DashboardController extends Controller
      * Display the tenant landing page for public visitors.
      *
      * F-126: Tenant Landing Page Layout
+     * F-128: Available Meals Grid Display
      * BR-126: Only renders on tenant domains (enforced by root route dispatch)
      * BR-134: Publicly accessible without authentication
      */
     public function tenantHome(Request $request, TenantLandingService $landingService): mixed
     {
         $tenant = tenant();
+        $page = max(1, (int) $request->query('page', 1));
 
-        $landingData = $landingService->getLandingPageData($tenant);
+        $landingData = $landingService->getLandingPageData($tenant, $page);
 
         return gale()->view('tenant.home', $landingData, web: true);
     }

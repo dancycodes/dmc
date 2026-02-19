@@ -221,7 +221,11 @@
     </section>
 
     {{-- ============================================ --}}
-    {{-- MEALS GRID SECTION (F-128 will populate)     --}}
+    {{-- MEALS GRID SECTION — F-128: Available Meals  --}}
+    {{-- BR-146: Only live + available meals           --}}
+    {{-- BR-147: Filtered by cook schedule             --}}
+    {{-- BR-152: Responsive 1/2/3 column grid          --}}
+    {{-- BR-153: Cards link to meal detail via Gale    --}}
     {{-- ============================================ --}}
     <section id="meals" class="scroll-mt-16 py-12 sm:py-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -234,29 +238,7 @@
                 </p>
             </div>
 
-            @if($sections['meals']['hasData'])
-                {{-- Meals grid placeholder — F-128 will replace this with actual meal cards --}}
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    @for($i = 0; $i < 3; $i++)
-                        <div class="bg-surface-alt dark:bg-surface-alt rounded-lg border border-outline dark:border-outline overflow-hidden animate-pulse">
-                            <div class="h-48 bg-outline/20 dark:bg-outline/20"></div>
-                            <div class="p-4 space-y-3">
-                                <div class="h-5 bg-outline/20 dark:bg-outline/20 rounded w-3/4"></div>
-                                <div class="h-4 bg-outline/20 dark:bg-outline/20 rounded w-1/2"></div>
-                                <div class="h-4 bg-outline/20 dark:bg-outline/20 rounded w-1/4"></div>
-                            </div>
-                        </div>
-                    @endfor
-                </div>
-            @else
-                {{-- Empty state --}}
-                <div class="text-center py-12">
-                    <div class="w-16 h-16 rounded-full bg-surface-alt dark:bg-surface-alt flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-8 h-8 text-on-surface opacity-40" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect></svg>
-                    </div>
-                    <p class="text-on-surface opacity-60">{{ __('No meals available yet. Check back soon!') }}</p>
-                </div>
-            @endif
+            @include('tenant._meals-grid', ['meals' => $meals, 'sections' => $sections])
         </div>
     </section>
 
