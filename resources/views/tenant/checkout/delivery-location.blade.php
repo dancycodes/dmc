@@ -1,5 +1,6 @@
 {{--
     F-141: Delivery Location Selection
+    F-145: Delivery Fee Calculation
     BR-274: Town dropdown shows only towns where the cook has delivery areas configured
     BR-275: Quarter dropdown is filtered by the selected town
     BR-276: Neighbourhood is a free-text field with OpenStreetMap Nominatim autocomplete
@@ -10,6 +11,12 @@
     BR-281: All fields (town, quarter, neighbourhood) are required for delivery orders
     BR-282: All form labels and text must be localized via __()
     BR-283: Town and quarter names displayed in the user's current language
+    BR-307: Delivery fee is determined by the selected quarter
+    BR-308: If the quarter belongs to a fee group, the group fee is used
+    BR-309: If the quarter has an individual fee (no group), the individual fee is used
+    BR-310: A fee of 0 XAF is displayed as "Free delivery"
+    BR-311: The fee is displayed in the format: "Delivery to {quarter}: {fee} XAF"
+    BR-312: The fee updates reactively when the quarter selection changes
 --}}
 @extends('layouts.tenant-public')
 
@@ -64,6 +71,26 @@
             if (!this.quarter_id) return null;
             const q = this.quarters.find(q => String(q.id) === String(this.quarter_id));
             return q ? q.delivery_fee : null;
+        },
+
+        /* F-145: Get the name of the currently selected quarter */
+        getSelectedQuarterName() {
+            if (!this.quarter_id) return '';
+            const q = this.quarters.find(q => String(q.id) === String(this.quarter_id));
+            return q ? q.name : '';
+        },
+
+        /* F-145 BR-311: Format the delivery fee display text */
+        getDeliveryFeeDisplay() {
+            const fee = this.getDeliveryFee();
+            if (fee === null) return '';
+            const name = this.getSelectedQuarterName();
+            if (fee === 0) {
+                /* BR-310: Free delivery */
+                return '{{ __('Delivery to') }} ' + name + ': {{ __('Free delivery') }}';
+            }
+            /* BR-311: Delivery to quarter - fee XAF */
+            return '{{ __('Delivery to') }} ' + name + ': ' + this.formatPrice(fee);
         },
 
         formatPrice(amount) {
@@ -281,10 +308,24 @@
                     {{ __('No quarters available for delivery in this town.') }}
                 </div>
 
-                {{-- Delivery fee indicator --}}
-                <div x-show="quarter_id && getDeliveryFee() !== null" x-cloak class="mt-2 flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"></path><path d="M15 18H9"></path><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"></path><circle cx="17" cy="18" r="2"></circle><circle cx="7" cy="18" r="2"></circle></svg>
-                    <span class="text-xs font-medium text-primary" x-text="getDeliveryFee() > 0 ? '{{ __('Delivery fee:') }} ' + formatPrice(getDeliveryFee()) : '{{ __('Free delivery!') }}'"></span>
+                {{-- F-145: Delivery fee indicator (BR-311, BR-310, BR-312) --}}
+                <div
+                    x-show="quarter_id && getDeliveryFee() !== null"
+                    x-cloak
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="opacity-0 -translate-y-1"
+                    x-transition:enter-end="opacity-100 translate-y-0"
+                    class="mt-2 flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg"
+                    :class="getDeliveryFee() === 0 ? 'bg-success-subtle' : 'bg-primary-subtle'"
+                >
+                    {{-- Delivery truck icon --}}
+                    <svg class="w-3.5 h-3.5 shrink-0" :class="getDeliveryFee() === 0 ? 'text-success' : 'text-primary'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"></path><path d="M15 18H9"></path><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"></path><circle cx="17" cy="18" r="2"></circle><circle cx="7" cy="18" r="2"></circle></svg>
+                    {{-- BR-311: "Delivery to {quarter}: {fee} XAF" / BR-310: "Free delivery" --}}
+                    <span
+                        class="text-xs font-medium"
+                        :class="getDeliveryFee() === 0 ? 'text-success' : 'text-primary'"
+                        x-text="getDeliveryFeeDisplay()"
+                    ></span>
                 </div>
             </div>
 
@@ -304,15 +345,31 @@
             </div>
         </div>
 
-        {{-- Order summary --}}
+        {{-- F-145: Order summary with delivery fee (BR-313) --}}
         <div class="mt-6 bg-surface dark:bg-surface border border-outline dark:border-outline rounded-xl p-4 shadow-card">
             <div class="flex items-center justify-between">
                 <span class="text-sm font-medium text-on-surface">{{ __('Cart Subtotal') }}</span>
-                <span class="text-base font-bold text-primary">{{ number_format($cartSummary['total'], 0, '.', ',') }} XAF</span>
+                <span class="text-sm font-semibold text-on-surface-strong">{{ number_format($cartSummary['total'], 0, '.', ',') }} XAF</span>
             </div>
             <div class="flex items-center justify-between mt-2">
                 <span class="text-sm font-medium text-on-surface">{{ __('Delivery Fee') }}</span>
-                <span class="text-sm text-on-surface" x-text="quarter_id && getDeliveryFee() !== null ? (getDeliveryFee() > 0 ? formatPrice(getDeliveryFee()) : '{{ __('Free') }}') : '{{ __('Select quarter to calculate') }}'"></span>
+                <span
+                    class="text-sm"
+                    :class="quarter_id && getDeliveryFee() !== null ? (getDeliveryFee() === 0 ? 'text-success font-semibold' : 'text-on-surface-strong font-semibold') : 'text-on-surface/50'"
+                    x-text="quarter_id && getDeliveryFee() !== null ? (getDeliveryFee() > 0 ? formatPrice(getDeliveryFee()) : '{{ __('Free') }}') : '{{ __('Select quarter to calculate') }}'"
+                ></span>
+            </div>
+            {{-- Total line (BR-313: delivery fee added to order total) --}}
+            <div
+                x-show="quarter_id && getDeliveryFee() !== null"
+                x-cloak
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100"
+                class="flex items-center justify-between mt-3 pt-3 border-t border-outline dark:border-outline"
+            >
+                <span class="text-sm font-semibold text-on-surface-strong">{{ __('Estimated Total') }}</span>
+                <span class="text-base font-bold text-primary" x-text="formatPrice({{ $cartSummary['total'] }} + (getDeliveryFee() || 0))"></span>
             </div>
         </div>
 
@@ -348,7 +405,12 @@
     >
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-xs font-medium text-on-surface-strong" x-text="quarter_id && getDeliveryFee() !== null ? (getDeliveryFee() > 0 ? '{{ __('Delivery:') }} ' + formatPrice(getDeliveryFee()) : '{{ __('Free delivery') }}') : ''"></p>
+                {{-- F-145 BR-311: Delivery fee display in mobile bar --}}
+                <p
+                    class="text-xs font-medium"
+                    :class="getDeliveryFee() === 0 ? 'text-success' : 'text-on-surface-strong'"
+                    x-text="quarter_id && getDeliveryFee() !== null ? getDeliveryFeeDisplay() : ''"
+                ></p>
                 <p class="text-xs text-on-surface/60 truncate max-w-[160px]" x-text="neighbourhood"></p>
             </div>
             <button
