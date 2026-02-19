@@ -59,9 +59,13 @@ use Illuminate\Support\Facades\Route;
 
 // Root route dispatches based on domain context
 // BR-066: Discovery page on main domain, tenant landing on tenant domains
+// BR-126: Tenant landing page renders ONLY on tenant domains
 Route::get('/', function () {
     if (app(TenantService::class)->isTenantDomain()) {
-        return app(DashboardController::class)->tenantHome(request());
+        return app(DashboardController::class)->tenantHome(
+            request(),
+            app(App\Services\TenantLandingService::class),
+        );
     }
 
     return app(DiscoveryController::class)->index(

@@ -1,11 +1,16 @@
 {{--
     Tenant Domain Public Layout
     ---------------------------
+    F-126: Tenant Landing Page Layout
     Used on tenant domains (cook.dmc.test) for public-facing pages.
     Features: Cook branding (name/logo), responsive nav, auth links,
-    theme/language switchers, notification bell, footer.
-    BR-122: tenant-public variant
-    BR-131: Shows cook's branding in the header
+    theme/language switchers, scroll-anchor navigation, footer.
+    BR-126: Renders ONLY on tenant domains
+    BR-128: Navigation includes Home, Meals, About, Contact as scroll-anchor links
+    BR-129: Auth state reflected (guest vs authenticated)
+    BR-130: Fully responsive, mobile-first with hamburger nav
+    BR-132: Supports light and dark mode
+    BR-135: All interactions use Gale; no full page reloads
 --}}
 @extends('layouts.app')
 
@@ -15,57 +20,144 @@
     $tenantName = $currentTenant?->name ?? config('app.name', 'DancyMeals');
 @endphp
 
-<div x-data="{ mobileMenuOpen: false }" class="min-h-screen flex flex-col">
-    {{-- Header / Navbar with Cook Branding --}}
-    <header class="bg-surface dark:bg-surface border-b border-outline dark:border-outline sticky top-0 z-50">
+<div x-data="{
+    mobileMenuOpen: false,
+    scrolled: false,
+    activeSection: 'hero',
+    init() {
+        /* BR-135: Track scroll position for sticky nav styling */
+        const onScroll = () => {
+            this.scrolled = window.scrollY > 20;
+            this.updateActiveSection();
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        this.$cleanup = () => window.removeEventListener('scroll', onScroll);
+    },
+    updateActiveSection() {
+        const sections = ['hero', 'meals', 'about', 'contact'];
+        for (let i = sections.length - 1; i >= 0; i--) {
+            const el = document.getElementById(sections[i]);
+            if (el && el.getBoundingClientRect().top <= 120) {
+                this.activeSection = sections[i];
+                return;
+            }
+        }
+        this.activeSection = 'hero';
+    },
+    scrollTo(id) {
+        const el = document.getElementById(id);
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            /* Update URL hash without triggering scroll */
+            history.replaceState(null, '', '#' + id);
+            this.activeSection = id;
+        }
+        this.mobileMenuOpen = false;
+    }
+}" class="min-h-screen flex flex-col">
+
+    {{-- Header / Navbar --}}
+    {{-- BR-130: Fixed at top with semi-transparent background on scroll --}}
+    <header
+        class="sticky top-0 z-50 transition-all duration-300"
+        :class="scrolled
+            ? 'bg-surface/95 dark:bg-surface/95 backdrop-blur-md shadow-card border-b border-outline dark:border-outline'
+            : 'bg-surface dark:bg-surface border-b border-outline dark:border-outline'"
+    >
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="h-16 flex items-center justify-between" x-data x-navigate>
+            <div class="h-16 flex items-center justify-between">
                 {{-- Cook Brand / Logo --}}
-                <a href="{{ url('/') }}" class="flex items-center gap-2 shrink-0 min-w-0">
+                <button
+                    @click="scrollTo('hero')"
+                    class="flex items-center gap-2 shrink-0 min-w-0 cursor-pointer"
+                >
                     <span class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-sm shrink-0">
-                        {{ strtoupper(substr($tenantName, 0, 1)) }}
+                        {{ mb_strtoupper(mb_substr($tenantName, 0, 1)) }}
                     </span>
                     <span class="font-display text-lg font-bold text-on-surface-strong truncate max-w-[200px]" title="{{ $tenantName }}">
                         {{ $tenantName }}
                     </span>
-                </a>
+                </button>
 
-                {{-- Desktop Navigation --}}
-                <nav class="hidden lg:flex items-center gap-6" aria-label="{{ __('Main navigation') }}">
-                    <a href="{{ url('/') }}" class="text-sm font-medium text-on-surface hover:text-on-surface-strong transition-colors duration-200">
-                        {{ __('Menu') }}
-                    </a>
-                    <a href="{{ url('/schedule') }}" class="text-sm font-medium text-on-surface hover:text-on-surface-strong transition-colors duration-200">
-                        {{ __('Schedule') }}
-                    </a>
-                    <a href="{{ url('/delivery') }}" class="text-sm font-medium text-on-surface hover:text-on-surface-strong transition-colors duration-200">
-                        {{ __('Delivery') }}
-                    </a>
+                {{-- Desktop Navigation (scroll-anchor links) --}}
+                {{-- BR-128: Home, Meals, About, Contact --}}
+                <nav class="hidden lg:flex items-center gap-1" aria-label="{{ __('Main navigation') }}">
+                    @php
+                        $navItems = [
+                            ['id' => 'hero', 'label' => __('Home'), 'icon' => '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline>'],
+                            ['id' => 'meals', 'label' => __('Meals'), 'icon' => '<rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect>'],
+                            ['id' => 'about', 'label' => __('About'), 'icon' => '<circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path>'],
+                            ['id' => 'contact', 'label' => __('Contact'), 'icon' => '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>'],
+                        ];
+                    @endphp
+                    @foreach($navItems as $item)
+                        <button
+                            @click="scrollTo('{{ $item['id'] }}')"
+                            class="px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200"
+                            :class="activeSection === '{{ $item['id'] }}'
+                                ? 'text-primary bg-primary-subtle'
+                                : 'text-on-surface hover:text-on-surface-strong hover:bg-surface-alt'"
+                        >
+                            {{ $item['label'] }}
+                        </button>
+                    @endforeach
                 </nav>
 
                 {{-- Desktop Right Section --}}
                 <div class="hidden lg:flex items-center gap-3">
-                    <x-nav.notification-bell />
                     <x-theme-switcher />
                     <x-language-switcher />
 
                     @auth
-                        <div class="flex items-center gap-3 ml-2">
-                            <a href="{{ url('/profile') }}" class="flex items-center gap-2 text-sm font-medium text-on-surface hover:text-on-surface-strong transition-colors duration-200">
-                                <div class="w-8 h-8 rounded-full bg-primary-subtle flex items-center justify-center text-primary font-semibold text-sm">
-                                    {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
-                                </div>
-                                <span class="max-w-[120px] truncate">{{ auth()->user()->name }}</span>
-                            </a>
-                            <form method="POST" action="{{ route('logout') }}" x-navigate-skip>
-                                @csrf
-                                <button type="submit" class="text-sm font-medium text-on-surface hover:text-danger transition-colors duration-200" title="{{ __('Logout') }}">
-                                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" x2="9" y1="12" y2="12"></line></svg>
+                        <div class="flex items-center gap-3 ml-2" x-data x-navigate>
+                            {{-- BR-129: Authenticated user sees name with dropdown --}}
+                            <div x-data="{ userMenuOpen: false }" class="relative">
+                                <button
+                                    @click="userMenuOpen = !userMenuOpen"
+                                    class="flex items-center gap-2 text-sm font-medium text-on-surface hover:text-on-surface-strong transition-colors duration-200"
+                                >
+                                    <div class="w-8 h-8 rounded-full bg-primary-subtle flex items-center justify-center text-primary font-semibold text-sm">
+                                        {{ mb_strtoupper(mb_substr(auth()->user()->name, 0, 1)) }}
+                                    </div>
+                                    <span class="max-w-[120px] truncate">{{ auth()->user()->name }}</span>
+                                    <svg class="w-4 h-4 transition-transform" :class="userMenuOpen ? 'rotate-180' : ''" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
                                 </button>
-                            </form>
+
+                                {{-- Dropdown Menu --}}
+                                <div
+                                    x-show="userMenuOpen"
+                                    @click.outside="userMenuOpen = false"
+                                    x-transition:enter="transition ease-out duration-150"
+                                    x-transition:enter-start="opacity-0 scale-95"
+                                    x-transition:enter-end="opacity-100 scale-100"
+                                    x-transition:leave="transition ease-in duration-100"
+                                    x-transition:leave-start="opacity-100 scale-100"
+                                    x-transition:leave-end="opacity-0 scale-95"
+                                    class="absolute right-0 mt-2 w-48 bg-surface dark:bg-surface border border-outline dark:border-outline rounded-lg shadow-dropdown py-1 z-50"
+                                    x-cloak
+                                >
+                                    <a href="{{ url('/profile') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-on-surface hover:bg-surface-alt transition-colors duration-200">
+                                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                        {{ __('Profile') }}
+                                    </a>
+                                    <a href="{{ url('/profile/addresses') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-on-surface hover:bg-surface-alt transition-colors duration-200">
+                                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                        {{ __('My Addresses') }}
+                                    </a>
+                                    <div class="border-t border-outline dark:border-outline my-1"></div>
+                                    <form method="POST" action="{{ route('logout') }}" x-navigate-skip>
+                                        @csrf
+                                        <button type="submit" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-danger hover:bg-danger-subtle transition-colors duration-200 text-left">
+                                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" x2="9" y1="12" y2="12"></line></svg>
+                                            {{ __('Logout') }}
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
                         </div>
                     @else
-                        <div class="flex items-center gap-2 ml-2">
+                        {{-- BR-129: Guest sees Login/Register links --}}
+                        <div class="flex items-center gap-2 ml-2" x-data x-navigate>
                             <a href="{{ route('login') }}" class="h-9 px-4 text-sm rounded-lg font-medium border border-outline text-on-surface hover:bg-surface-alt transition-all duration-200 inline-flex items-center">
                                 {{ __('Login') }}
                             </a>
@@ -107,27 +199,34 @@
             @click.away="mobileMenuOpen = false"
             x-cloak
         >
-            <nav class="px-4 py-4 space-y-1" x-data x-navigate aria-label="{{ __('Mobile navigation') }}">
-                <a href="{{ url('/') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-alt transition-colors duration-200">
+            <nav class="px-4 py-4 space-y-1" aria-label="{{ __('Mobile navigation') }}">
+                {{-- BR-128: Scroll anchor links --}}
+                <button @click="scrollTo('hero')" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors duration-200" :class="activeSection === 'hero' ? 'text-primary bg-primary-subtle' : 'text-on-surface hover:bg-surface-alt'">
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    {{ __('Home') }}
+                </button>
+                <button @click="scrollTo('meals')" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors duration-200" :class="activeSection === 'meals' ? 'text-primary bg-primary-subtle' : 'text-on-surface hover:bg-surface-alt'">
                     <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect></svg>
-                    {{ __('Menu') }}
-                </a>
-                <a href="{{ url('/schedule') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-alt transition-colors duration-200">
-                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>
-                    {{ __('Schedule') }}
-                </a>
-                <a href="{{ url('/delivery') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-alt transition-colors duration-200">
-                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                    {{ __('Delivery') }}
-                </a>
+                    {{ __('Meals') }}
+                </button>
+                <button @click="scrollTo('about')" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors duration-200" :class="activeSection === 'about' ? 'text-primary bg-primary-subtle' : 'text-on-surface hover:bg-surface-alt'">
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+                    {{ __('About') }}
+                </button>
+                <button @click="scrollTo('contact')" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors duration-200" :class="activeSection === 'contact' ? 'text-primary bg-primary-subtle' : 'text-on-surface hover:bg-surface-alt'">
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                    {{ __('Contact') }}
+                </button>
 
                 <div class="border-t border-outline dark:border-outline my-2"></div>
 
                 @auth
-                    <a href="{{ url('/profile') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-alt transition-colors duration-200">
-                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                        {{ __('Profile') }}
-                    </a>
+                    <div x-data x-navigate>
+                        <a href="{{ url('/profile') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-alt transition-colors duration-200">
+                            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                            {{ __('Profile') }}
+                        </a>
+                    </div>
                     <form method="POST" action="{{ route('logout') }}" x-navigate-skip>
                         @csrf
                         <button type="submit" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-danger hover:bg-danger-subtle transition-colors duration-200">
@@ -136,14 +235,16 @@
                         </button>
                     </form>
                 @else
-                    <a href="{{ route('login') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-alt transition-colors duration-200">
-                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" x2="3" y1="12" y2="12"></line></svg>
-                        {{ __('Login') }}
-                    </a>
-                    <a href="{{ route('register') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-primary hover:bg-primary-subtle transition-colors duration-200">
-                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" x2="19" y1="8" y2="14"></line><line x1="22" x2="16" y1="11" y2="11"></line></svg>
-                        {{ __('Register') }}
-                    </a>
+                    <div x-data x-navigate>
+                        <a href="{{ route('login') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-alt transition-colors duration-200">
+                            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" x2="3" y1="12" y2="12"></line></svg>
+                            {{ __('Login') }}
+                        </a>
+                        <a href="{{ route('register') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-primary hover:bg-primary-subtle transition-colors duration-200">
+                            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" x2="19" y1="8" y2="14"></line><line x1="22" x2="16" y1="11" y2="11"></line></svg>
+                            {{ __('Register') }}
+                        </a>
+                    </div>
                 @endauth
             </nav>
         </div>
@@ -155,9 +256,13 @@
     </main>
 
     {{-- Footer --}}
-    <footer class="bg-surface-alt dark:bg-surface-alt border-t border-outline dark:border-outline mt-auto">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+    {{-- BR-133: Footer section at the bottom --}}
+    <footer id="contact" class="bg-surface-alt dark:bg-surface-alt border-t border-outline dark:border-outline mt-auto scroll-mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+            {{-- Contact & Social Links placeholder (F-134 will populate) --}}
+            @yield('footer-content')
+
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-outline dark:border-outline">
                 <div class="text-center sm:text-left">
                     <p class="text-sm text-on-surface">
                         {{ __('Powered by') }}
