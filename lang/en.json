@@ -2073,5 +2073,22 @@
     "Same as my profile": "Same as my profile",
     "Changing the number here will not update your profile. This number is used for this order only.": "Changing the number here will not update your profile. This number is used for this order only.",
     "Phone number saved.": "Phone number saved.",
-    "Phone": "Phone"
+    "Phone": "Phone",
+    "Order Summary": "Order Summary",
+    "Review your order before proceeding to payment.": "Review your order before proceeding to payment.",
+    "Edit Cart": "Edit Cart",
+    "Review": "Review",
+    "Order Items": "Order Items",
+    ":count item|:count items": ":count item|:count items",
+    "Meal subtotal": "Meal subtotal",
+    "Subtotal": "Subtotal",
+    "Delivery Fee": "Delivery Fee",
+    "Total": "Total",
+    "Order Details": "Order Details",
+    "Proceed to Payment": "Proceed to Payment",
+    "Your cart is empty. Add items before reviewing your order.": "Your cart is empty. Add items before reviewing your order.",
+    "Please provide your phone number first.": "Please provide your phone number first.",
+    "Some prices have changed": "Some prices have changed",
+    "The total below reflects the current prices. Please review before continuing.": "The total below reflects the current prices. Please review before continuing.",
+    "Promo": "Promo"
 }

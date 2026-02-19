@@ -2073,5 +2073,22 @@
     "Same as my profile": "Identique \u00e0 mon profil",
     "Changing the number here will not update your profile. This number is used for this order only.": "Changer le num\u00e9ro ici ne mettra pas \u00e0 jour votre profil. Ce num\u00e9ro est utilis\u00e9 uniquement pour cette commande.",
     "Phone number saved.": "Num\u00e9ro de t\u00e9l\u00e9phone enregistr\u00e9.",
-    "Phone": "T\u00e9l\u00e9phone"
+    "Phone": "T\u00e9l\u00e9phone",
+    "Order Summary": "R\u00e9capitulatif de commande",
+    "Review your order before proceeding to payment.": "V\u00e9rifiez votre commande avant de proc\u00e9der au paiement.",
+    "Edit Cart": "Modifier le panier",
+    "Review": "V\u00e9rifier",
+    "Order Items": "Articles command\u00e9s",
+    ":count item|:count items": ":count article|:count articles",
+    "Meal subtotal": "Sous-total du plat",
+    "Subtotal": "Sous-total",
+    "Delivery Fee": "Frais de livraison",
+    "Total": "Total",
+    "Order Details": "D\u00e9tails de la commande",
+    "Proceed to Payment": "Proc\u00e9der au paiement",
+    "Your cart is empty. Add items before reviewing your order.": "Votre panier est vide. Ajoutez des articles avant de v\u00e9rifier votre commande.",
+    "Please provide your phone number first.": "Veuillez d'abord fournir votre num\u00e9ro de t\u00e9l\u00e9phone.",
+    "Some prices have changed": "Certains prix ont chang\u00e9",
+    "The total below reflects the current prices. Please review before continuing.": "Le total ci-dessous refl\u00e8te les prix actuels. Veuillez v\u00e9rifier avant de continuer.",
+    "Promo": "Promo"
 }

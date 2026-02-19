@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\Address;
 use App\Models\DeliveryArea;
 use App\Models\DeliveryAreaQuarter;
+use App\Models\Meal;
+use App\Models\MealComponent;
 use App\Models\PickupLocation;
 use App\Models\Quarter;
 use App\Models\QuarterGroup;
@@ -559,6 +561,119 @@ class CheckoutService
         }
 
         return url('/checkout/delivery-location');
+    }
+
+    /**
+     * F-146: Build the complete order summary for the review step.
+     *
+     * BR-316: Itemized list shows meal name, component name, quantity, unit price, line subtotal.
+     * BR-317: Items are grouped by meal.
+     * BR-318: Subtotal is the sum of all food item line subtotals.
+     * BR-319: Delivery fee is shown as a separate line item; pickup shows "Pickup - Free".
+     * BR-320: Promo discount (if applicable) is shown as a negative line item with code name.
+     * BR-321: Grand total = subtotal + delivery fee - promo discount.
+     * BR-322: All amounts displayed in XAF (integer, formatted with thousand separators).
+     *
+     * @return array{meals: array, subtotal: int, delivery_fee: int, delivery_display: array, promo_discount: int, promo_code: string|null, grand_total: int, item_count: int, price_changes: array}
+     */
+    public function getOrderSummary(int $tenantId, array $cartData): array
+    {
+        $meals = $cartData['meals'] ?? [];
+        $items = $cartData['items'] ?? [];
+
+        // BR-318: Calculate food subtotal from current cart data
+        $subtotal = 0;
+        foreach ($items as $item) {
+            $subtotal += $item['unit_price'] * $item['quantity'];
+        }
+
+        // BR-319: Get delivery fee based on method
+        $deliveryMethod = $this->getDeliveryMethod($tenantId);
+        $deliveryFee = $this->getStoredDeliveryFee($tenantId);
+        $deliveryDisplay = $this->getDeliveryFeeDisplayData($tenantId);
+
+        // BR-320: Promo discount (F-215 - forward-compatible stub)
+        $promoDiscount = 0;
+        $promoCode = null;
+
+        // BR-321: Grand total = subtotal + delivery fee - promo discount
+        // Edge case: promo discount exceeding subtotal means food portion is free
+        $effectiveDiscount = min($promoDiscount, $subtotal);
+        $grandTotal = max(0, $subtotal + $deliveryFee - $effectiveDiscount);
+
+        // Edge case: Check for price changes since items were added to cart
+        $priceChanges = $this->detectPriceChanges($items);
+
+        // Count total items (sum of quantities)
+        $itemCount = 0;
+        foreach ($items as $item) {
+            $itemCount += $item['quantity'];
+        }
+
+        return [
+            'meals' => $meals,
+            'subtotal' => $subtotal,
+            'delivery_method' => $deliveryMethod,
+            'delivery_fee' => $deliveryFee,
+            'delivery_display' => $deliveryDisplay,
+            'promo_discount' => $effectiveDiscount,
+            'promo_code' => $promoCode,
+            'grand_total' => $grandTotal,
+            'item_count' => $itemCount,
+            'price_changes' => $priceChanges,
+        ];
+    }
+
+    /**
+     * F-146: Detect price changes between cart stored prices and current DB prices.
+     *
+     * Edge case: Component price changed since cart add.
+     *
+     * @return array<int, array{component_id: int, name: string, old_price: int, new_price: int}>
+     */
+    private function detectPriceChanges(array $items): array
+    {
+        if (empty($items)) {
+            return [];
+        }
+
+        $componentIds = array_column($items, 'component_id');
+        $components = MealComponent::query()
+            ->whereIn('id', $componentIds)
+            ->get()
+            ->keyBy('id');
+
+        $changes = [];
+        $locale = app()->getLocale();
+
+        foreach ($items as $item) {
+            $component = $components->get($item['component_id']);
+
+            if (! $component) {
+                continue;
+            }
+
+            if ($component->price !== $item['unit_price']) {
+                $changes[] = [
+                    'component_id' => $item['component_id'],
+                    'name' => $component->{'name_'.$locale} ?? $component->name_en,
+                    'old_price' => $item['unit_price'],
+                    'new_price' => $component->price,
+                ];
+            }
+        }
+
+        return $changes;
+    }
+
+    /**
+     * F-146: Get the back URL for the summary step.
+     *
+     * Summary step comes after phone number (F-143).
+     */
+    public function getSummaryBackUrl(): string
+    {
+        return url('/checkout/phone');
     }
 
     /**

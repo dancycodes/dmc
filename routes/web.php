@@ -573,4 +573,12 @@ Route::middleware('tenant.domain')->group(function () {
         ->name('tenant.checkout.phone');
     Route::post('/checkout/phone', [\App\Http\Controllers\Tenant\CheckoutController::class, 'savePhoneNumber'])
         ->name('tenant.checkout.save-phone');
+
+    // F-146: Order Total Calculation & Summary
+    // BR-316: Itemized list with meal grouping
+    // BR-321: Grand total = subtotal + delivery fee - promo discount
+    // BR-324: Edit Cart link
+    // BR-325: Proceed to Payment leads to F-149
+    Route::get('/checkout/summary', [\App\Http\Controllers\Tenant\CheckoutController::class, 'summary'])
+        ->name('tenant.checkout.summary');
 });
