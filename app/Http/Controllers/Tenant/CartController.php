@@ -8,11 +8,13 @@ use Illuminate\Http\Request;
 
 /**
  * F-138: Meal Component Selection & Cart Add
+ * F-139: Order Cart Management
  *
  * Handles cart operations on tenant domains via Gale SSE.
  * BR-246: Cart state maintained in session.
  * BR-247: Guest carts work via session without authentication.
- * BR-251: Cart updates use Gale (no page reload).
+ * BR-251/BR-262: Cart updates use Gale (no page reload).
+ * BR-259: Cart persists in server-side session across page navigations.
  */
 class CartController extends Controller
 {
@@ -21,7 +23,134 @@ class CartController extends Controller
     ) {}
 
     /**
-     * Add a component to the cart.
+     * F-139: Display the cart page.
+     *
+     * BR-253: Cart items displayed grouped by meal.
+     * BR-254: Each item shows meal name, component name, quantity, unit price, line subtotal.
+     * BR-259: Cart persists in session.
+     * BR-262: All cart interactions use Gale.
+     */
+    public function index(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        $cart = $this->cartService->getCartWithAvailability($tenant->id);
+
+        return gale()->view('tenant.cart', [
+            'tenant' => $tenant,
+            'cart' => $cart,
+        ], web: true);
+    }
+
+    /**
+     * F-139: Update quantity of a cart item.
+     *
+     * BR-255: Quantity adjustment respects component stock limits and minimum of 1.
+     * BR-262: All cart interactions use Gale.
+     */
+    public function updateQuantity(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        $validated = $request->validateState([
+            'component_id' => 'required|integer',
+            'quantity' => 'required|integer|min:0',
+        ]);
+
+        $componentId = (int) $validated['component_id'];
+        $quantity = (int) $validated['quantity'];
+
+        // BR-255: Decrementing to 0 removes the item
+        if ($quantity <= 0) {
+            $result = $this->cartService->removeFromCart($tenant->id, $componentId);
+        } else {
+            // Cap at max per component
+            $quantity = min($quantity, CartService::MAX_QUANTITY_PER_COMPONENT);
+            $result = $this->cartService->updateQuantity($tenant->id, $componentId, $quantity);
+        }
+
+        if (! ($result['success'] ?? true)) {
+            return gale()
+                ->state('cartError', $result['error'] ?? '')
+                ->state('cartCount', $result['cart']['summary']['count'])
+                ->state('cartTotal', $result['cart']['summary']['total']);
+        }
+
+        $enrichedCart = $this->cartService->getCartWithAvailability($tenant->id);
+
+        return gale()
+            ->state('cartCount', $enrichedCart['summary']['count'])
+            ->state('cartTotal', $enrichedCart['summary']['total'])
+            ->state('cartMeals', $enrichedCart['meals'])
+            ->state('cartError', '')
+            ->state('cartSuccess', '');
+    }
+
+    /**
+     * F-139: Clear the entire cart.
+     *
+     * BR-258: "Clear Cart" requires confirmation before executing.
+     * BR-262: All cart interactions use Gale.
+     */
+    public function clearCart(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        $this->cartService->clearCart($tenant->id);
+        $cart = $this->cartService->getCartWithAvailability($tenant->id);
+
+        return gale()
+            ->state('cartCount', $cart['summary']['count'])
+            ->state('cartTotal', $cart['summary']['total'])
+            ->state('cartMeals', $cart['meals'])
+            ->state('cartError', '')
+            ->state('cartSuccess', __('Cart cleared'));
+    }
+
+    /**
+     * F-139: Proceed to checkout.
+     *
+     * BR-260: Requires authentication; guests are redirected to login.
+     * BR-261: Cart cannot proceed to checkout if empty.
+     */
+    public function checkout(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        // BR-260: Require authentication
+        if (! auth()->check()) {
+            return gale()->redirect(route('login'))->with('message', __('Please login to proceed with your order.'));
+        }
+
+        // BR-261: Cannot checkout with empty cart
+        $cart = $this->cartService->getCart($tenant->id);
+        if (empty($cart['items'])) {
+            return gale()
+                ->state('cartError', __('Your cart is empty.'));
+        }
+
+        // F-140 will handle the next step — stub redirect for now
+        return gale()->redirect(url('/checkout'))->with('message', __('Proceeding to checkout...'));
+    }
+
+    /**
+     * F-138: Add a component to the cart.
      *
      * BR-243: Quantity capped at min/max limits.
      * BR-244: Requirement rules enforced.
@@ -79,7 +208,7 @@ class CartController extends Controller
     }
 
     /**
-     * Remove a component from the cart.
+     * F-138: Remove a component from the cart.
      */
     public function removeFromCart(Request $request): mixed
     {
@@ -108,7 +237,7 @@ class CartController extends Controller
     }
 
     /**
-     * Get current cart state.
+     * F-138: Get current cart state.
      * Used to hydrate cart state on page load.
      */
     public function getCart(Request $request): mixed
