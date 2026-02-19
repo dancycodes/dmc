@@ -36,7 +36,13 @@ class TenantLandingService
     /**
      * Build the cook profile data for display.
      *
-     * @return array{name: string, bio: string|null, hasImages: bool, coverImages: array, whatsapp: string|null, phone: string|null, socialLinks: array}
+     * F-127: Cook Brand Header Section
+     * BR-136: Brand name from locale (handled by HasTranslatable)
+     * BR-137: Tagline is bio excerpt (first 150 chars)
+     * BR-141/BR-142: Rating badge with stars and review count
+     * BR-143: "New Cook" badge for zero reviews
+     *
+     * @return array{name: string, bio: string|null, bioExcerpt: string|null, hasImages: bool, coverImages: array, rating: array{average: float, count: int, hasReviews: bool}, whatsapp: string|null, phone: string|null, socialLinks: array}
      */
     private function buildCookProfile(Tenant $tenant): array
     {
@@ -49,11 +55,17 @@ class TenantLandingService
             ->values()
             ->toArray();
 
+        $bio = $tenant->description;
+        $bioExcerpt = $this->truncateBio($bio, 150);
+        $rating = $this->buildRatingData($tenant);
+
         return [
             'name' => $tenant->name,
-            'bio' => $tenant->description,
+            'bio' => $bio,
+            'bioExcerpt' => $bioExcerpt,
             'hasImages' => ! empty($coverImages),
             'coverImages' => $coverImages,
+            'rating' => $rating,
             'whatsapp' => $tenant->whatsapp,
             'phone' => $tenant->phone,
             'socialLinks' => [
@@ -61,6 +73,65 @@ class TenantLandingService
                 'instagram' => $tenant->social_instagram,
                 'tiktok' => $tenant->social_tiktok,
             ],
+        ];
+    }
+
+    /**
+     * Truncate the bio to a maximum character length, respecting word boundaries.
+     *
+     * BR-137: Tagline shows first 150 characters of bio, truncated.
+     */
+    private function truncateBio(?string $bio, int $maxLength): ?string
+    {
+        if (empty($bio)) {
+            return null;
+        }
+
+        if (mb_strlen($bio) <= $maxLength) {
+            return $bio;
+        }
+
+        $truncated = mb_substr($bio, 0, $maxLength);
+        $lastSpace = mb_strrpos($truncated, ' ');
+
+        if ($lastSpace !== false && $lastSpace > $maxLength * 0.7) {
+            $truncated = mb_substr($truncated, 0, $lastSpace);
+        }
+
+        return $truncated.'...';
+    }
+
+    /**
+     * Build rating data for the cook.
+     *
+     * BR-141: Average star rating with numeric value
+     * BR-142: Total review count
+     * BR-143: "New Cook" badge for zero reviews
+     *
+     * Forward-compatible: F-176 (Rating System) will provide actual data.
+     * Until then, returns zero reviews / "New Cook" state.
+     *
+     * @return array{average: float, count: int, hasReviews: bool}
+     */
+    private function buildRatingData(Tenant $tenant): array
+    {
+        // Forward-compatible: when F-176 rating system is implemented,
+        // this will query actual rating data from the orders/reviews table.
+        // For now, all cooks show as "New Cook" (zero reviews).
+        $average = 0.0;
+        $count = 0;
+
+        // Future F-176 implementation will replace the above with:
+        // if (\Schema::hasTable('order_ratings')) {
+        //     $stats = $tenant->orderRatings()->selectRaw('AVG(rating) as avg, COUNT(*) as cnt')->first();
+        //     $average = round((float) ($stats->avg ?? 0), 1);
+        //     $count = (int) ($stats->cnt ?? 0);
+        // }
+
+        return [
+            'average' => $average,
+            'count' => $count,
+            'hasReviews' => $count > 0,
         ];
     }
 
