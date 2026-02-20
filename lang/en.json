@@ -2401,5 +2401,20 @@
     "Before": "Before",
     "After": "After",
     "Processing Fee": "Processing Fee",
-    "Order details unavailable": "Order details unavailable"
+    "Order details unavailable": "Order details unavailable",
+    "My Wallet": "My Wallet",
+    "Manage your wallet balance and view recent transactions.": "Manage your wallet balance and view recent transactions.",
+    "Current Balance": "Current Balance",
+    "Your wallet balance comes from refunds and can be used for future orders.": "Your wallet balance comes from refunds and can be used for future orders.",
+    "Your wallet balance will appear here when you receive a refund.": "Your wallet balance will appear here when you receive a refund.",
+    "Wallet payments are currently not available for orders.": "Wallet payments are currently not available for orders.",
+    "Recent Transactions": "Recent Transactions",
+    "total": "total",
+    "No wallet transactions yet.": "No wallet transactions yet.",
+    "Payment Credit": "Payment Credit",
+    "Commission": "Commission",
+    "Withdrawal": "Withdrawal",
+    "Refund Deduction": "Refund Deduction",
+    "Wallet Payment": "Wallet Payment",
+    "View full transaction history": "View full transaction history"
 }

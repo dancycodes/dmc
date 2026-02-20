@@ -220,6 +220,11 @@ Route::middleware('auth')->group(function () {
         ->where('sourceType', 'payment_transaction|wallet_transaction')
         ->where('sourceId', '[0-9]+')
         ->name('client.transactions.show');
+
+    // Client Wallet Dashboard (F-166)
+    // BR-280: Each client has one wallet with a single balance
+    // BR-288: Authentication required
+    Route::get('/my-wallet', [\App\Http\Controllers\Client\WalletController::class, 'index'])->name('client.wallet.index');
 });
 
 /*
