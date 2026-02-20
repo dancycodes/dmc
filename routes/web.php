@@ -213,6 +213,13 @@ Route::middleware('auth')->group(function () {
     // BR-260: All transactions across all tenants
     // BR-269: Authentication required
     Route::get('/my-transactions', [\App\Http\Controllers\Client\TransactionController::class, 'index'])->name('client.transactions.index');
+
+    // Transaction Detail View (F-165)
+    // BR-271: Client can only view their own transaction details
+    Route::get('/my-transactions/{sourceType}/{sourceId}', [\App\Http\Controllers\Client\TransactionController::class, 'show'])
+        ->where('sourceType', 'payment_transaction|wallet_transaction')
+        ->where('sourceId', '[0-9]+')
+        ->name('client.transactions.show');
 });
 
 /*
