@@ -502,6 +502,10 @@ Route::middleware('tenant.domain')->group(function () {
         Route::get('/orders', [OrderController::class, 'index'])->name('cook.orders.index');
         Route::get('/orders/{order}', [OrderController::class, 'show'])->name('cook.orders.show');
         Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('cook.orders.update-status');
+
+        // F-158: Mass Order Status Update
+        // BR-197: Only users with can-manage-orders permission (enforced in controller)
+        Route::post('/orders/mass-update-status', [OrderController::class, 'massUpdateStatus'])->name('cook.orders.mass-update-status');
     });
 
     // F-135: Meal Search Bar (public, on tenant domain)

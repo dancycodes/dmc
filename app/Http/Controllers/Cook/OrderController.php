@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Cook;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Services\CookOrderService;
+use App\Services\MassOrderStatusService;
 use App\Services\OrderStatusService;
 use Illuminate\Http\Request;
 
@@ -176,5 +177,92 @@ class OrderController extends Controller
         }
 
         return redirect()->back()->with('error', $result['message']);
+    }
+
+    /**
+     * Mass update the status of multiple orders.
+     *
+     * F-158: Mass Order Status Update
+     * BR-189: Only orders at the same current status can be bulk-updated.
+     * BR-191: Each order is validated individually against transition rules.
+     * BR-192: Failed orders do not prevent successful orders from being updated.
+     * BR-193: Results reported per-order: success count and individual failure reasons.
+     * BR-194: Each successful change triggers a client notification.
+     * BR-195: Each status change is logged individually via Spatie Activitylog.
+     * BR-196: Confirmation dialog shown before executing.
+     * BR-197: Only users with manage-orders permission.
+     * BR-198: Mass completion triggers commission deduction and withdrawable timer per order.
+     */
+    public function massUpdateStatus(Request $request, MassOrderStatusService $massStatusService): mixed
+    {
+        $user = $request->user();
+        $tenant = tenant();
+
+        // BR-197: Permission check
+        if (! $user->can('can-manage-orders')) {
+            abort(403);
+        }
+
+        // Get order IDs and target status from Gale state or request input
+        if ($request->isGale()) {
+            $validated = $request->validateState([
+                'massOrderIds' => ['required', 'array', 'min:1'],
+                'massOrderIds.*' => ['required', 'integer'],
+                'massTargetStatus' => ['required', 'string', 'in:'.implode(',', Order::STATUSES)],
+            ]);
+            $orderIds = array_map('intval', $validated['massOrderIds']);
+            $targetStatus = $validated['massTargetStatus'];
+        } else {
+            $validated = app(\App\Http\Requests\Cook\MassOrderStatusUpdateRequest::class);
+            $orderIds = $validated->validated()['order_ids'];
+            $targetStatus = $validated->validated()['target_status'];
+        }
+
+        // BR-189: Validate all orders share the same status
+        $sameStatusCheck = $massStatusService->validateSameStatus($orderIds, $tenant);
+
+        if (! $sameStatusCheck['valid']) {
+            if ($request->isGale()) {
+                return gale()->state('massUpdateResult', [
+                    'success_count' => 0,
+                    'fail_count' => count($orderIds),
+                    'total' => count($orderIds),
+                    'target_status' => $targetStatus,
+                    'target_status_label' => Order::getStatusLabel($targetStatus),
+                    'failures' => [[
+                        'order_id' => 0,
+                        'order_number' => '',
+                        'reason' => $sameStatusCheck['message'],
+                    ]],
+                ])->state('showResultDialog', true)
+                    ->state('massProcessing', false);
+            }
+
+            return redirect()->back()->with('error', $sameStatusCheck['message']);
+        }
+
+        // Execute the mass update
+        $result = $massStatusService->massUpdateStatus($orderIds, $targetStatus, $user, $tenant);
+
+        if ($request->isGale()) {
+            return gale()
+                ->state('massUpdateResult', $result)
+                ->state('showResultDialog', true)
+                ->state('massProcessing', false)
+                ->state('selectedOrders', [])
+                ->state('selectAll', false);
+        }
+
+        if ($result['fail_count'] === 0) {
+            return redirect()->back()->with('success', __(':count orders updated to :status', [
+                'count' => $result['success_count'],
+                'status' => $result['target_status_label'],
+            ]));
+        }
+
+        return redirect()->back()->with('error', __(':success updated, :fail failed.', [
+            'success' => $result['success_count'],
+            'fail' => $result['fail_count'],
+        ]));
     }
 }
