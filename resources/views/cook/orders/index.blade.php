@@ -139,7 +139,7 @@
         getSelectedStatuses() {
             let statuses = new Set();
             this.selectedOrders.forEach(id => {
-                let el = document.querySelector('[data-order-id=\"' + id + '\"]');
+                let el = document.querySelector('[data-order-id=' + id + ']');
                 if (el) {
                     statuses.add(el.dataset.orderStatus);
                 }
@@ -181,7 +181,7 @@
             if (mapping.branching) {
                 let methods = new Set();
                 this.selectedOrders.forEach(id => {
-                    let el = document.querySelector('[data-order-id=\"' + id + '\"]');
+                    let el = document.querySelector('[data-order-id=' + id + ']');
                     if (el) methods.add(el.dataset.orderDeliveryMethod);
                 });
                 if (methods.size > 1) return null;
