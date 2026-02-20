@@ -2,7 +2,7 @@
     Cook Order Detail View
     ----------------------
     F-156: Cook Order Detail View
-    Displays the full detail of a single order for the cook or manager.
+    F-157: Single Order Status Update
 
     BR-166: Order detail is tenant-scoped.
     BR-167: Client phone number displayed.
@@ -10,12 +10,14 @@
     BR-169: Delivery orders show town, quarter, landmark, delivery fee.
     BR-170: Pickup orders show pickup location name and address.
     BR-171: Status timeline with timestamps and user info.
-    BR-172: Status update button shows next valid status.
+    BR-172/BR-178: Status update button shows next valid status with dynamic label.
     BR-173: Payment info (method, amount, status, reference).
     BR-174: Client notes displayed if present.
-    BR-175: Only manage-orders permission.
+    BR-175/BR-187: Only manage-orders permission.
     BR-176: All amounts in XAF.
-    BR-177: All text uses __() localization.
+    BR-177/BR-188: All text uses __() localization.
+    BR-181: Confirmation dialog for Confirmed and Completed transitions.
+    BR-185: Timeline refreshes after successful update.
 --}}
 @extends('layouts.cook-dashboard')
 
@@ -29,15 +31,23 @@
         showConfirmDialog: false,
         nextStatus: '{{ $nextStatus ?? '' }}',
         nextStatusLabel: '{{ addslashes($nextStatusLabel ?? '') }}',
+        requiresConfirmation: {{ $requiresConfirmation ? 'true' : 'false' }},
+        confirmationMessage: '{{ addslashes($confirmationMessage ?? '') }}',
+        isUpdating: false,
 
         confirmStatusUpdate() {
-            this.showConfirmDialog = true;
+            if (this.requiresConfirmation) {
+                this.showConfirmDialog = true;
+            } else {
+                this.executeStatusUpdate();
+            }
         },
         cancelStatusUpdate() {
             this.showConfirmDialog = false;
         },
         executeStatusUpdate() {
             this.showConfirmDialog = false;
+            this.isUpdating = true;
             $action('{{ url('/dashboard/orders/' . $order->id . '/status') }}', {
                 method: 'PATCH',
                 include: ['nextStatus']
@@ -45,6 +55,7 @@
         }
     }"
 >
+    @fragment('order-detail-content')
     {{-- Back navigation + Header --}}
     <div class="mb-6">
         {{-- Breadcrumb --}}
@@ -69,7 +80,7 @@
                 @include('cook._order-status-badge', ['status' => $order->status])
             </div>
 
-            <div class="flex items-center gap-3">
+            <div class="hidden sm:flex items-center gap-3">
                 {{-- F-188: Message Client button (forward-compatible) --}}
                 <a
                     href="{{ url('/dashboard/orders/' . $order->id . '/messages') }}"
@@ -80,16 +91,26 @@
                     {{ __('Message Client') }}
                 </a>
 
-                {{-- BR-172: Status update button --}}
+                {{-- BR-178: Status update button with dynamic label --}}
                 @if($nextStatus)
                     <button
                         @click="confirmStatusUpdate()"
                         class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold bg-primary text-on-primary hover:bg-primary-hover transition-colors duration-200 shadow-sm"
+                        :class="{ 'opacity-50 cursor-wait': isUpdating || $fetching() }"
+                        :disabled="isUpdating || $fetching()"
                     >
-                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg>
-                        <span x-text="'{{ __('Mark as') }} ' + nextStatusLabel">
-                            {{ __('Mark as') }} {{ $nextStatusLabel }}
-                        </span>
+                        <template x-if="!isUpdating && !$fetching()">
+                            <span class="inline-flex items-center gap-2">
+                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg>
+                                {{ $nextStatusLabel }}
+                            </span>
+                        </template>
+                        <template x-if="isUpdating || $fetching()">
+                            <span class="inline-flex items-center gap-2">
+                                <svg class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                {{ __('Updating...') }}
+                            </span>
+                        </template>
                     </button>
                 @endif
             </div>
@@ -464,21 +485,34 @@
         </div>
 
     </div>
+    @endfragment
 
-    {{-- Mobile floating status update button --}}
+    {{-- Mobile floating status update button (BR-178: sticky bottom) --}}
     @if($nextStatus)
-        <div class="fixed bottom-6 right-6 sm:hidden z-30">
+        <div class="fixed bottom-6 left-4 right-4 sm:hidden z-30">
             <button
                 @click="confirmStatusUpdate()"
-                class="inline-flex items-center gap-2 px-5 py-3 rounded-full text-sm font-semibold bg-primary text-on-primary hover:bg-primary-hover transition-colors duration-200 shadow-lg"
+                class="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl text-sm font-semibold bg-primary text-on-primary hover:bg-primary-hover transition-colors duration-200 shadow-lg"
+                :class="{ 'opacity-50 cursor-wait': isUpdating || $fetching() }"
+                :disabled="isUpdating || $fetching()"
             >
-                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg>
-                <span x-text="nextStatusLabel">{{ $nextStatusLabel }}</span>
+                <template x-if="!isUpdating && !$fetching()">
+                    <span class="inline-flex items-center gap-2">
+                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg>
+                        {{ $nextStatusLabel }}
+                    </span>
+                </template>
+                <template x-if="isUpdating || $fetching()">
+                    <span class="inline-flex items-center gap-2">
+                        <svg class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        {{ __('Updating...') }}
+                    </span>
+                </template>
             </button>
         </div>
     @endif
 
-    {{-- Status Update Confirmation Dialog --}}
+    {{-- Status Update Confirmation Dialog (BR-181) --}}
     <div
         x-show="showConfirmDialog"
         x-transition:enter="transition ease-out duration-200"
@@ -512,9 +546,8 @@
             <h3 class="text-base font-semibold text-on-surface-strong text-center mb-2">
                 {{ __('Update Order Status') }}
             </h3>
-            <p class="text-sm text-on-surface/70 text-center mb-6">
-                {{ __('Are you sure you want to mark this order as') }}
-                <span class="font-semibold text-on-surface-strong" x-text="nextStatusLabel">{{ $nextStatusLabel }}</span>?
+            <p class="text-sm text-on-surface/70 text-center mb-6" x-text="confirmationMessage">
+                {{ $confirmationMessage }}
             </p>
 
             <div class="flex items-center gap-3">

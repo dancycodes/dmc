@@ -264,6 +264,60 @@ class OrderFactory extends Factory
     }
 
     /**
+     * F-157: State: out for delivery.
+     */
+    public function outForDelivery(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => Order::STATUS_OUT_FOR_DELIVERY,
+            'delivery_method' => Order::METHOD_DELIVERY,
+            'paid_at' => now()->subHours(3),
+            'confirmed_at' => now()->subHours(2),
+        ]);
+    }
+
+    /**
+     * F-157: State: ready for pickup.
+     */
+    public function readyForPickup(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => Order::STATUS_READY_FOR_PICKUP,
+            'delivery_method' => Order::METHOD_PICKUP,
+            'paid_at' => now()->subHours(3),
+            'confirmed_at' => now()->subHours(2),
+            'delivery_fee' => 0,
+        ]);
+    }
+
+    /**
+     * F-157: State: delivered.
+     */
+    public function delivered(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => Order::STATUS_DELIVERED,
+            'delivery_method' => Order::METHOD_DELIVERY,
+            'paid_at' => now()->subHours(4),
+            'confirmed_at' => now()->subHours(3),
+        ]);
+    }
+
+    /**
+     * F-157: State: picked up.
+     */
+    public function pickedUp(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => Order::STATUS_PICKED_UP,
+            'delivery_method' => Order::METHOD_PICKUP,
+            'paid_at' => now()->subHours(4),
+            'confirmed_at' => now()->subHours(3),
+            'delivery_fee' => 0,
+        ]);
+    }
+
+    /**
      * F-155: State: with multi-item snapshot.
      */
     public function withMultipleItems(): static

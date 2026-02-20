@@ -235,6 +235,16 @@ class Order extends Model
     }
 
     /**
+     * Get the status transitions for this order.
+     *
+     * F-157: Status transition records for timeline tracking.
+     */
+    public function statusTransitions(): HasMany
+    {
+        return $this->hasMany(OrderStatusTransition::class);
+    }
+
+    /**
      * Generate a unique order number.
      *
      * Format: DMC-{YYMMDD}-{4 digit sequence}

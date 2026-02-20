@@ -497,10 +497,11 @@ Route::middleware('tenant.domain')->group(function () {
         Route::put('/selling-units/{unit}', [SellingUnitController::class, 'update'])->name('cook.selling-units.update');
         Route::delete('/selling-units/{unit}', [SellingUnitController::class, 'destroy'])->name('cook.selling-units.destroy');
 
-        // Order management (F-155: Cook Order List View)
-        // BR-162: Only users with can-manage-orders permission (enforced in controller)
+        // Order management (F-155: Cook Order List View, F-157: Status Update)
+        // BR-162/BR-187: Only users with can-manage-orders permission (enforced in controller)
         Route::get('/orders', [OrderController::class, 'index'])->name('cook.orders.index');
         Route::get('/orders/{order}', [OrderController::class, 'show'])->name('cook.orders.show');
+        Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('cook.orders.update-status');
     });
 
     // F-135: Meal Search Bar (public, on tenant domain)
