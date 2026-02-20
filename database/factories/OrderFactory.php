@@ -318,6 +318,18 @@ class OrderFactory extends Factory
     }
 
     /**
+     * F-159: State: refunded.
+     */
+    public function refunded(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => Order::STATUS_REFUNDED,
+            'paid_at' => now()->subHours(5),
+            'cancelled_at' => now()->subHour(),
+        ]);
+    }
+
+    /**
      * F-155: State: with multi-item snapshot.
      */
     public function withMultipleItems(): static

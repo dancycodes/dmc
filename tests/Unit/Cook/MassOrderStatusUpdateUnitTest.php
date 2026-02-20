@@ -18,7 +18,6 @@ use App\Models\OrderStatusTransition;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\MassOrderStatusService;
-use App\Services\OrderStatusService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(Tests\TestCase::class, RefreshDatabase::class);
@@ -41,7 +40,7 @@ test('validateSameStatus returns valid when all orders share same status', funct
         'cook_id' => $cook->id,
     ]);
 
-    $service = new MassOrderStatusService(new OrderStatusService);
+    $service = app(MassOrderStatusService::class);
     $result = $service->validateSameStatus($orders->pluck('id')->toArray(), $tenant);
 
     expect($result['valid'])->toBeTrue();
@@ -64,7 +63,7 @@ test('validateSameStatus returns invalid when orders have mixed statuses (BR-189
         'cook_id' => $cook->id,
     ]);
 
-    $service = new MassOrderStatusService(new OrderStatusService);
+    $service = app(MassOrderStatusService::class);
     $result = $service->validateSameStatus(
         [$paidOrder->id, $preparingOrder->id],
         $tenant
@@ -77,7 +76,7 @@ test('validateSameStatus returns invalid when orders have mixed statuses (BR-189
 test('validateSameStatus returns invalid when no orders found', function () {
     ['tenant' => $tenant] = createTenantWithCook();
 
-    $service = new MassOrderStatusService(new OrderStatusService);
+    $service = app(MassOrderStatusService::class);
     $result = $service->validateSameStatus([99999], $tenant);
 
     expect($result['valid'])->toBeFalse();
@@ -96,7 +95,7 @@ test('validateSameStatus returns invalid for terminal status orders', function (
         'completed_at' => now(),
     ]);
 
-    $service = new MassOrderStatusService(new OrderStatusService);
+    $service = app(MassOrderStatusService::class);
     $result = $service->validateSameStatus($orders->pluck('id')->toArray(), $tenant);
 
     expect($result['valid'])->toBeFalse();
@@ -122,7 +121,7 @@ test('validateSameStatus detects mixed delivery methods for ready status', funct
         'delivery_method' => Order::METHOD_PICKUP,
     ]);
 
-    $service = new MassOrderStatusService(new OrderStatusService);
+    $service = app(MassOrderStatusService::class);
     $result = $service->validateSameStatus(
         [$deliveryOrder->id, $pickupOrder->id],
         $tenant
@@ -144,7 +143,7 @@ test('validateSameStatus works for ready status with same delivery method', func
         'delivery_method' => Order::METHOD_DELIVERY,
     ]);
 
-    $service = new MassOrderStatusService(new OrderStatusService);
+    $service = app(MassOrderStatusService::class);
     $result = $service->validateSameStatus($orders->pluck('id')->toArray(), $tenant);
 
     expect($result['valid'])->toBeTrue();
@@ -166,7 +165,7 @@ test('massUpdateStatus updates all valid orders successfully', function () {
         'cook_id' => $cook->id,
     ]);
 
-    $service = new MassOrderStatusService(new OrderStatusService);
+    $service = app(MassOrderStatusService::class);
     $result = $service->massUpdateStatus(
         $orders->pluck('id')->toArray(),
         Order::STATUS_CONFIRMED,
@@ -209,7 +208,7 @@ test('massUpdateStatus handles partial failure (BR-192)', function () {
 
     $allIds = $paidOrders->pluck('id')->merge([$cancelledOrder->id])->toArray();
 
-    $service = new MassOrderStatusService(new OrderStatusService);
+    $service = app(MassOrderStatusService::class);
     $result = $service->massUpdateStatus(
         $allIds,
         Order::STATUS_CONFIRMED,
@@ -234,7 +233,7 @@ test('massUpdateStatus tracks missing order IDs', function () {
         'cook_id' => $cook->id,
     ]);
 
-    $service = new MassOrderStatusService(new OrderStatusService);
+    $service = app(MassOrderStatusService::class);
     $result = $service->massUpdateStatus(
         [$order->id, 99999],
         Order::STATUS_CONFIRMED,
@@ -258,7 +257,7 @@ test('massUpdateStatus creates transition records per order (BR-195)', function 
         'cook_id' => $cook->id,
     ]);
 
-    $service = new MassOrderStatusService(new OrderStatusService);
+    $service = app(MassOrderStatusService::class);
     $service->massUpdateStatus(
         $orders->pluck('id')->toArray(),
         Order::STATUS_CONFIRMED,
@@ -287,7 +286,7 @@ test('massUpdateStatus creates activity log entries per order (BR-195)', functio
         'cook_id' => $cook->id,
     ]);
 
-    $service = new MassOrderStatusService(new OrderStatusService);
+    $service = app(MassOrderStatusService::class);
     $service->massUpdateStatus(
         $orders->pluck('id')->toArray(),
         Order::STATUS_CONFIRMED,
@@ -326,7 +325,7 @@ test('massUpdateStatus isolates failures from successes (BR-192)', function () {
         'cook_id' => $cook->id,
     ]);
 
-    $service = new MassOrderStatusService(new OrderStatusService);
+    $service = app(MassOrderStatusService::class);
     $result = $service->massUpdateStatus(
         [$paidOrder->id, $confirmedOrder->id],
         Order::STATUS_CONFIRMED,
@@ -353,7 +352,7 @@ test('massUpdateStatus all orders fail returns zero success count', function () 
         'completed_at' => now(),
     ]);
 
-    $service = new MassOrderStatusService(new OrderStatusService);
+    $service = app(MassOrderStatusService::class);
     $result = $service->massUpdateStatus(
         $orders->pluck('id')->toArray(),
         Order::STATUS_CONFIRMED,
@@ -378,7 +377,7 @@ test('massUpdateStatus respects tenant isolation', function () {
         'client_id' => $client->id,
     ]);
 
-    $service = new MassOrderStatusService(new OrderStatusService);
+    $service = app(MassOrderStatusService::class);
     $result = $service->massUpdateStatus(
         [$otherOrder->id],
         Order::STATUS_CONFIRMED,
@@ -453,7 +452,7 @@ test('massUpdateStatus handles concurrent modification gracefully', function () 
     // Simulate concurrent modification: update order before mass update
     $order->update(['status' => Order::STATUS_CONFIRMED]);
 
-    $service = new MassOrderStatusService(new OrderStatusService);
+    $service = app(MassOrderStatusService::class);
     $result = $service->massUpdateStatus(
         [$order->id],
         Order::STATUS_CONFIRMED,
@@ -469,7 +468,7 @@ test('massUpdateStatus with empty order IDs returns failures for all', function 
     ['tenant' => $tenant, 'cook' => $cook] = createTenantWithCook();
     $user = $cook;
 
-    $service = new MassOrderStatusService(new OrderStatusService);
+    $service = app(MassOrderStatusService::class);
     $result = $service->massUpdateStatus(
         [],
         Order::STATUS_CONFIRMED,
@@ -493,7 +492,7 @@ test('massUpdateStatus returns correct target status label', function () {
         'cook_id' => $cook->id,
     ]);
 
-    $service = new MassOrderStatusService(new OrderStatusService);
+    $service = app(MassOrderStatusService::class);
     $result = $service->massUpdateStatus(
         [$order->id],
         Order::STATUS_CONFIRMED,
@@ -515,7 +514,7 @@ test('massUpdateStatus handles preparing to ready transition', function () {
         'cook_id' => $cook->id,
     ]);
 
-    $service = new MassOrderStatusService(new OrderStatusService);
+    $service = app(MassOrderStatusService::class);
     $result = $service->massUpdateStatus(
         $orders->pluck('id')->toArray(),
         Order::STATUS_READY,

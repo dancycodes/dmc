@@ -96,6 +96,20 @@ class Order extends Model
         self::STATUS_COMPLETED,
         self::STATUS_CANCELLED,
         self::STATUS_PAYMENT_FAILED,
+        self::STATUS_REFUNDED,
+    ];
+
+    /**
+     * F-159 BR-204: Statuses from which cancellation is allowed.
+     *
+     * Before cook starts preparing.
+     *
+     * @var array<string>
+     */
+    public const CANCELLABLE_STATUSES = [
+        self::STATUS_PENDING_PAYMENT,
+        self::STATUS_PAID,
+        self::STATUS_CONFIRMED,
     ];
 
     /**

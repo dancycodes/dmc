@@ -12,9 +12,15 @@ use Illuminate\Support\Facades\DB;
  *
  * Handles validation, transition recording, timestamp updates,
  * activity logging, and notification dispatch.
+ *
+ * F-159: Delegates transition validation to OrderTransitionValidator.
  */
 class OrderStatusService
 {
+    public function __construct(
+        private OrderTransitionValidator $transitionValidator,
+    ) {}
+
     /**
      * Statuses requiring a confirmation dialog before updating.
      *
@@ -35,10 +41,12 @@ class OrderStatusService
      * BR-183: Triggers notification to client.
      * BR-184: Logged via Spatie Activitylog.
      * BR-185: Timeline updates after transition.
+     * F-159 BR-203: Admin override support with reason logging.
      *
+     * @param  array{admin_override?: bool, override_reason?: string}  $options
      * @return array{success: bool, message: string, order?: Order, new_status?: string}
      */
-    public function updateStatus(Order $order, string $targetStatus, User $user): array
+    public function updateStatus(Order $order, string $targetStatus, User $user, array $options = []): array
     {
         // Handle duplicate/no-op requests (edge case: order already in target status)
         if ($order->status === $targetStatus) {
@@ -50,8 +58,8 @@ class OrderStatusService
             ];
         }
 
-        // BR-182: Validate the transition is allowed
-        $validationResult = $this->validateTransition($order, $targetStatus);
+        // BR-182/F-159: Validate the transition is allowed
+        $validationResult = $this->validateTransition($order, $targetStatus, $options);
         if (! $validationResult['valid']) {
             return [
                 'success' => false,
@@ -59,7 +67,10 @@ class OrderStatusService
             ];
         }
 
-        return DB::transaction(function () use ($order, $targetStatus, $user) {
+        $isAdminOverride = $options['admin_override'] ?? false;
+        $overrideReason = $options['override_reason'] ?? null;
+
+        return DB::transaction(function () use ($order, $targetStatus, $user, $isAdminOverride, $overrideReason) {
             $previousStatus = $order->status;
 
             // Optimistic locking: re-fetch the order status to prevent race conditions
@@ -83,16 +94,18 @@ class OrderStatusService
             $freshOrder->save();
             $freshOrder->enableLogging();
 
-            // BR-185: Create transition record
+            // BR-185/F-159 BR-203: Create transition record with admin override tracking
             OrderStatusTransition::create([
                 'order_id' => $freshOrder->id,
                 'triggered_by' => $user->id,
                 'previous_status' => $previousStatus,
                 'new_status' => $targetStatus,
+                'is_admin_override' => $isAdminOverride,
+                'override_reason' => $isAdminOverride ? $overrideReason : null,
             ]);
 
-            // BR-184: Activity log entry
-            $this->logStatusChange($freshOrder, $previousStatus, $targetStatus, $user);
+            // BR-184/F-159 BR-203: Activity log entry (elevated for admin overrides)
+            $this->logStatusChange($freshOrder, $previousStatus, $targetStatus, $user, $isAdminOverride, $overrideReason);
 
             // BR-183: Trigger notification to client (forward-compatible for F-192)
             $this->dispatchStatusNotification($freshOrder, $previousStatus, $targetStatus);
@@ -116,43 +129,14 @@ class OrderStatusService
      * Validate that the requested transition is allowed.
      *
      * BR-182: Server-side transition validation.
+     * F-159: Delegates to OrderTransitionValidator for comprehensive validation.
      *
+     * @param  array{admin_override?: bool, override_reason?: string, user?: User}  $options
      * @return array{valid: bool, message: string}
      */
-    public function validateTransition(Order $order, string $targetStatus): array
+    public function validateTransition(Order $order, string $targetStatus, array $options = []): array
     {
-        // Cannot transition terminal orders
-        if ($order->isTerminal()) {
-            return [
-                'valid' => false,
-                'message' => __('This order is in a terminal state and cannot be updated.'),
-            ];
-        }
-
-        // Get next valid status for this order
-        $nextStatus = $order->getNextStatus();
-
-        if (! $nextStatus) {
-            return [
-                'valid' => false,
-                'message' => __('No valid transition available for this order.'),
-            ];
-        }
-
-        // The target must match the next valid status exactly
-        if ($targetStatus !== $nextStatus) {
-            return [
-                'valid' => false,
-                'message' => __('Invalid status transition. The next valid status is :status.', [
-                    'status' => Order::getStatusLabel($nextStatus),
-                ]),
-            ];
-        }
-
-        return [
-            'valid' => true,
-            'message' => '',
-        ];
+        return $this->transitionValidator->validate($order, $targetStatus, $options);
     }
 
     /**
@@ -216,18 +200,37 @@ class OrderStatusService
      * Log the status change via Spatie Activitylog.
      *
      * BR-184: Each status change is logged with the user who triggered it.
+     * F-159 BR-203: Admin overrides are logged with elevated audit trail.
      */
-    private function logStatusChange(Order $order, string $previousStatus, string $newStatus, User $user): void
-    {
+    private function logStatusChange(
+        Order $order,
+        string $previousStatus,
+        string $newStatus,
+        User $user,
+        bool $isAdminOverride = false,
+        ?string $overrideReason = null,
+    ): void {
+        $properties = [
+            'attributes' => ['status' => $newStatus],
+            'old' => ['status' => $previousStatus],
+        ];
+
+        // F-159 BR-203: Add admin override details to audit trail
+        if ($isAdminOverride) {
+            $properties['admin_override'] = true;
+            $properties['override_reason'] = $overrideReason;
+        }
+
+        $logMessage = $isAdminOverride
+            ? "Admin override: Order status changed from {$previousStatus} to {$newStatus} (Reason: {$overrideReason})"
+            : "Order status changed from {$previousStatus} to {$newStatus}";
+
         activity('orders')
             ->causedBy($user)
             ->performedOn($order)
-            ->withProperties([
-                'attributes' => ['status' => $newStatus],
-                'old' => ['status' => $previousStatus],
-            ])
+            ->withProperties($properties)
             ->event('updated')
-            ->log("Order status changed from {$previousStatus} to {$newStatus}");
+            ->log($logMessage);
     }
 
     /**

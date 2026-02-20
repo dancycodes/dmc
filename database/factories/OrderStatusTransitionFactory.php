@@ -26,6 +26,8 @@ class OrderStatusTransitionFactory extends Factory
             'triggered_by' => User::factory(),
             'previous_status' => Order::STATUS_PAID,
             'new_status' => Order::STATUS_CONFIRMED,
+            'is_admin_override' => false,
+            'override_reason' => null,
         ];
     }
 
@@ -59,6 +61,39 @@ class OrderStatusTransitionFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'previous_status' => Order::STATUS_DELIVERED,
             'new_status' => Order::STATUS_COMPLETED,
+        ]);
+    }
+
+    /**
+     * F-159: Admin override transition.
+     */
+    public function adminOverride(string $reason = 'Dispute resolution'): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_admin_override' => true,
+            'override_reason' => $reason,
+        ]);
+    }
+
+    /**
+     * F-159: Transition to cancelled.
+     */
+    public function toCancelled(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'previous_status' => Order::STATUS_PAID,
+            'new_status' => Order::STATUS_CANCELLED,
+        ]);
+    }
+
+    /**
+     * F-159: Transition to refunded.
+     */
+    public function toRefunded(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'previous_status' => Order::STATUS_CANCELLED,
+            'new_status' => Order::STATUS_REFUNDED,
         ]);
     }
 }
