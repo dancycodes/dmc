@@ -2334,5 +2334,20 @@
     "Invalid target status.": "Statut cible invalide.",
     "No valid orders found.": "Aucune commande valide trouv\u00e9e.",
     "Order not found.": "Commande non trouv\u00e9e.",
-    "Mark as Ready (next step)": "Marquer comme pr\u00eat (\u00e9tape suivante)"
+    "Mark as Ready (next step)": "Marquer comme pr\u00eat (\u00e9tape suivante)",
+    "My Orders": "Mes commandes",
+    "Track and manage your orders across all cooks.": "Suivez et g\u00e9rez vos commandes chez tous les cuisiniers.",
+    "All Orders": "Toutes les commandes",
+    "Filter by status": "Filtrer par statut",
+    "Newest first": "Plus r\u00e9centes d'abord",
+    "Oldest first": "Plus anciennes d'abord",
+    "Newest": "R\u00e9centes",
+    "Oldest": "Anciennes",
+    "Active Orders": "Commandes actives",
+    "Past Orders": "Commandes pass\u00e9es",
+    "You haven't placed any orders yet.": "Vous n'avez pas encore pass\u00e9 de commande.",
+    "Browse cooks to get started!": "Parcourez les cuisiniers pour commencer !",
+    "No orders match your filters.": "Aucune commande ne correspond \u00e0 vos filtres.",
+    "Clear filters": "Effacer les filtres",
+    "Unknown Cook": "Cuisinier inconnu"
 }
