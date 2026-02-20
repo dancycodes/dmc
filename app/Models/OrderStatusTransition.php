@@ -8,9 +8,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * F-157: Order Status Transition record.
+ * F-159: Enhanced with admin override tracking.
  *
  * Tracks each status change with previous/new status, timestamp,
- * and the user who triggered the transition.
+ * the user who triggered the transition, and admin override details.
  */
 class OrderStatusTransition extends Model
 {
@@ -32,7 +33,21 @@ class OrderStatusTransition extends Model
         'triggered_by',
         'previous_status',
         'new_status',
+        'is_admin_override',
+        'override_reason',
     ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'is_admin_override' => 'boolean',
+        ];
+    }
 
     /**
      * Get the order this transition belongs to.
