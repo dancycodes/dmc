@@ -356,6 +356,35 @@ class Order extends Model
     }
 
     /**
+     * F-155: Scope - search by order number or client name.
+     *
+     * BR-159: Case-insensitive and matches partial strings.
+     */
+    public function scopeSearch(Builder $query, ?string $search): Builder
+    {
+        if (empty($search)) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $q) use ($search) {
+            $q->where('order_number', 'ilike', '%'.$search.'%')
+                ->orWhereHas('client', function (Builder $clientQuery) use ($search) {
+                    $clientQuery->where('name', 'ilike', '%'.$search.'%');
+                });
+        });
+    }
+
+    /**
+     * F-155: Get items summary string from items_snapshot.
+     *
+     * BR-163: Truncated list of meal names with quantities.
+     */
+    public function getItemsSummaryAttribute(): string
+    {
+        return \App\Services\CookOrderService::getItemsSummary($this);
+    }
+
+    /**
      * Additional attributes excluded from activity logging.
      *
      * @return array<string>

@@ -2227,5 +2227,22 @@
     "Items": "Items",
     "Promo Discount": "Promo Discount",
     "View Order": "View Order",
-    "Thank you for ordering from :cook on DancyMeals!": "Thank you for ordering from :cook on DancyMeals!"
+    "Thank you for ordering from :cook on DancyMeals!": "Thank you for ordering from :cook on DancyMeals!",
+    "Manage incoming orders from your customers.": "Manage incoming orders from your customers.",
+    "Search by order ID or client name": "Search by order ID or client name",
+    "Out for Delivery": "Out for Delivery",
+    "Ready for Pickup": "Ready for Pickup",
+    "Picked Up": "Picked Up",
+    "Pending Payment": "Pending Payment",
+    "Payment Failed": "Payment Failed",
+    "orders selected": "orders selected",
+    "Clear selection": "Clear selection",
+    "No orders match your search": "No orders match your search",
+    "Try adjusting your filters or search term.": "Try adjusting your filters or search term.",
+    "Clear all filters": "Clear all filters",
+    "No items": "No items",
+    "Select all orders on this page": "Select all orders on this page",
+    "Select order": "Select order",
+    "From": "From",
+    "To": "To"
 }

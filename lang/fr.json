@@ -2227,5 +2227,22 @@
     "Items": "Articles",
     "Promo Discount": "Remise promotionnelle",
     "View Order": "Voir la commande",
-    "Thank you for ordering from :cook on DancyMeals!": "Merci d'avoir command\u00e9 chez :cook sur DancyMeals !"
+    "Thank you for ordering from :cook on DancyMeals!": "Merci d'avoir command\u00e9 chez :cook sur DancyMeals !",
+    "Manage incoming orders from your customers.": "G\u00e9rez les commandes entrantes de vos clients.",
+    "Search by order ID or client name": "Rechercher par num\u00e9ro de commande ou nom du client",
+    "Out for Delivery": "En cours de livraison",
+    "Ready for Pickup": "Pr\u00eat pour le retrait",
+    "Picked Up": "R\u00e9cup\u00e9r\u00e9",
+    "Pending Payment": "En attente de paiement",
+    "Payment Failed": "Paiement \u00e9chou\u00e9",
+    "orders selected": "commandes s\u00e9lectionn\u00e9es",
+    "Clear selection": "Effacer la s\u00e9lection",
+    "No orders match your search": "Aucune commande ne correspond \u00e0 votre recherche",
+    "Try adjusting your filters or search term.": "Essayez d'ajuster vos filtres ou votre terme de recherche.",
+    "Clear all filters": "Effacer tous les filtres",
+    "No items": "Aucun article",
+    "Select all orders on this page": "S\u00e9lectionner toutes les commandes de cette page",
+    "Select order": "S\u00e9lectionner la commande",
+    "From": "Du",
+    "To": "\u00c0"
 }
