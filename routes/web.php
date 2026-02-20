@@ -26,6 +26,7 @@ use App\Http\Controllers\Cook\MealImageController;
 use App\Http\Controllers\Cook\MealLocationOverrideController;
 use App\Http\Controllers\Cook\MealScheduleController;
 use App\Http\Controllers\Cook\MealTagController;
+use App\Http\Controllers\Cook\OrderController;
 use App\Http\Controllers\Cook\PickupLocationController;
 use App\Http\Controllers\Cook\QuarterController;
 use App\Http\Controllers\Cook\QuarterGroupController;
@@ -495,6 +496,10 @@ Route::middleware('tenant.domain')->group(function () {
         Route::post('/selling-units', [SellingUnitController::class, 'store'])->name('cook.selling-units.store');
         Route::put('/selling-units/{unit}', [SellingUnitController::class, 'update'])->name('cook.selling-units.update');
         Route::delete('/selling-units/{unit}', [SellingUnitController::class, 'destroy'])->name('cook.selling-units.destroy');
+
+        // Order management (F-155: Cook Order List View)
+        // BR-162: Only users with can-manage-orders permission (enforced in controller)
+        Route::get('/orders', [OrderController::class, 'index'])->name('cook.orders.index');
     });
 
     // F-135: Meal Search Bar (public, on tenant domain)

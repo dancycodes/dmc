@@ -175,4 +175,69 @@ class OrderFactory extends Factory
             'payment_retry_expires_at' => now()->addMinutes(5),
         ]);
     }
+
+    /**
+     * F-155: State: confirmed.
+     */
+    public function confirmed(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => Order::STATUS_CONFIRMED,
+            'paid_at' => now()->subMinutes(30),
+            'confirmed_at' => now(),
+        ]);
+    }
+
+    /**
+     * F-155: State: preparing.
+     */
+    public function preparing(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => Order::STATUS_PREPARING,
+            'paid_at' => now()->subHour(),
+            'confirmed_at' => now()->subMinutes(30),
+        ]);
+    }
+
+    /**
+     * F-155: State: ready.
+     */
+    public function ready(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => Order::STATUS_READY,
+            'paid_at' => now()->subHours(2),
+            'confirmed_at' => now()->subHour(),
+        ]);
+    }
+
+    /**
+     * F-155: State: completed.
+     */
+    public function completed(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => Order::STATUS_COMPLETED,
+            'paid_at' => now()->subHours(3),
+            'confirmed_at' => now()->subHours(2),
+            'completed_at' => now(),
+        ]);
+    }
+
+    /**
+     * F-155: State: with multi-item snapshot.
+     */
+    public function withMultipleItems(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'items_snapshot' => [
+                ['meal_id' => 1, 'meal_name' => 'Ndole', 'component_name' => 'Standard', 'quantity' => 2, 'unit_price' => 1500, 'subtotal' => 3000],
+                ['meal_id' => 2, 'meal_name' => 'Eru', 'component_name' => 'Large', 'quantity' => 1, 'unit_price' => 2000, 'subtotal' => 2000],
+                ['meal_id' => 3, 'meal_name' => 'Jollof Rice', 'component_name' => 'Family', 'quantity' => 3, 'unit_price' => 2500, 'subtotal' => 7500],
+            ],
+            'subtotal' => 12500,
+            'grand_total' => 13000,
+        ]);
+    }
 }
