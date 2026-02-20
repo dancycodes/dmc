@@ -79,6 +79,13 @@ class Order extends Model
     public const PAYMENT_TIMEOUT_MINUTES = 15;
 
     /**
+     * F-152: Maximum retry attempts allowed per order.
+     *
+     * BR-379: Maximum 3 retry attempts allowed per order.
+     */
+    public const MAX_RETRY_ATTEMPTS = 3;
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
@@ -101,6 +108,8 @@ class Order extends Model
         'phone',
         'payment_provider',
         'payment_phone',
+        'retry_count',
+        'payment_retry_expires_at',
         'items_snapshot',
         'paid_at',
         'confirmed_at',
@@ -117,6 +126,8 @@ class Order extends Model
     {
         return [
             'items_snapshot' => 'array',
+            'retry_count' => 'integer',
+            'payment_retry_expires_at' => 'datetime',
             'paid_at' => 'datetime',
             'confirmed_at' => 'datetime',
             'completed_at' => 'datetime',
@@ -235,9 +246,14 @@ class Order extends Model
      * Check if payment has timed out (>15 minutes).
      *
      * BR-361: Timeout after 15 minutes if no webhook confirmation received.
+     * F-152 BR-377: Uses payment_retry_expires_at if set.
      */
     public function isPaymentTimedOut(): bool
     {
+        if ($this->payment_retry_expires_at) {
+            return now()->greaterThan($this->payment_retry_expires_at);
+        }
+
         return $this->isPendingPayment()
             && $this->created_at
             && $this->created_at->diffInMinutes(now()) > self::PAYMENT_TIMEOUT_MINUTES;
@@ -245,9 +261,17 @@ class Order extends Model
 
     /**
      * Get remaining seconds until payment timeout.
+     *
+     * F-152 BR-377: Uses payment_retry_expires_at if set.
      */
     public function getPaymentTimeoutRemainingSeconds(): int
     {
+        if ($this->payment_retry_expires_at) {
+            $remaining = now()->diffInSeconds($this->payment_retry_expires_at, false);
+
+            return max(0, (int) $remaining);
+        }
+
         if (! $this->created_at) {
             return 0;
         }
@@ -257,6 +281,50 @@ class Order extends Model
         $remaining = $totalTimeout - $elapsed;
 
         return max(0, (int) $remaining);
+    }
+
+    /**
+     * F-152: Check if the order can be retried.
+     *
+     * BR-376: Order must be in pending_payment or payment_failed status.
+     * BR-379: Must not exceed max retry attempts.
+     * BR-377: Must be within the retry window.
+     */
+    public function canRetryPayment(): bool
+    {
+        if (! in_array($this->status, [self::STATUS_PENDING_PAYMENT, self::STATUS_PAYMENT_FAILED], true)) {
+            return false;
+        }
+
+        if ($this->retry_count >= self::MAX_RETRY_ATTEMPTS) {
+            return false;
+        }
+
+        if ($this->isPaymentTimedOut()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * F-152: Check if max retries have been reached.
+     *
+     * BR-379: Maximum 3 retry attempts allowed per order.
+     */
+    public function hasExhaustedRetries(): bool
+    {
+        return $this->retry_count >= self::MAX_RETRY_ATTEMPTS;
+    }
+
+    /**
+     * F-152: Get the retry window expiry time.
+     *
+     * BR-377: The retry window is 15 minutes from the initial payment attempt.
+     */
+    public function getRetryExpiresAt(): ?\Carbon\Carbon
+    {
+        return $this->payment_retry_expires_at;
     }
 
     /**
