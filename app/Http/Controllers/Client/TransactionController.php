@@ -48,4 +48,39 @@ class TransactionController extends Controller
 
         return gale()->view('client.transactions.index', $viewData, web: true);
     }
+
+    /**
+     * Display the detail of a single transaction.
+     *
+     * F-165: Transaction Detail View
+     * BR-271: Client can only view their own transaction details.
+     * BR-272: All transaction types display: amount, type, date/time, status.
+     * BR-273: Payment transactions additionally show: payment method, Flutterwave reference.
+     * BR-274: Refund transactions additionally show: original order reference, refund reason.
+     * BR-275: Wallet payment transactions show: wallet as the payment method.
+     * BR-276: Order reference is a clickable link to the order detail page (F-161).
+     * BR-277: Failed transactions show the failure reason.
+     * BR-278: All amounts displayed in XAF format.
+     * BR-279: All user-facing text uses __() localization.
+     */
+    public function show(string $sourceType, int $sourceId, ClientTransactionService $transactionService): mixed
+    {
+        $user = request()->user();
+
+        // Validate source_type
+        if (! in_array($sourceType, ['payment_transaction', 'wallet_transaction'], true)) {
+            abort(404);
+        }
+
+        // BR-271: Ownership check is inside the service method
+        $transaction = $transactionService->getTransactionDetail($user, $sourceType, $sourceId);
+
+        if (! $transaction) {
+            abort(403);
+        }
+
+        return gale()->view('client.transactions.show', [
+            'transaction' => $transaction,
+        ], web: true);
+    }
 }
