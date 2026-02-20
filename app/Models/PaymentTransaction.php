@@ -76,6 +76,16 @@ class PaymentTransaction extends Model
     }
 
     /**
+     * Get the order associated with this transaction.
+     *
+     * F-150: Links payment transactions to orders.
+     */
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    /**
      * Get the client (customer) who made the payment.
      */
     public function client(): BelongsTo
