@@ -208,6 +208,11 @@ Route::middleware('auth')->group(function () {
     // BR-223: Real-time status tracking via SSE polling
     Route::get('/my-orders/{order}', [\App\Http\Controllers\Client\OrderController::class, 'show'])->name('client.orders.show');
     Route::post('/my-orders/{order}/refresh-status', [\App\Http\Controllers\Client\OrderController::class, 'refreshStatus'])->name('client.orders.refresh-status');
+
+    // Client Transaction History (F-164)
+    // BR-260: All transactions across all tenants
+    // BR-269: Authentication required
+    Route::get('/my-transactions', [\App\Http\Controllers\Client\TransactionController::class, 'index'])->name('client.transactions.index');
 });
 
 /*

@@ -2368,5 +2368,20 @@
     "Pickup Location": "Pickup Location",
     "Payment Phone": "Payment Phone",
     "Inactive": "Inactive",
-    "You are not authorized to view this order.": "You are not authorized to view this order."
+    "You are not authorized to view this order.": "You are not authorized to view this order.",
+    "Transaction History": "Transaction History",
+    "View your payment history across all orders.": "View your payment history across all orders.",
+    "All Transactions": "All Transactions",
+    "Wallet Payments": "Wallet Payments",
+    "No transactions yet.": "No transactions yet.",
+    "Your payment history will appear here once you place your first order.": "Your payment history will appear here once you place your first order.",
+    "No transactions match your filter.": "No transactions match your filter.",
+    "Try a different filter or view all transactions.": "Try a different filter or view all transactions.",
+    "View All Transactions": "View All Transactions",
+    "Payment for": "Payment for",
+    "Refund for": "Refund for",
+    "Wallet payment for": "Wallet payment for",
+    "Wallet Balance": "Wallet Balance",
+    "Ref": "Ref",
+    "Transactions": "Transactions"
 }

@@ -44,6 +44,9 @@
                                 <span class="min-w-[18px] h-[18px] rounded-full bg-primary text-on-primary text-[10px] font-bold flex items-center justify-center px-1">{{ $clientActiveOrderCount }}</span>
                             @endif
                         </a>
+                        <a href="{{ url('/my-transactions') }}" class="text-sm font-medium text-on-surface hover:text-on-surface-strong transition-colors duration-200">
+                            {{ __('Transactions') }}
+                        </a>
                     @endauth
                 </nav>
 
@@ -146,6 +149,11 @@
                         @if(isset($clientActiveOrderCount) && $clientActiveOrderCount > 0)
                             <span class="min-w-[18px] h-[18px] rounded-full bg-primary text-on-primary text-[10px] font-bold flex items-center justify-center px-1 ml-auto">{{ $clientActiveOrderCount }}</span>
                         @endif
+                    </a>
+                    <a href="{{ url('/my-transactions') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-alt transition-colors duration-200">
+                        {{-- Receipt icon (Lucide) --}}
+                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"></path><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><path d="M12 17.5v-11"></path></svg>
+                        {{ __('Transactions') }}
                     </a>
                     <a href="{{ url('/profile') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-alt transition-colors duration-200">
                         {{-- User icon --}}
