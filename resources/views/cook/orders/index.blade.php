@@ -90,7 +90,12 @@
         },
 
         async refreshOrders() {
-            this.applyFilters();
+            let url = '{{ url('/dashboard/orders') }}?sort=' + this.sort + '&direction=' + this.direction;
+            if (this.search) url += '&search=' + encodeURIComponent(this.search);
+            if (this.status) url += '&status=' + this.status;
+            if (this.date_from) url += '&date_from=' + this.date_from;
+            if (this.date_to) url += '&date_to=' + this.date_to;
+            $navigate(url, { key: 'order-list', replace: true });
         }
     }"
     x-interval.15s.visible="refreshOrders()"
