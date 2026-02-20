@@ -8,6 +8,7 @@ use App\Traits\LogsActivityTrait;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Mail;
@@ -109,6 +110,17 @@ class User extends Authenticatable implements MustVerifyEmail
     public function walletTransactions(): HasMany
     {
         return $this->hasMany(WalletTransaction::class);
+    }
+
+    /**
+     * Get the user's client wallet.
+     *
+     * F-166: Client Wallet Dashboard.
+     * BR-280: Each client has one wallet with a single balance.
+     */
+    public function clientWallet(): HasOne
+    {
+        return $this->hasOne(ClientWallet::class);
     }
 
     /**

@@ -2401,5 +2401,20 @@
     "Before": "Avant",
     "After": "Apr\u00e8s",
     "Processing Fee": "Frais de traitement",
-    "Order details unavailable": "D\u00e9tails de la commande indisponibles"
+    "Order details unavailable": "D\u00e9tails de la commande indisponibles",
+    "My Wallet": "Mon Portefeuille",
+    "Manage your wallet balance and view recent transactions.": "G\u00e9rez le solde de votre portefeuille et consultez les transactions r\u00e9centes.",
+    "Current Balance": "Solde Actuel",
+    "Your wallet balance comes from refunds and can be used for future orders.": "Le solde de votre portefeuille provient des remboursements et peut \u00eatre utilis\u00e9 pour de futures commandes.",
+    "Your wallet balance will appear here when you receive a refund.": "Le solde de votre portefeuille appara\u00eetra ici lorsque vous recevrez un remboursement.",
+    "Wallet payments are currently not available for orders.": "Les paiements par portefeuille ne sont actuellement pas disponibles pour les commandes.",
+    "Recent Transactions": "Transactions R\u00e9centes",
+    "total": "total",
+    "No wallet transactions yet.": "Aucune transaction de portefeuille pour le moment.",
+    "Payment Credit": "Cr\u00e9dit de paiement",
+    "Commission": "Commission",
+    "Withdrawal": "Retrait",
+    "Refund Deduction": "D\u00e9duction de remboursement",
+    "Wallet Payment": "Paiement par portefeuille",
+    "View full transaction history": "Voir l'historique complet des transactions"
 }

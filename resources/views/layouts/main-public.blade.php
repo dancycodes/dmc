@@ -44,6 +44,9 @@
                                 <span class="min-w-[18px] h-[18px] rounded-full bg-primary text-on-primary text-[10px] font-bold flex items-center justify-center px-1">{{ $clientActiveOrderCount }}</span>
                             @endif
                         </a>
+                        <a href="{{ url('/my-wallet') }}" class="text-sm font-medium text-on-surface hover:text-on-surface-strong transition-colors duration-200">
+                            {{ __('My Wallet') }}
+                        </a>
                         <a href="{{ url('/my-transactions') }}" class="text-sm font-medium text-on-surface hover:text-on-surface-strong transition-colors duration-200">
                             {{ __('Transactions') }}
                         </a>
@@ -149,6 +152,11 @@
                         @if(isset($clientActiveOrderCount) && $clientActiveOrderCount > 0)
                             <span class="min-w-[18px] h-[18px] rounded-full bg-primary text-on-primary text-[10px] font-bold flex items-center justify-center px-1 ml-auto">{{ $clientActiveOrderCount }}</span>
                         @endif
+                    </a>
+                    <a href="{{ url('/my-wallet') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-alt transition-colors duration-200">
+                        {{-- Wallet icon (Lucide) --}}
+                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"></path><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"></path></svg>
+                        {{ __('My Wallet') }}
                     </a>
                     <a href="{{ url('/my-transactions') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-alt transition-colors duration-200">
                         {{-- Receipt icon (Lucide) --}}
