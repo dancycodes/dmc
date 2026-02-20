@@ -202,6 +202,12 @@ Route::middleware('auth')->group(function () {
     // BR-219: Accessible from any domain (main or tenant)
     // BR-220: Authentication required
     Route::get('/my-orders', [\App\Http\Controllers\Client\OrderController::class, 'index'])->name('client.orders.index');
+
+    // Client Order Detail & Status Tracking (F-161)
+    // BR-222: Client can only view their own orders
+    // BR-223: Real-time status tracking via SSE polling
+    Route::get('/my-orders/{order}', [\App\Http\Controllers\Client\OrderController::class, 'show'])->name('client.orders.show');
+    Route::post('/my-orders/{order}/refresh-status', [\App\Http\Controllers\Client\OrderController::class, 'refreshStatus'])->name('client.orders.refresh-status');
 });
 
 /*
