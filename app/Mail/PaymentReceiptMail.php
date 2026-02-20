@@ -62,7 +62,7 @@ class PaymentReceiptMail extends BaseMailableNotification
     {
         $receiptService = app(PaymentReceiptService::class);
 
-        $items = $receiptService->parseItemsSnapshot($this->order->items_snapshot ?? []);
+        $items = $receiptService->parseItemsSnapshot($this->order->items_snapshot);
         $paymentLabel = $receiptService->getPaymentMethodLabel($this->order->payment_provider);
         $transactionReference = $receiptService->getTransactionReference($this->transaction, $this->order);
 

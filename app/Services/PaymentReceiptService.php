@@ -50,8 +50,8 @@ class PaymentReceiptService
                 ->first();
         }
 
-        // Parse items from snapshot
-        $items = $this->parseItemsSnapshot($order->items_snapshot ?? []);
+        // Parse items from snapshot (handles array, string, or null)
+        $items = $this->parseItemsSnapshot($order->items_snapshot);
 
         // Get human-readable payment label
         $paymentLabel = $this->getPaymentMethodLabel($order->payment_provider);
@@ -74,17 +74,39 @@ class PaymentReceiptService
      * Parse the items snapshot into grouped display data.
      *
      * BR-398: Item summary shows meals with their components.
+     * Handles both structured snapshots (meal_id, component_name, etc.)
+     * and legacy snapshots (meal, quantity, price).
+     * Also handles double-encoded JSON strings from the database.
      *
-     * @param  array<int, array{meal_id: int, meal_name: string, component_id: int, component_name: string, quantity: int, unit_price: int, subtotal: int}>  $snapshot
+     * @param  array|string|null  $snapshot
      * @return array<int, array{meal_name: string, components: array}>
      */
-    public function parseItemsSnapshot(array $snapshot): array
+    public function parseItemsSnapshot(array|string|null $snapshot): array
     {
+        // Handle null or empty
+        if (empty($snapshot)) {
+            return [];
+        }
+
+        // Handle JSON string (double-encoded from database)
+        if (is_string($snapshot)) {
+            $decoded = json_decode($snapshot, true);
+            if (! is_array($decoded)) {
+                return [];
+            }
+            $snapshot = $decoded;
+        }
+
         $grouped = [];
 
         foreach ($snapshot as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            // Support both structured and legacy formats
             $mealId = $item['meal_id'] ?? 0;
-            $mealName = $item['meal_name'] ?? __('Unknown Meal');
+            $mealName = $item['meal_name'] ?? $item['meal'] ?? __('Unknown Meal');
 
             if (! isset($grouped[$mealId])) {
                 $grouped[$mealId] = [
@@ -93,11 +115,18 @@ class PaymentReceiptService
                 ];
             }
 
+            // Legacy format: { meal, quantity, price }
+            // Structured format: { component_name, quantity, unit_price, subtotal }
+            $componentName = $item['component_name'] ?? $item['meal'] ?? __('Unknown Item');
+            $quantity = $item['quantity'] ?? 1;
+            $unitPrice = $item['unit_price'] ?? $item['price'] ?? 0;
+            $subtotal = $item['subtotal'] ?? ($unitPrice * $quantity);
+
             $grouped[$mealId]['components'][] = [
-                'name' => $item['component_name'] ?? __('Unknown Item'),
-                'quantity' => $item['quantity'] ?? 1,
-                'unit_price' => $item['unit_price'] ?? 0,
-                'subtotal' => $item['subtotal'] ?? 0,
+                'name' => $componentName,
+                'quantity' => $quantity,
+                'unit_price' => $unitPrice,
+                'subtotal' => $subtotal,
             ];
         }
 
