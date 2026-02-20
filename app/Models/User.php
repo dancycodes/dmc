@@ -102,6 +102,16 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Get the user's wallet transactions.
+     *
+     * F-151: Wallet credits, commissions, refunds, withdrawals.
+     */
+    public function walletTransactions(): HasMany
+    {
+        return $this->hasMany(WalletTransaction::class);
+    }
+
+    /**
      * Check if the user account is active.
      */
     public function isActive(): bool

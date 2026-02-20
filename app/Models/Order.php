@@ -181,6 +181,16 @@ class Order extends Model
     }
 
     /**
+     * Get the wallet transactions for this order.
+     *
+     * F-151: Wallet credits and commission records linked to orders.
+     */
+    public function walletTransactions(): HasMany
+    {
+        return $this->hasMany(WalletTransaction::class);
+    }
+
+    /**
      * Generate a unique order number.
      *
      * Format: DMC-{YYMMDD}-{4 digit sequence}

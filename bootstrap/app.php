@@ -33,6 +33,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // it passes through for guests and active users.
         $middleware->appendToGroup('web', EnsureUserIsActive::class);
 
+        // F-151: Exclude webhook endpoints from CSRF verification.
+        // Flutterwave sends POST requests from their servers and cannot
+        // include a CSRF token. Signature verification is used instead (BR-364).
+        $middleware->validateCsrfTokens(except: [
+            'webhooks/*',
+        ]);
+
         $middleware->alias([
             'main.domain' => EnsureMainDomain::class,
             'tenant.domain' => EnsureTenantDomain::class,
