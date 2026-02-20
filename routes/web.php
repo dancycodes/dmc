@@ -609,3 +609,20 @@ Route::middleware('tenant.domain')->group(function () {
     Route::post('/checkout/payment/cancel/{orderId}', [\App\Http\Controllers\Tenant\CheckoutController::class, 'cancelPayment'])
         ->name('tenant.checkout.cancel-payment');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Webhook Routes (accessible on ALL domains)
+|--------------------------------------------------------------------------
+|
+| External webhook endpoints that receive callbacks from third-party
+| services. These routes are excluded from CSRF verification since they
+| receive requests from external servers (not browsers).
+|
+| F-151: Payment Webhook Handling
+| BR-364: Verifies Flutterwave webhook signature for authenticity
+| BR-375: Returns 200 OK promptly to prevent Flutterwave retries
+|
+*/
+Route::post('/webhooks/flutterwave', [\App\Http\Controllers\Webhook\FlutterwaveWebhookController::class, 'handle'])
+    ->name('webhooks.flutterwave');
