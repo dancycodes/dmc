@@ -112,7 +112,7 @@
         },
         toggleSelectAll() {
             if (this.selectAll) {
-                this.selectedOrders = [...document.querySelectorAll('[data-order-id]')].map(el => el.dataset.orderId);
+                this.selectedOrders = [...new Set([...document.querySelectorAll('[data-order-id]')].map(el => el.dataset.orderId))];
             } else {
                 this.selectedOrders = [];
             }
@@ -123,10 +123,10 @@
             if (idx > -1) {
                 this.selectedOrders.splice(idx, 1);
             } else {
-                this.selectedOrders.push(id);
+                if (!this.selectedOrders.includes(id)) this.selectedOrders.push(id);
             }
-            const totalCheckboxes = document.querySelectorAll('[data-order-id]').length;
-            this.selectAll = this.selectedOrders.length === totalCheckboxes && totalCheckboxes > 0;
+            const uniqueIds = new Set([...document.querySelectorAll('[data-order-id]')].map(el => el.dataset.orderId));
+            this.selectAll = this.selectedOrders.length === uniqueIds.size && uniqueIds.size > 0;
         },
         isSelected(orderId) {
             return this.selectedOrders.includes(String(orderId));
