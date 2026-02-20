@@ -16,6 +16,7 @@ use App\Services\CheckoutService;
 use App\Services\PaymentReceiptService;
 use App\Services\PaymentRetryService;
 use App\Services\PaymentService;
+use App\Services\WalletPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -30,6 +31,7 @@ use Illuminate\Support\Facades\Mail;
  * F-149: Payment Method Selection
  * F-150: Flutterwave Payment Initiation
  * F-152: Payment Retry with Timeout
+ * F-153: Wallet Balance Payment
  * F-154: Payment Receipt & Confirmation
  *
  * Handles checkout flow on tenant domains via Gale SSE.
@@ -38,6 +40,7 @@ use Illuminate\Support\Facades\Mail;
  * BR-273/BR-282/BR-290/BR-297/BR-326/BR-353: All text localized via __().
  * BR-327-BR-334: Location not available messaging and contact options.
  * BR-345-BR-352: Payment method selection rules.
+ * BR-387-BR-397: Wallet balance payment rules.
  */
 class CheckoutController extends Controller
 {
@@ -47,6 +50,7 @@ class CheckoutController extends Controller
         private PaymentService $paymentService,
         private PaymentRetryService $paymentRetryService,
         private PaymentReceiptService $paymentReceiptService,
+        private WalletPaymentService $walletPaymentService,
     ) {}
 
     /**
@@ -965,6 +969,78 @@ class CheckoutController extends Controller
 
         // BR-360: Redirect to waiting page
         return gale()->redirect(url('/checkout/payment/waiting/'.$order->id));
+    }
+
+    /**
+     * F-153: Process wallet balance payment.
+     *
+     * BR-387: Only available when admin has enabled wallet payments globally.
+     * BR-388: Wallet balance must be >= order total.
+     * BR-389: Deduct order total from wallet balance.
+     * BR-390: Instant deduction; no external payment gateway involved.
+     * BR-391: Order status immediately changes to "Paid".
+     * BR-392: Wallet transaction record created.
+     * BR-393: Cook wallet credited with (order amount - commission).
+     * BR-394: Commission calculated identically to Flutterwave payments.
+     * BR-395: Logged via Spatie Activitylog.
+     * BR-396: No partial wallet payment supported.
+     * BR-397: All text localized via __().
+     */
+    public function processWalletPayment(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        // Require authentication
+        if (! auth()->check()) {
+            return gale()->redirect(route('login'))
+                ->with('message', __('Please login to proceed with your order.'));
+        }
+
+        // Verify cart is not empty
+        $cart = $this->cartService->getCartWithAvailability($tenant->id);
+        if (empty($cart['items'])) {
+            return gale()->redirect(url('/cart'))
+                ->with('message', __('Your cart is empty.'));
+        }
+
+        // Verify complete checkout data
+        $deliveryMethod = $this->checkoutService->getDeliveryMethod($tenant->id);
+        if (! $deliveryMethod) {
+            return gale()->redirect(url('/checkout/delivery-method'))
+                ->with('message', __('Please select a delivery method first.'));
+        }
+
+        $paymentProvider = $this->checkoutService->getPaymentProvider($tenant->id);
+        if ($paymentProvider !== 'wallet') {
+            return gale()->redirect(url('/checkout/payment'))
+                ->with('message', __('Please select wallet as your payment method.'));
+        }
+
+        $user = auth()->user();
+
+        // Process the wallet payment
+        $result = $this->walletPaymentService->processWalletPayment($tenant, $user);
+
+        if (! $result['success']) {
+            return gale()->redirect(url('/checkout/payment'))
+                ->with('error', $result['error']);
+        }
+
+        $order = $result['order'];
+
+        // Clear cart after successful payment
+        $this->cartService->clearCart($tenant->id);
+
+        // Clear checkout session data
+        $this->checkoutService->clearCheckoutData($tenant->id);
+
+        // Redirect to receipt page (F-154)
+        return gale()->redirect(url('/checkout/payment/receipt/'.$order->id))
+            ->with('message', __('Payment successful!'));
     }
 
     /**

@@ -2416,5 +2416,19 @@
     "Withdrawal": "Retrait",
     "Refund Deduction": "D\u00e9duction de remboursement",
     "Wallet Payment": "Paiement par portefeuille",
-    "View full transaction history": "Voir l'historique complet des transactions"
+    "View full transaction history": "Voir l'historique complet des transactions",
+    "Wallet payments are currently disabled.": "Les paiements par portefeuille sont actuellement d\u00e9sactiv\u00e9s.",
+    "Wallet payments have been disabled.": "Les paiements par portefeuille ont \u00e9t\u00e9 d\u00e9sactiv\u00e9s.",
+    "Wallet not found.": "Portefeuille introuvable.",
+    "Wallet payment for order :number": "Paiement par portefeuille pour la commande :number",
+    "Wallet payment processed successfully": "Paiement par portefeuille trait\u00e9 avec succ\u00e8s",
+    "Please select wallet as your payment method.": "Veuillez s\u00e9lectionner le portefeuille comme mode de paiement.",
+    "Payment failed. Please try again.": "Le paiement a \u00e9chou\u00e9. Veuillez r\u00e9essayer.",
+    "Pay :amount from wallet": "Payer :amount depuis le portefeuille",
+    "Remaining balance: :balance": "Solde restant : :balance",
+    "Confirm Wallet Payment": "Confirmer le paiement par portefeuille",
+    "Pay :amount XAF from your wallet?": "Payer :amount XAF depuis votre portefeuille ?",
+    "Your remaining balance will be :balance XAF.": "Votre solde restant sera de :balance XAF.",
+    "Cancel": "Annuler",
+    "Confirm Payment": "Confirmer le paiement"
 }

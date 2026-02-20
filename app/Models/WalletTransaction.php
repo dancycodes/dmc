@@ -40,6 +40,8 @@ class WalletTransaction extends Model
 
     public const TYPE_REFUND_DEDUCTION = 'refund_deduction';
 
+    public const TYPE_WALLET_PAYMENT = 'wallet_payment';
+
     /**
      * Valid transaction types.
      *
@@ -51,6 +53,7 @@ class WalletTransaction extends Model
         self::TYPE_REFUND,
         self::TYPE_WITHDRAWAL,
         self::TYPE_REFUND_DEDUCTION,
+        self::TYPE_WALLET_PAYMENT,
     ];
 
     /**
@@ -150,7 +153,7 @@ class WalletTransaction extends Model
      */
     public function isDebit(): bool
     {
-        return in_array($this->type, [self::TYPE_COMMISSION, self::TYPE_WITHDRAWAL, self::TYPE_REFUND_DEDUCTION], true);
+        return in_array($this->type, [self::TYPE_COMMISSION, self::TYPE_WITHDRAWAL, self::TYPE_REFUND_DEDUCTION, self::TYPE_WALLET_PAYMENT], true);
     }
 
     /**

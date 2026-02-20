@@ -635,6 +635,13 @@ Route::middleware('tenant.domain')->group(function () {
     Route::post('/checkout/payment', [\App\Http\Controllers\Tenant\CheckoutController::class, 'savePaymentMethod'])
         ->name('tenant.checkout.save-payment');
 
+    // F-153: Wallet Balance Payment
+    // BR-387: Only when admin enabled wallet payments globally
+    // BR-390: Instant deduction; no external payment gateway
+    // BR-391: Order status immediately changes to "Paid"
+    Route::get('/checkout/payment/wallet', [\App\Http\Controllers\Tenant\CheckoutController::class, 'processWalletPayment'])
+        ->name('tenant.checkout.wallet-payment');
+
     // F-150: Flutterwave Payment Initiation
     // BR-354: Payment initiated via Flutterwave v3 mobile money charge API
     // BR-358: Order created with "Pending Payment" status

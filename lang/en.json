@@ -2416,5 +2416,19 @@
     "Withdrawal": "Withdrawal",
     "Refund Deduction": "Refund Deduction",
     "Wallet Payment": "Wallet Payment",
-    "View full transaction history": "View full transaction history"
+    "View full transaction history": "View full transaction history",
+    "Wallet payments are currently disabled.": "Wallet payments are currently disabled.",
+    "Wallet payments have been disabled.": "Wallet payments have been disabled.",
+    "Wallet not found.": "Wallet not found.",
+    "Wallet payment for order :number": "Wallet payment for order :number",
+    "Wallet payment processed successfully": "Wallet payment processed successfully",
+    "Please select wallet as your payment method.": "Please select wallet as your payment method.",
+    "Payment failed. Please try again.": "Payment failed. Please try again.",
+    "Pay :amount from wallet": "Pay :amount from wallet",
+    "Remaining balance: :balance": "Remaining balance: :balance",
+    "Confirm Wallet Payment": "Confirm Wallet Payment",
+    "Pay :amount XAF from your wallet?": "Pay :amount XAF from your wallet?",
+    "Your remaining balance will be :balance XAF.": "Your remaining balance will be :balance XAF.",
+    "Cancel": "Cancel",
+    "Confirm Payment": "Confirm Payment"
 }
