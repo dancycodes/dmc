@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Models\Order;
+use App\Models\PaymentTransaction;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Schema;
 
 class ClientOrderService
 {
@@ -218,5 +220,210 @@ class ClientOrderService
     public static function formatXAF(int $amount): string
     {
         return number_format($amount, 0, '.', ',').' XAF';
+    }
+
+    /**
+     * F-161: Get order detail data for the client order detail view.
+     *
+     * BR-222: Client can only view their own orders.
+     * BR-224: Visual timeline shows all status transitions with timestamps.
+     * BR-225: Cancel button visible when order is Paid/Confirmed AND within cancellation window.
+     * BR-229: Cook's WhatsApp number displayed for urgent contact.
+     * BR-230: Payment details show method, amount, reference, status.
+     * BR-231: Items section shows meal name, components, quantities, unit prices, line totals.
+     * BR-232: Delivery orders show town, quarter, landmark, delivery fee.
+     * BR-233: Pickup orders show pickup location name and address.
+     *
+     * @return array{
+     *     order: Order,
+     *     items: array<array{meal_name: string, component_name: string, quantity: int, unit_price: int, subtotal: int}>,
+     *     statusTimeline: array<array{status: string, label: string, timestamp: string, relative_time: string, user: string}>,
+     *     paymentTransaction: ?PaymentTransaction,
+     *     canCancel: bool,
+     *     cancellationSecondsRemaining: int,
+     *     canReport: bool,
+     *     canRate: bool,
+     *     cookWhatsapp: ?string,
+     *     cookName: string,
+     *     tenantUrl: string,
+     *     tenantActive: bool
+     * }
+     */
+    public function getOrderDetail(Order $order): array
+    {
+        // Eager load all needed relationships
+        $order->load([
+            'client:id,name,phone,email',
+            'tenant:id,name_en,name_fr,slug,custom_domain,whatsapp,phone,is_active,cook_id,settings',
+            'town',
+            'quarter',
+            'pickupLocation.town',
+            'pickupLocation.quarter',
+            'statusTransitions.triggeredBy:id,name',
+        ]);
+
+        $cookOrderService = new CookOrderService;
+        $items = $cookOrderService->parseOrderItems($order);
+        $statusTimeline = $cookOrderService->getStatusTimeline($order);
+        $paymentTransaction = $cookOrderService->getLatestPaymentTransaction($order);
+
+        // BR-225: Cancel button logic
+        $canCancel = $this->canCancelOrder($order);
+        $cancellationSecondsRemaining = $canCancel ? $this->getCancellationSecondsRemaining($order) : 0;
+
+        // BR-227: Report a Problem available for delivered/picked up/completed statuses
+        $canReport = in_array($order->status, [
+            Order::STATUS_DELIVERED,
+            Order::STATUS_PICKED_UP,
+            Order::STATUS_COMPLETED,
+        ], true);
+
+        // BR-228: Rating prompt for completed, unrated orders
+        $canRate = $order->status === Order::STATUS_COMPLETED && ! $this->hasBeenRated($order);
+
+        // BR-229: Cook's WhatsApp number
+        $cookWhatsapp = $order->tenant?->whatsapp;
+
+        return [
+            'order' => $order,
+            'items' => $items,
+            'statusTimeline' => $statusTimeline,
+            'paymentTransaction' => $paymentTransaction,
+            'canCancel' => $canCancel,
+            'cancellationSecondsRemaining' => $cancellationSecondsRemaining,
+            'canReport' => $canReport,
+            'canRate' => $canRate,
+            'cookWhatsapp' => $cookWhatsapp,
+            'cookName' => $order->tenant?->name ?? __('Unknown Cook'),
+            'tenantUrl' => self::getTenantUrl($order->tenant),
+            'tenantActive' => $order->tenant?->is_active ?? false,
+        ];
+    }
+
+    /**
+     * F-161 BR-225: Check if the order can be cancelled by the client.
+     *
+     * Order must be in Paid or Confirmed status AND within the cancellation window.
+     * Uses platform default cancellation window (F-212 will add per-cook override).
+     */
+    public function canCancelOrder(Order $order): bool
+    {
+        if (! in_array($order->status, [Order::STATUS_PAID, Order::STATUS_CONFIRMED], true)) {
+            return false;
+        }
+
+        $cancellationWindowMinutes = $this->getCancellationWindowMinutes($order);
+
+        if ($cancellationWindowMinutes <= 0) {
+            return false;
+        }
+
+        // Window starts from when the order was paid
+        $referenceTime = $order->paid_at ?? $order->created_at;
+        if (! $referenceTime) {
+            return false;
+        }
+
+        $windowExpiresAt = $referenceTime->copy()->addMinutes($cancellationWindowMinutes);
+
+        return now()->lessThan($windowExpiresAt);
+    }
+
+    /**
+     * F-161 BR-226: Get the remaining seconds in the cancellation window.
+     */
+    public function getCancellationSecondsRemaining(Order $order): int
+    {
+        $cancellationWindowMinutes = $this->getCancellationWindowMinutes($order);
+
+        if ($cancellationWindowMinutes <= 0) {
+            return 0;
+        }
+
+        $referenceTime = $order->paid_at ?? $order->created_at;
+        if (! $referenceTime) {
+            return 0;
+        }
+
+        $windowExpiresAt = $referenceTime->copy()->addMinutes($cancellationWindowMinutes);
+        $remaining = now()->diffInSeconds($windowExpiresAt, false);
+
+        return max(0, (int) $remaining);
+    }
+
+    /**
+     * Get the cancellation window in minutes for the order's cook.
+     *
+     * Forward-compatible: F-212 will add per-cook override in tenant settings.
+     * Falls back to platform default.
+     */
+    private function getCancellationWindowMinutes(Order $order): int
+    {
+        // Check tenant-level override (F-212 will populate this)
+        $tenantOverride = $order->tenant?->getSetting('cancellation_window');
+        if ($tenantOverride !== null) {
+            return (int) $tenantOverride;
+        }
+
+        // Platform default
+        if (Schema::hasTable('platform_settings')) {
+            return app(PlatformSettingService::class)->getDefaultCancellationWindow();
+        }
+
+        return 30; // Fallback 30 minutes
+    }
+
+    /**
+     * F-161 BR-228: Check if the order has been rated.
+     *
+     * Forward-compatible: F-176 will create the ratings table.
+     */
+    private function hasBeenRated(Order $order): bool
+    {
+        if (Schema::hasTable('ratings')) {
+            return \DB::table('ratings')
+                ->where('order_id', $order->id)
+                ->exists();
+        }
+
+        return false;
+    }
+
+    /**
+     * F-161: Refresh status timeline data for polling updates.
+     *
+     * BR-223: Status updates pushed to client in real-time via Gale SSE.
+     *
+     * @return array{
+     *     status: string,
+     *     statusLabel: string,
+     *     statusTimeline: array,
+     *     canCancel: bool,
+     *     cancellationSecondsRemaining: int,
+     *     canReport: bool,
+     *     canRate: bool
+     * }
+     */
+    public function getOrderStatusRefresh(Order $order): array
+    {
+        $order->refresh();
+        $order->load(['statusTransitions.triggeredBy:id,name', 'client:id,name']);
+
+        $cookOrderService = new CookOrderService;
+        $statusTimeline = $cookOrderService->getStatusTimeline($order);
+
+        return [
+            'status' => $order->status,
+            'statusLabel' => Order::getStatusLabel($order->status),
+            'statusTimeline' => $statusTimeline,
+            'canCancel' => $this->canCancelOrder($order),
+            'cancellationSecondsRemaining' => $this->canCancelOrder($order) ? $this->getCancellationSecondsRemaining($order) : 0,
+            'canReport' => in_array($order->status, [
+                Order::STATUS_DELIVERED,
+                Order::STATUS_PICKED_UP,
+                Order::STATUS_COMPLETED,
+            ], true),
+            'canRate' => $order->status === Order::STATUS_COMPLETED && ! $this->hasBeenRated($order),
+        ];
     }
 }
