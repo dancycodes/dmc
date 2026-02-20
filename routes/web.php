@@ -500,6 +500,7 @@ Route::middleware('tenant.domain')->group(function () {
         // Order management (F-155: Cook Order List View)
         // BR-162: Only users with can-manage-orders permission (enforced in controller)
         Route::get('/orders', [OrderController::class, 'index'])->name('cook.orders.index');
+        Route::get('/orders/{order}', [OrderController::class, 'show'])->name('cook.orders.show');
     });
 
     // F-135: Meal Search Bar (public, on tenant domain)

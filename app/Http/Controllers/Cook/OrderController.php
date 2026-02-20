@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Cook;
 
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use App\Services\CookOrderService;
 use Illuminate\Http\Request;
 
@@ -58,5 +59,42 @@ class OrderController extends Controller
         }
 
         return gale()->view('cook.orders.index', $data, web: true);
+    }
+
+    /**
+     * Display the cook's order detail page.
+     *
+     * F-156: Cook Order Detail View
+     * BR-166: Order detail is tenant-scoped.
+     * BR-175: Only users with manage-orders permission.
+     * BR-167-BR-177: All order sections displayed.
+     */
+    public function show(Request $request, int $orderId, CookOrderService $orderService): mixed
+    {
+        $user = $request->user();
+        $tenant = tenant();
+
+        // BR-175: Permission check
+        if (! $user->can('can-manage-orders')) {
+            abort(403);
+        }
+
+        // BR-166: Tenant-scoped order lookup
+        $order = Order::query()
+            ->forTenant($tenant->id)
+            ->findOrFail($orderId);
+
+        $detail = $orderService->getOrderDetail($order);
+
+        $data = [
+            'order' => $detail['order'],
+            'items' => $detail['items'],
+            'statusTimeline' => $detail['statusTimeline'],
+            'nextStatus' => $detail['nextStatus'],
+            'nextStatusLabel' => $detail['nextStatusLabel'],
+            'paymentTransaction' => $detail['paymentTransaction'],
+        ];
+
+        return gale()->view('cook.orders.show', $data, web: true);
     }
 }

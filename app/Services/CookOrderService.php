@@ -6,6 +6,8 @@ use App\Models\Order;
 use App\Models\Tenant;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Schema;
+use Spatie\Activitylog\Models\Activity;
 
 class CookOrderService
 {
@@ -125,6 +127,222 @@ class CookOrderService
             'completed' => (int) ($counts->completed ?? 0),
             'cancelled' => (int) ($counts->cancelled ?? 0),
         ];
+    }
+
+    /**
+     * F-156: Get order detail data for the cook order detail view.
+     *
+     * BR-166: Order detail is tenant-scoped.
+     * BR-167: Client phone number displayed.
+     * BR-168: Items with components, quantities, prices.
+     * BR-169/BR-170: Delivery/pickup details.
+     * BR-171: Status timeline from activity log.
+     * BR-173: Payment information.
+     * BR-174: Client notes.
+     *
+     * @return array{
+     *     order: Order,
+     *     items: array<array{meal_name: string, component_name: string, quantity: int, unit_price: int, subtotal: int}>,
+     *     statusTimeline: array<array{status: string, label: string, timestamp: string, user: string}>,
+     *     nextStatus: ?string,
+     *     nextStatusLabel: ?string,
+     *     paymentTransaction: ?\App\Models\PaymentTransaction
+     * }
+     */
+    public function getOrderDetail(Order $order): array
+    {
+        // Eager load all needed relationships
+        $order->load([
+            'client:id,name,phone,email',
+            'tenant:id,name_en,name_fr,slug,whatsapp',
+            'town',
+            'quarter',
+            'pickupLocation.town',
+            'pickupLocation.quarter',
+        ]);
+
+        $items = $this->parseOrderItems($order);
+        $statusTimeline = $this->getStatusTimeline($order);
+        $nextStatus = $order->getNextStatus();
+        $nextStatusLabel = $nextStatus ? Order::getStatusLabel($nextStatus) : null;
+        $paymentTransaction = $this->getLatestPaymentTransaction($order);
+
+        return [
+            'order' => $order,
+            'items' => $items,
+            'statusTimeline' => $statusTimeline,
+            'nextStatus' => $nextStatus,
+            'nextStatusLabel' => $nextStatusLabel,
+            'paymentTransaction' => $paymentTransaction,
+        ];
+    }
+
+    /**
+     * F-156: Parse order items from the items_snapshot column.
+     *
+     * BR-168: Items section shows meal name, selected components with quantities,
+     * unit prices, and line totals.
+     *
+     * @return array<int, array{meal_name: string, component_name: string, quantity: int, unit_price: int, subtotal: int}>
+     */
+    public function parseOrderItems(Order $order): array
+    {
+        $snapshot = $order->items_snapshot;
+
+        if (empty($snapshot)) {
+            return [];
+        }
+
+        // Handle double-encoded JSON (lesson from F-154)
+        if (is_string($snapshot)) {
+            $decoded = json_decode($snapshot, true);
+            $snapshot = is_array($decoded) ? $decoded : [];
+        }
+
+        if (! is_array($snapshot)) {
+            return [];
+        }
+
+        $items = [];
+        foreach ($snapshot as $item) {
+            $items[] = [
+                'meal_name' => $item['meal_name'] ?? $item['meal'] ?? __('Unknown'),
+                'component_name' => $item['component_name'] ?? $item['component'] ?? '',
+                'quantity' => (int) ($item['quantity'] ?? 1),
+                'unit_price' => (int) ($item['unit_price'] ?? $item['price'] ?? 0),
+                'subtotal' => (int) ($item['subtotal'] ?? (($item['unit_price'] ?? $item['price'] ?? 0) * ($item['quantity'] ?? 1))),
+            ];
+        }
+
+        return $items;
+    }
+
+    /**
+     * F-156: Get the status timeline from activity log.
+     *
+     * BR-171: Status timeline shows all transitions with timestamps
+     * and the user who triggered each change.
+     *
+     * @return array<int, array{status: string, label: string, timestamp: string, relative_time: string, user: string}>
+     */
+    public function getStatusTimeline(Order $order): array
+    {
+        $timeline = [];
+
+        // Always include order creation as first entry
+        $timeline[] = [
+            'status' => Order::STATUS_PENDING_PAYMENT,
+            'label' => Order::getStatusLabel(Order::STATUS_PENDING_PAYMENT),
+            'timestamp' => $order->created_at?->format('M d, Y H:i') ?? '',
+            'relative_time' => $order->created_at?->diffForHumans() ?? '',
+            'user' => $order->client?->name ?? __('Customer'),
+        ];
+
+        // Check for paid_at timestamp
+        if ($order->paid_at) {
+            $timeline[] = [
+                'status' => Order::STATUS_PAID,
+                'label' => Order::getStatusLabel(Order::STATUS_PAID),
+                'timestamp' => $order->paid_at->format('M d, Y H:i'),
+                'relative_time' => $order->paid_at->diffForHumans(),
+                'user' => __('System'),
+            ];
+        }
+
+        // Get status change entries from activity log
+        if (Schema::hasTable('activity_log')) {
+            $activities = Activity::query()
+                ->where('subject_type', Order::class)
+                ->where('subject_id', $order->id)
+                ->where('event', 'updated')
+                ->whereJsonContains('properties->attributes', ['status' => ''])
+                ->orWhere(function ($q) use ($order) {
+                    $q->where('subject_type', Order::class)
+                        ->where('subject_id', $order->id)
+                        ->where('description', 'like', '%status%');
+                })
+                ->with('causer:id,name')
+                ->orderBy('created_at')
+                ->get();
+
+            foreach ($activities as $activity) {
+                $properties = $activity->properties ?? collect();
+                $newAttributes = $properties->get('attributes', []);
+                $oldAttributes = $properties->get('old', []);
+
+                if (isset($newAttributes['status']) && isset($oldAttributes['status'])) {
+                    $newStatus = $newAttributes['status'];
+                    // Avoid duplicating paid status already added from paid_at
+                    if ($newStatus === Order::STATUS_PAID && $order->paid_at) {
+                        continue;
+                    }
+
+                    $timeline[] = [
+                        'status' => $newStatus,
+                        'label' => Order::getStatusLabel($newStatus),
+                        'timestamp' => $activity->created_at->format('M d, Y H:i'),
+                        'relative_time' => $activity->created_at->diffForHumans(),
+                        'user' => $activity->causer?->name ?? __('System'),
+                    ];
+                }
+            }
+        }
+
+        // Add confirmed_at if not already in timeline
+        if ($order->confirmed_at && ! collect($timeline)->contains('status', Order::STATUS_CONFIRMED)) {
+            $timeline[] = [
+                'status' => Order::STATUS_CONFIRMED,
+                'label' => Order::getStatusLabel(Order::STATUS_CONFIRMED),
+                'timestamp' => $order->confirmed_at->format('M d, Y H:i'),
+                'relative_time' => $order->confirmed_at->diffForHumans(),
+                'user' => __('Cook'),
+            ];
+        }
+
+        // Add completed_at if not already in timeline
+        if ($order->completed_at && ! collect($timeline)->contains('status', Order::STATUS_COMPLETED)) {
+            $timeline[] = [
+                'status' => Order::STATUS_COMPLETED,
+                'label' => Order::getStatusLabel(Order::STATUS_COMPLETED),
+                'timestamp' => $order->completed_at->format('M d, Y H:i'),
+                'relative_time' => $order->completed_at->diffForHumans(),
+                'user' => __('System'),
+            ];
+        }
+
+        // Add cancelled_at if not already in timeline
+        if ($order->cancelled_at && ! collect($timeline)->contains('status', Order::STATUS_CANCELLED)) {
+            $timeline[] = [
+                'status' => Order::STATUS_CANCELLED,
+                'label' => Order::getStatusLabel(Order::STATUS_CANCELLED),
+                'timestamp' => $order->cancelled_at->format('M d, Y H:i'),
+                'relative_time' => $order->cancelled_at->diffForHumans(),
+                'user' => __('Customer'),
+            ];
+        }
+
+        // Sort by timestamp
+        usort($timeline, function ($a, $b) {
+            return strcmp($a['timestamp'], $b['timestamp']);
+        });
+
+        return $timeline;
+    }
+
+    /**
+     * F-156: Get the latest payment transaction for an order.
+     *
+     * BR-173: Payment info shows method, amount, status, Flutterwave reference.
+     */
+    public function getLatestPaymentTransaction(Order $order): ?\App\Models\PaymentTransaction
+    {
+        if (! Schema::hasTable('payment_transactions')) {
+            return null;
+        }
+
+        return $order->paymentTransactions()
+            ->orderByDesc('created_at')
+            ->first();
     }
 
     /**
