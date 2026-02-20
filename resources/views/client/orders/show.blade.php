@@ -56,6 +56,26 @@
             }
         },
 
+        statusBadgeClasses: {
+            'pending_payment': 'bg-surface-alt text-on-surface/70 dark:bg-surface-alt dark:text-on-surface/70',
+            'payment_failed': 'bg-danger-subtle text-danger dark:bg-danger-subtle dark:text-danger',
+            'paid': 'bg-info-subtle text-info dark:bg-info-subtle dark:text-info',
+            'confirmed': 'bg-[oklch(0.93_0.05_270)] text-[oklch(0.45_0.15_270)] dark:bg-[oklch(0.25_0.06_270)] dark:text-[oklch(0.75_0.12_270)]',
+            'preparing': 'bg-warning-subtle text-warning dark:bg-warning-subtle dark:text-warning',
+            'ready': 'bg-[oklch(0.93_0.05_175)] text-[oklch(0.45_0.1_175)] dark:bg-[oklch(0.25_0.04_175)] dark:text-[oklch(0.75_0.1_175)]',
+            'out_for_delivery': 'bg-[oklch(0.93_0.05_300)] text-[oklch(0.45_0.15_300)] dark:bg-[oklch(0.25_0.06_300)] dark:text-[oklch(0.75_0.12_300)]',
+            'ready_for_pickup': 'bg-[oklch(0.93_0.05_300)] text-[oklch(0.45_0.15_300)] dark:bg-[oklch(0.25_0.06_300)] dark:text-[oklch(0.75_0.12_300)]',
+            'delivered': 'bg-success-subtle text-success dark:bg-success-subtle dark:text-success',
+            'picked_up': 'bg-success-subtle text-success dark:bg-success-subtle dark:text-success',
+            'completed': 'bg-success-subtle text-success dark:bg-success-subtle dark:text-success',
+            'cancelled': 'bg-danger-subtle text-danger dark:bg-danger-subtle dark:text-danger',
+            'refunded': 'bg-secondary-subtle text-secondary dark:bg-secondary-subtle dark:text-secondary',
+        },
+
+        getBadgeClass() {
+            return this.statusBadgeClasses[this.currentStatus] || 'bg-surface-alt text-on-surface dark:bg-surface-alt dark:text-on-surface';
+        },
+
         checkStatusChange() {
             if (this.currentStatus !== this.previousStatus) {
                 this.statusToastMessage = '{{ __('Your order is now') }} ' + this.currentStatusLabel + '!';
@@ -109,7 +129,11 @@
                 <h1 class="text-2xl font-display font-bold text-on-surface-strong">
                     #{{ $order->order_number }}
                 </h1>
-                @include('cook._order-status-badge', ['status' => $order->status])
+                <span
+                    class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                    :class="getBadgeClass()"
+                    x-text="currentStatusLabel"
+                ></span>
             </div>
             <p class="text-sm text-on-surface/60">
                 {{ __('Placed on') }} {{ $order->created_at->format('M d, Y') }} {{ __('at') }} {{ $order->created_at->format('H:i') }}
