@@ -617,6 +617,14 @@ Route::middleware('tenant.domain')->group(function () {
         ->name('tenant.checkout.payment-retry');
     Route::post('/checkout/payment/retry/{orderId}', [\App\Http\Controllers\Tenant\CheckoutController::class, 'processRetryPayment'])
         ->name('tenant.checkout.process-retry');
+
+    // F-154: Payment Receipt & Confirmation
+    // BR-398: Displays order number, item summary, total, payment method, reference, status
+    // BR-403: Receipt can be downloaded as PDF (via browser print)
+    // BR-404: Track Order links to order tracking page
+    // BR-406: Confirmation page accessible only to order's owner
+    Route::get('/checkout/payment/receipt/{orderId}', [\App\Http\Controllers\Tenant\CheckoutController::class, 'paymentReceipt'])
+        ->name('tenant.checkout.payment-receipt');
 });
 
 /*

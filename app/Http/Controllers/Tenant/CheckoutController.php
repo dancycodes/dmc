@@ -4,14 +4,21 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Mail\PaymentReceiptMail;
 use App\Models\Order;
 use App\Models\PaymentMethod;
 use App\Models\Quarter;
+use App\Models\Tenant;
+use App\Notifications\NewOrderNotification;
+use App\Notifications\PaymentConfirmedNotification;
 use App\Services\CartService;
 use App\Services\CheckoutService;
+use App\Services\PaymentReceiptService;
 use App\Services\PaymentRetryService;
 use App\Services\PaymentService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * F-140: Delivery/Pickup Choice Selection
@@ -23,6 +30,7 @@ use Illuminate\Http\Request;
  * F-149: Payment Method Selection
  * F-150: Flutterwave Payment Initiation
  * F-152: Payment Retry with Timeout
+ * F-154: Payment Receipt & Confirmation
  *
  * Handles checkout flow on tenant domains via Gale SSE.
  * BR-264: Client must choose delivery or pickup to proceed.
@@ -38,6 +46,7 @@ class CheckoutController extends Controller
         private CartService $cartService,
         private PaymentService $paymentService,
         private PaymentRetryService $paymentRetryService,
+        private PaymentReceiptService $paymentReceiptService,
     ) {}
 
     /**
@@ -1251,5 +1260,149 @@ class CheckoutController extends Controller
 
         // On successful initiation, redirect to waiting page
         return gale()->redirect(url('/checkout/payment/waiting/'.$order->id));
+    }
+
+    /**
+     * F-154: Display the payment receipt and confirmation page.
+     *
+     * BR-398: Displays order number, item summary, total amount, payment method,
+     *         transaction reference, order status.
+     * BR-400: Push notification sent to client confirming payment.
+     * BR-401: Push notification sent to cook about new order.
+     * BR-402: Email receipt sent to client's registered email.
+     * BR-403: Receipt can be downloaded as PDF (via browser print).
+     * BR-404: Track Order links to order tracking page.
+     * BR-405: Order status is "Paid" at this point.
+     * BR-406: Confirmation page is accessible only to the order's owner.
+     * BR-407: Notifications use all three channels: push, database, email.
+     * BR-408: All text localized via __().
+     */
+    public function paymentReceipt(Request $request, int $orderId): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        // Require authentication
+        if (! auth()->check()) {
+            return gale()->redirect(route('login'))
+                ->with('message', __('Please login to view your receipt.'));
+        }
+
+        // Load the order
+        $order = Order::query()
+            ->where('id', $orderId)
+            ->where('tenant_id', $tenant->id)
+            ->first();
+
+        if (! $order) {
+            return gale()->redirect(url('/'))
+                ->with('error', __('Order not found.'));
+        }
+
+        // BR-406: Verify order ownership
+        if (! $this->paymentReceiptService->isOrderOwner($order, auth()->id())) {
+            abort(403, __('You are not authorized to view this receipt.'));
+        }
+
+        // Verify order is paid (or a later status)
+        if ($order->status === Order::STATUS_PENDING_PAYMENT || $order->status === Order::STATUS_PAYMENT_FAILED) {
+            return gale()->redirect(url('/checkout/payment/waiting/'.$order->id))
+                ->with('message', __('Payment is still being processed.'));
+        }
+
+        // Get receipt data
+        $receiptData = $this->paymentReceiptService->getReceiptData($order);
+        $deliveryLabel = $this->paymentReceiptService->getDeliveryMethodLabel($order);
+        $shareText = $this->paymentReceiptService->getShareText($order, $tenant);
+
+        // BR-404: Track Order URL (F-161 forward-compatible)
+        $trackOrderUrl = url('/orders/'.$order->id);
+
+        // Send notifications (idempotent — only send once per order)
+        $this->sendPaymentNotifications($order, $tenant);
+
+        return gale()->view('tenant.checkout.payment-receipt', [
+            'tenant' => $tenant,
+            'order' => $receiptData['order'],
+            'items' => $receiptData['items'],
+            'paymentLabel' => $receiptData['payment_label'],
+            'transactionReference' => $receiptData['transaction_reference'],
+            'deliveryLabel' => $deliveryLabel,
+            'shareText' => $shareText,
+            'trackOrderUrl' => $trackOrderUrl,
+        ], web: true);
+    }
+
+    /**
+     * Send payment notifications (push, database, email).
+     *
+     * BR-400: Push notification to client.
+     * BR-401: Push notification to cook.
+     * BR-402: Email receipt to client.
+     * BR-407: All three channels.
+     *
+     * Uses a session flag to prevent duplicate notifications on page refresh.
+     * Edge case: If email/push fails, order is still confirmed (BR-407 fallback).
+     */
+    private function sendPaymentNotifications(Order $order, Tenant $tenant): void
+    {
+        // Prevent duplicate notifications on page refresh
+        $notificationKey = 'payment_notified_'.$order->id;
+        if (session()->has($notificationKey)) {
+            return;
+        }
+
+        // Mark as sent (even if sending fails — idempotent)
+        session()->put($notificationKey, true);
+
+        $client = auth()->user();
+
+        try {
+            // BR-400: Push + database notification to client (N-006)
+            $client->notify(new PaymentConfirmedNotification($order, $tenant));
+        } catch (\Exception $e) {
+            // Edge case: Push notification fails — log but don't block
+            Log::warning('F-154: Client payment notification failed', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        try {
+            // BR-401: Push + database notification to cook (N-001)
+            $cook = $order->cook;
+            if ($cook) {
+                $cook->notify(new NewOrderNotification($order, $tenant));
+            }
+        } catch (\Exception $e) {
+            // Edge case: Push notification fails — log but don't block
+            Log::warning('F-154: Cook order notification failed', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        try {
+            // BR-402: Email receipt to client
+            $transaction = $order->paymentTransactions()
+                ->where('status', 'successful')
+                ->latest()
+                ->first();
+
+            Mail::to($client->email)
+                ->send(
+                    (new PaymentReceiptMail($order, $tenant, $transaction))
+                        ->forRecipient($client)
+                );
+        } catch (\Exception $e) {
+            // Edge case: Email fails — receipt still available on-page
+            Log::warning('F-154: Email receipt failed', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }
