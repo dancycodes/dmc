@@ -197,6 +197,11 @@ Route::middleware('auth')->group(function () {
     // Language Preference (F-042)
     Route::get('/profile/language', [LanguagePreferenceController::class, 'show'])->name('language.show');
     Route::post('/profile/language', [LanguagePreferenceController::class, 'update'])->name('language.update');
+
+    // Client Order List (F-160)
+    // BR-219: Accessible from any domain (main or tenant)
+    // BR-220: Authentication required
+    Route::get('/my-orders', [\App\Http\Controllers\Client\OrderController::class, 'index'])->name('client.orders.index');
 });
 
 /*

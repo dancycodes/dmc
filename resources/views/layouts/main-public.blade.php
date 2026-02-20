@@ -34,6 +34,17 @@
                     <a href="{{ url('/discover') }}" class="text-sm font-medium text-on-surface hover:text-on-surface-strong transition-colors duration-200">
                         {{ __('Discover Cooks') }}
                     </a>
+                    @auth
+                        <a href="{{ url('/my-orders') }}" class="text-sm font-medium text-on-surface hover:text-on-surface-strong transition-colors duration-200 inline-flex items-center gap-1.5">
+                            {{ __('My Orders') }}
+                            @php
+                                $clientActiveOrderCount = \App\Models\Order::query()->where('client_id', auth()->id())->whereIn('status', \App\Services\ClientOrderService::ACTIVE_STATUSES)->count();
+                            @endphp
+                            @if($clientActiveOrderCount > 0)
+                                <span class="min-w-[18px] h-[18px] rounded-full bg-primary text-on-primary text-[10px] font-bold flex items-center justify-center px-1">{{ $clientActiveOrderCount }}</span>
+                            @endif
+                        </a>
+                    @endauth
                 </nav>
 
                 {{-- Desktop Right Section --}}
@@ -128,6 +139,14 @@
                 <div class="border-t border-outline dark:border-outline my-2"></div>
 
                 @auth
+                    <a href="{{ url('/my-orders') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-alt transition-colors duration-200">
+                        {{-- ClipboardList icon --}}
+                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M12 11h4"></path><path d="M12 16h4"></path><path d="M8 11h.01"></path><path d="M8 16h.01"></path></svg>
+                        {{ __('My Orders') }}
+                        @if(isset($clientActiveOrderCount) && $clientActiveOrderCount > 0)
+                            <span class="min-w-[18px] h-[18px] rounded-full bg-primary text-on-primary text-[10px] font-bold flex items-center justify-center px-1 ml-auto">{{ $clientActiveOrderCount }}</span>
+                        @endif
+                    </a>
                     <a href="{{ url('/profile') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-alt transition-colors duration-200">
                         {{-- User icon --}}
                         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>

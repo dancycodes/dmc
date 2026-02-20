@@ -2334,5 +2334,20 @@
     "Invalid target status.": "Invalid target status.",
     "No valid orders found.": "No valid orders found.",
     "Order not found.": "Order not found.",
-    "Mark as Ready (next step)": "Mark as Ready (next step)"
+    "Mark as Ready (next step)": "Mark as Ready (next step)",
+    "My Orders": "My Orders",
+    "Track and manage your orders across all cooks.": "Track and manage your orders across all cooks.",
+    "All Orders": "All Orders",
+    "Filter by status": "Filter by status",
+    "Newest first": "Newest first",
+    "Oldest first": "Oldest first",
+    "Newest": "Newest",
+    "Oldest": "Oldest",
+    "Active Orders": "Active Orders",
+    "Past Orders": "Past Orders",
+    "You haven't placed any orders yet.": "You haven't placed any orders yet.",
+    "Browse cooks to get started!": "Browse cooks to get started!",
+    "No orders match your filters.": "No orders match your filters.",
+    "Clear filters": "Clear filters",
+    "Unknown Cook": "Unknown Cook"
 }
