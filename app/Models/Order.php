@@ -46,6 +46,38 @@ class Order extends Model
 
     public const STATUS_PAYMENT_FAILED = 'payment_failed';
 
+    public const STATUS_REFUNDED = 'refunded';
+
+    /**
+     * F-156/F-159: Valid status transitions map.
+     *
+     * Maps current status to the next valid status(es).
+     * Delivery and pickup have different paths after 'ready'.
+     *
+     * @var array<string, array<string>>
+     */
+    public const STATUS_TRANSITIONS = [
+        self::STATUS_PAID => [self::STATUS_CONFIRMED],
+        self::STATUS_CONFIRMED => [self::STATUS_PREPARING],
+        self::STATUS_PREPARING => [self::STATUS_READY],
+        self::STATUS_READY => [self::STATUS_OUT_FOR_DELIVERY, self::STATUS_READY_FOR_PICKUP],
+        self::STATUS_OUT_FOR_DELIVERY => [self::STATUS_DELIVERED],
+        self::STATUS_READY_FOR_PICKUP => [self::STATUS_PICKED_UP],
+        self::STATUS_DELIVERED => [self::STATUS_COMPLETED],
+        self::STATUS_PICKED_UP => [self::STATUS_COMPLETED],
+    ];
+
+    /**
+     * Terminal statuses where no further transitions are possible.
+     *
+     * @var array<string>
+     */
+    public const TERMINAL_STATUSES = [
+        self::STATUS_COMPLETED,
+        self::STATUS_CANCELLED,
+        self::STATUS_REFUNDED,
+    ];
+
     /**
      * Valid order statuses.
      *
@@ -111,6 +143,7 @@ class Order extends Model
         'retry_count',
         'payment_retry_expires_at',
         'items_snapshot',
+        'notes',
         'paid_at',
         'confirmed_at',
         'completed_at',
@@ -382,6 +415,82 @@ class Order extends Model
     public function getItemsSummaryAttribute(): string
     {
         return \App\Services\CookOrderService::getItemsSummary($this);
+    }
+
+    /**
+     * F-156: Get the next valid status for this order.
+     *
+     * BR-172: The status update button shows the next valid status only.
+     * For 'ready' status, the next status depends on delivery_method.
+     *
+     * @return string|null The next valid status, or null if terminal/no transition available.
+     */
+    public function getNextStatus(): ?string
+    {
+        if (in_array($this->status, self::TERMINAL_STATUSES, true)) {
+            return null;
+        }
+
+        $transitions = self::STATUS_TRANSITIONS[$this->status] ?? [];
+
+        if (empty($transitions)) {
+            return null;
+        }
+
+        // For 'ready' status, pick based on delivery method
+        if ($this->status === self::STATUS_READY) {
+            return $this->delivery_method === self::METHOD_DELIVERY
+                ? self::STATUS_OUT_FOR_DELIVERY
+                : self::STATUS_READY_FOR_PICKUP;
+        }
+
+        return $transitions[0];
+    }
+
+    /**
+     * F-156: Get a human-readable label for a given status.
+     */
+    public static function getStatusLabel(string $status): string
+    {
+        return match ($status) {
+            self::STATUS_PENDING_PAYMENT => __('Pending Payment'),
+            self::STATUS_PAID => __('Paid'),
+            self::STATUS_CONFIRMED => __('Confirmed'),
+            self::STATUS_PREPARING => __('Preparing'),
+            self::STATUS_READY => __('Ready'),
+            self::STATUS_OUT_FOR_DELIVERY => __('Out for Delivery'),
+            self::STATUS_READY_FOR_PICKUP => __('Ready for Pickup'),
+            self::STATUS_DELIVERED => __('Delivered'),
+            self::STATUS_PICKED_UP => __('Picked Up'),
+            self::STATUS_COMPLETED => __('Completed'),
+            self::STATUS_CANCELLED => __('Cancelled'),
+            self::STATUS_PAYMENT_FAILED => __('Payment Failed'),
+            self::STATUS_REFUNDED => __('Refunded'),
+            default => __(ucfirst(str_replace('_', ' ', $status))),
+        };
+    }
+
+    /**
+     * F-156: Check if the order is in a terminal state.
+     */
+    public function isTerminal(): bool
+    {
+        return in_array($this->status, self::TERMINAL_STATUSES, true);
+    }
+
+    /**
+     * F-156: Get the payment provider label.
+     *
+     * BR-173: Payment information shows method label.
+     */
+    public function getPaymentProviderLabel(): string
+    {
+        return match ($this->payment_provider) {
+            'mtn_momo' => 'MTN MoMo',
+            'orange_money' => 'Orange Money',
+            'wallet' => __('Wallet Balance'),
+            default => $this->payment_provider ?? __('Unknown'),
+        };
     }
 
     /**

@@ -177,6 +177,44 @@ class OrderFactory extends Factory
     }
 
     /**
+     * F-156: State: with client notes.
+     */
+    public function withNotes(string $notes = 'No pepper please. Extra plantain.'): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'notes' => $notes,
+        ]);
+    }
+
+    /**
+     * F-156: State: with delivery details.
+     */
+    public function withDeliveryDetails(int $townId, int $quarterId, string $neighbourhood = 'Near Total gas station'): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'delivery_method' => Order::METHOD_DELIVERY,
+            'town_id' => $townId,
+            'quarter_id' => $quarterId,
+            'neighbourhood' => $neighbourhood,
+            'delivery_fee' => 500,
+            'grand_total' => ($attributes['subtotal'] ?? 3000) + 500,
+        ]);
+    }
+
+    /**
+     * F-156: State: with pickup details.
+     */
+    public function withPickupDetails(int $pickupLocationId): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'delivery_method' => Order::METHOD_PICKUP,
+            'pickup_location_id' => $pickupLocationId,
+            'delivery_fee' => 0,
+            'grand_total' => $attributes['subtotal'] ?? 3000,
+        ]);
+    }
+
+    /**
      * F-155: State: confirmed.
      */
     public function confirmed(): static
