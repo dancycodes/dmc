@@ -36,7 +36,7 @@ class PaymentTransactionFactory extends Factory
         $amount = fake()->randomElement([500, 1000, 1500, 2000, 2500, 3000, 5000, 7500, 10000, 15000, 20000, 25000]);
 
         return [
-            'order_id' => fake()->numberBetween(1000, 9999),
+            'order_id' => null,
             'client_id' => User::factory(),
             'cook_id' => User::factory(),
             'tenant_id' => Tenant::factory(),

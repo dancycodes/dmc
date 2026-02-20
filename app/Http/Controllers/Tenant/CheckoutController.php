@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Models\Order;
 use App\Models\PaymentMethod;
 use App\Models\Quarter;
 use App\Services\CartService;
 use App\Services\CheckoutService;
+use App\Services\PaymentService;
 use Illuminate\Http\Request;
 
 /**
@@ -18,6 +20,7 @@ use Illuminate\Http\Request;
  * F-146: Order Total Calculation & Summary
  * F-147: Location Not Available Flow
  * F-149: Payment Method Selection
+ * F-150: Flutterwave Payment Initiation
  *
  * Handles checkout flow on tenant domains via Gale SSE.
  * BR-264: Client must choose delivery or pickup to proceed.
@@ -31,6 +34,7 @@ class CheckoutController extends Controller
     public function __construct(
         private CheckoutService $checkoutService,
         private CartService $cartService,
+        private PaymentService $paymentService,
     ) {}
 
     /**
@@ -855,8 +859,257 @@ class CheckoutController extends Controller
                 ->with('message', __('Processing wallet payment...'));
         }
 
-        // F-150: Flutterwave Payment Initiation (forward-compatible stub)
+        // F-150: Flutterwave Payment Initiation
         return gale()->redirect(url('/checkout/payment/initiate'))
             ->with('message', __('Initiating payment...'));
+    }
+
+    /**
+     * F-150: Initiate Flutterwave payment.
+     *
+     * BR-354: Payment initiated via Flutterwave v3 mobile money charge API.
+     * BR-358: Order status is set to "Pending Payment" upon initiation.
+     * BR-359: A transaction reference is generated and stored with the order.
+     * BR-360: The UI shows a "Waiting for payment" loading state after initiation.
+     * BR-362: Initiation errors are displayed to the client with actionable messages.
+     */
+    public function initiatePayment(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        // Require authentication
+        if (! auth()->check()) {
+            return gale()->redirect(route('login'))
+                ->with('message', __('Please login to proceed with your order.'));
+        }
+
+        // Verify cart is not empty
+        $cart = $this->cartService->getCartWithAvailability($tenant->id);
+        if (empty($cart['items'])) {
+            return gale()->redirect(url('/cart'))
+                ->with('message', __('Your cart is empty.'));
+        }
+
+        // Verify complete checkout data
+        $deliveryMethod = $this->checkoutService->getDeliveryMethod($tenant->id);
+        if (! $deliveryMethod) {
+            return gale()->redirect(url('/checkout/delivery-method'))
+                ->with('message', __('Please select a delivery method first.'));
+        }
+
+        $paymentProvider = $this->checkoutService->getPaymentProvider($tenant->id);
+        if (! $paymentProvider || $paymentProvider === 'wallet') {
+            return gale()->redirect(url('/checkout/payment'))
+                ->with('message', __('Please select a payment method first.'));
+        }
+
+        $user = auth()->user();
+
+        // Check for existing pending order to prevent duplicates
+        // BR-363/Edge case: Duplicate payment attempts
+        $existingOrder = Order::query()
+            ->where('client_id', $user->id)
+            ->where('tenant_id', $tenant->id)
+            ->where('status', Order::STATUS_PENDING_PAYMENT)
+            ->where('created_at', '>=', now()->subMinutes(Order::PAYMENT_TIMEOUT_MINUTES))
+            ->first();
+
+        if ($existingOrder) {
+            // Redirect to existing waiting page instead of creating duplicate
+            return gale()->redirect(url('/checkout/payment/waiting/'.$existingOrder->id));
+        }
+
+        // Create the order
+        $orderResult = $this->paymentService->createOrder($tenant, $user);
+
+        if (! $orderResult['success']) {
+            return gale()->redirect(url('/checkout/payment'))
+                ->with('error', $orderResult['error']);
+        }
+
+        $order = $orderResult['order'];
+
+        // Initiate payment via Flutterwave
+        $paymentResult = $this->paymentService->initiatePayment($order, $user);
+
+        if (! $paymentResult['success']) {
+            // BR-362: Show error to client
+            // Mark order as payment_failed so it can be retried
+            $order->update(['status' => Order::STATUS_PAYMENT_FAILED]);
+
+            return gale()->redirect(url('/checkout/payment'))
+                ->with('error', $paymentResult['error']);
+        }
+
+        // Clear cart after successful order creation + payment initiation
+        $this->cartService->clearCart($tenant->id);
+
+        // BR-360: Redirect to waiting page
+        return gale()->redirect(url('/checkout/payment/waiting/'.$order->id));
+    }
+
+    /**
+     * F-150: Display the payment waiting page.
+     *
+     * BR-360: The UI shows a "Waiting for payment" loading state after initiation.
+     * BR-361: Timeout after 15 minutes if no webhook confirmation received.
+     */
+    public function paymentWaiting(Request $request, int $orderId): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        if (! auth()->check()) {
+            return gale()->redirect(route('login'));
+        }
+
+        // Load order and verify ownership
+        $order = Order::query()
+            ->where('id', $orderId)
+            ->where('client_id', auth()->id())
+            ->where('tenant_id', $tenant->id)
+            ->first();
+
+        if (! $order) {
+            return gale()->redirect(url('/'))
+                ->with('error', __('Order not found.'));
+        }
+
+        // Check current payment status
+        $paymentStatus = $this->paymentService->checkPaymentStatus($order);
+
+        // If payment is already complete, redirect to receipt (F-154)
+        if ($paymentStatus['is_complete']) {
+            return gale()->redirect(url('/checkout/payment/receipt/'.$order->id))
+                ->with('message', __('Payment successful!'));
+        }
+
+        // If payment failed or timed out
+        if ($paymentStatus['is_failed'] || $paymentStatus['is_timed_out']) {
+            $errorMessage = $paymentStatus['is_timed_out']
+                ? __('Payment timed out. Please try again.')
+                : __('Payment failed. Please try again.');
+
+            return gale()->view('tenant.checkout.payment-waiting', [
+                'tenant' => $tenant,
+                'order' => $order,
+                'paymentStatus' => $paymentStatus,
+                'remainingSeconds' => 0,
+                'errorMessage' => $errorMessage,
+            ], web: true);
+        }
+
+        $remainingSeconds = $order->getPaymentTimeoutRemainingSeconds();
+
+        return gale()->view('tenant.checkout.payment-waiting', [
+            'tenant' => $tenant,
+            'order' => $order,
+            'paymentStatus' => $paymentStatus,
+            'remainingSeconds' => $remainingSeconds,
+            'errorMessage' => null,
+        ], web: true);
+    }
+
+    /**
+     * F-150: Check payment status (polled by the waiting page).
+     *
+     * Returns current payment status as Gale state update.
+     */
+    public function checkPaymentStatus(Request $request, int $orderId): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        if (! auth()->check()) {
+            return gale()->state('paymentStatus', 'error');
+        }
+
+        $order = Order::query()
+            ->where('id', $orderId)
+            ->where('client_id', auth()->id())
+            ->where('tenant_id', $tenant->id)
+            ->first();
+
+        if (! $order) {
+            return gale()->state('paymentStatus', 'error');
+        }
+
+        $paymentStatus = $this->paymentService->checkPaymentStatus($order);
+
+        if ($paymentStatus['is_complete']) {
+            // Redirect to receipt page (F-154 forward-compatible)
+            return gale()->redirect(url('/checkout/payment/receipt/'.$order->id))
+                ->with('message', __('Payment successful!'));
+        }
+
+        if ($paymentStatus['is_timed_out']) {
+            return gale()
+                ->state('paymentStatus', 'timed_out')
+                ->state('errorMessage', __('Payment timed out.'))
+                ->state('remainingSeconds', 0);
+        }
+
+        if ($paymentStatus['is_failed']) {
+            return gale()
+                ->state('paymentStatus', 'failed')
+                ->state('errorMessage', __('Payment failed. Please try again.'));
+        }
+
+        $remainingSeconds = $order->getPaymentTimeoutRemainingSeconds();
+
+        return gale()
+            ->state('paymentStatus', 'pending')
+            ->state('remainingSeconds', $remainingSeconds);
+    }
+
+    /**
+     * F-150: Cancel payment and return to payment method selection.
+     *
+     * UI/UX: "Cancel" option available during waiting state.
+     */
+    public function cancelPayment(Request $request, int $orderId): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        if (! auth()->check()) {
+            return gale()->redirect(route('login'));
+        }
+
+        $order = Order::query()
+            ->where('id', $orderId)
+            ->where('client_id', auth()->id())
+            ->where('tenant_id', $tenant->id)
+            ->where('status', Order::STATUS_PENDING_PAYMENT)
+            ->first();
+
+        if ($order) {
+            $order->update([
+                'status' => Order::STATUS_CANCELLED,
+                'cancelled_at' => now(),
+            ]);
+
+            activity('orders')
+                ->performedOn($order)
+                ->causedBy(auth()->user())
+                ->withProperties(['order_number' => $order->order_number])
+                ->log('Payment cancelled by client');
+        }
+
+        return gale()->redirect(url('/checkout/payment'))
+            ->with('message', __('Payment cancelled. You can try again.'));
     }
 }

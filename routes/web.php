@@ -595,4 +595,17 @@ Route::middleware('tenant.domain')->group(function () {
         ->name('tenant.checkout.payment');
     Route::post('/checkout/payment', [\App\Http\Controllers\Tenant\CheckoutController::class, 'savePaymentMethod'])
         ->name('tenant.checkout.save-payment');
+
+    // F-150: Flutterwave Payment Initiation
+    // BR-354: Payment initiated via Flutterwave v3 mobile money charge API
+    // BR-358: Order created with "Pending Payment" status
+    // BR-360: Waiting UI with countdown timer
+    Route::get('/checkout/payment/initiate', [\App\Http\Controllers\Tenant\CheckoutController::class, 'initiatePayment'])
+        ->name('tenant.checkout.initiate-payment');
+    Route::get('/checkout/payment/waiting/{orderId}', [\App\Http\Controllers\Tenant\CheckoutController::class, 'paymentWaiting'])
+        ->name('tenant.checkout.payment-waiting');
+    Route::post('/checkout/payment/check-status/{orderId}', [\App\Http\Controllers\Tenant\CheckoutController::class, 'checkPaymentStatus'])
+        ->name('tenant.checkout.check-payment-status');
+    Route::post('/checkout/payment/cancel/{orderId}', [\App\Http\Controllers\Tenant\CheckoutController::class, 'cancelPayment'])
+        ->name('tenant.checkout.cancel-payment');
 });

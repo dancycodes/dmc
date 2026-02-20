@@ -376,28 +376,40 @@ test('search scope finds by numeric order ID', function () {
     $user = User::factory()->create();
     $tenant = Tenant::factory()->create();
 
+    $order = \App\Models\Order::factory()->create([
+        'client_id' => $user->id,
+        'tenant_id' => $tenant->id,
+        'cook_id' => $user->id,
+    ]);
+
     PaymentTransaction::factory()->create([
         'client_id' => $user->id,
         'cook_id' => $user->id,
         'tenant_id' => $tenant->id,
-        'order_id' => 1042,
+        'order_id' => $order->id,
     ]);
 
-    expect(PaymentTransaction::search('1042')->count())->toBe(1);
+    expect(PaymentTransaction::search((string) $order->id)->count())->toBe(1);
 });
 
 test('search scope finds by ORD- pattern', function () {
     $user = User::factory()->create();
     $tenant = Tenant::factory()->create();
 
+    $order = \App\Models\Order::factory()->create([
+        'client_id' => $user->id,
+        'tenant_id' => $tenant->id,
+        'cook_id' => $user->id,
+    ]);
+
     PaymentTransaction::factory()->create([
         'client_id' => $user->id,
         'cook_id' => $user->id,
         'tenant_id' => $tenant->id,
-        'order_id' => 1042,
+        'order_id' => $order->id,
     ]);
 
-    expect(PaymentTransaction::search('ORD-1042')->count())->toBe(1);
+    expect(PaymentTransaction::search('ORD-'.$order->id)->count())->toBe(1);
 });
 
 test('search scope returns all when empty', function () {
