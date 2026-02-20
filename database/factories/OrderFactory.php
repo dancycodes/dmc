@@ -148,6 +148,31 @@ class OrderFactory extends Factory
             'status' => Order::STATUS_PENDING_PAYMENT,
             'created_at' => now()->subMinutes(20),
             'updated_at' => now()->subMinutes(20),
+            'payment_retry_expires_at' => now()->subMinutes(5),
+        ]);
+    }
+
+    /**
+     * F-152: State: with active retry window.
+     */
+    public function withRetryWindow(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => Order::STATUS_PAYMENT_FAILED,
+            'retry_count' => 1,
+            'payment_retry_expires_at' => now()->addMinutes(10),
+        ]);
+    }
+
+    /**
+     * F-152: State: max retries exhausted.
+     */
+    public function retriesExhausted(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => Order::STATUS_PAYMENT_FAILED,
+            'retry_count' => Order::MAX_RETRY_ATTEMPTS,
+            'payment_retry_expires_at' => now()->addMinutes(5),
         ]);
     }
 }

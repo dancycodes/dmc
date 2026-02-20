@@ -608,6 +608,15 @@ Route::middleware('tenant.domain')->group(function () {
         ->name('tenant.checkout.check-payment-status');
     Route::post('/checkout/payment/cancel/{orderId}', [\App\Http\Controllers\Tenant\CheckoutController::class, 'cancelPayment'])
         ->name('tenant.checkout.cancel-payment');
+
+    // F-152: Payment Retry with Timeout
+    // BR-376: On payment failure, order remains for retry window
+    // BR-379: Maximum 3 retry attempts allowed
+    // BR-380: Each retry creates a new Flutterwave charge
+    Route::get('/checkout/payment/retry/{orderId}', [\App\Http\Controllers\Tenant\CheckoutController::class, 'paymentRetry'])
+        ->name('tenant.checkout.payment-retry');
+    Route::post('/checkout/payment/retry/{orderId}', [\App\Http\Controllers\Tenant\CheckoutController::class, 'processRetryPayment'])
+        ->name('tenant.checkout.process-retry');
 });
 
 /*

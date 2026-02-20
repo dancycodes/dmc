@@ -14,3 +14,9 @@ Artisan::command('inspire', function () {
  * Uses --force to skip confirmation prompt in production.
  */
 Schedule::command('activitylog:clean --force')->weekly()->sundays()->at('03:00');
+
+/*
+ * F-152 BR-382: Auto-cancellation of orders that have exceeded the retry window.
+ * Runs every minute to ensure timely cancellation of expired orders.
+ */
+Schedule::command('dancymeals:cancel-expired-orders')->everyMinute();

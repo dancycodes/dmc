@@ -9,6 +9,7 @@ use App\Models\PaymentMethod;
 use App\Models\Quarter;
 use App\Services\CartService;
 use App\Services\CheckoutService;
+use App\Services\PaymentRetryService;
 use App\Services\PaymentService;
 use Illuminate\Http\Request;
 
@@ -21,6 +22,7 @@ use Illuminate\Http\Request;
  * F-147: Location Not Available Flow
  * F-149: Payment Method Selection
  * F-150: Flutterwave Payment Initiation
+ * F-152: Payment Retry with Timeout
  *
  * Handles checkout flow on tenant domains via Gale SSE.
  * BR-264: Client must choose delivery or pickup to proceed.
@@ -35,6 +37,7 @@ class CheckoutController extends Controller
         private CheckoutService $checkoutService,
         private CartService $cartService,
         private PaymentService $paymentService,
+        private PaymentRetryService $paymentRetryService,
     ) {}
 
     /**
@@ -945,6 +948,9 @@ class CheckoutController extends Controller
                 ->with('error', $paymentResult['error']);
         }
 
+        // F-152 BR-377: Set retry window
+        $this->paymentRetryService->initRetryWindow($order);
+
         // Clear cart after successful order creation + payment initiation
         $this->cartService->clearCart($tenant->id);
 
@@ -957,6 +963,7 @@ class CheckoutController extends Controller
      *
      * BR-360: The UI shows a "Waiting for payment" loading state after initiation.
      * BR-361: Timeout after 15 minutes if no webhook confirmation received.
+     * F-152: Sets retry window on initial payment and redirects to retry page on failure.
      */
     public function paymentWaiting(Request $request, int $orderId): mixed
     {
@@ -982,6 +989,9 @@ class CheckoutController extends Controller
                 ->with('error', __('Order not found.'));
         }
 
+        // F-152 BR-377: Init retry window on first visit
+        $this->paymentRetryService->initRetryWindow($order);
+
         // Check current payment status
         $paymentStatus = $this->paymentService->checkPaymentStatus($order);
 
@@ -991,19 +1001,9 @@ class CheckoutController extends Controller
                 ->with('message', __('Payment successful!'));
         }
 
-        // If payment failed or timed out
+        // F-152: If payment failed or timed out, redirect to retry page
         if ($paymentStatus['is_failed'] || $paymentStatus['is_timed_out']) {
-            $errorMessage = $paymentStatus['is_timed_out']
-                ? __('Payment timed out. Please try again.')
-                : __('Payment failed. Please try again.');
-
-            return gale()->view('tenant.checkout.payment-waiting', [
-                'tenant' => $tenant,
-                'order' => $order,
-                'paymentStatus' => $paymentStatus,
-                'remainingSeconds' => 0,
-                'errorMessage' => $errorMessage,
-            ], web: true);
+            return gale()->redirect(url('/checkout/payment/retry/'.$order->id));
         }
 
         $remainingSeconds = $order->getPaymentTimeoutRemainingSeconds();
@@ -1052,17 +1052,9 @@ class CheckoutController extends Controller
                 ->with('message', __('Payment successful!'));
         }
 
-        if ($paymentStatus['is_timed_out']) {
-            return gale()
-                ->state('paymentStatus', 'timed_out')
-                ->state('errorMessage', __('Payment timed out.'))
-                ->state('remainingSeconds', 0);
-        }
-
-        if ($paymentStatus['is_failed']) {
-            return gale()
-                ->state('paymentStatus', 'failed')
-                ->state('errorMessage', __('Payment failed. Please try again.'));
+        // F-152: Redirect to retry page on failure/timeout
+        if ($paymentStatus['is_timed_out'] || $paymentStatus['is_failed']) {
+            return gale()->redirect(url('/checkout/payment/retry/'.$order->id));
         }
 
         $remainingSeconds = $order->getPaymentTimeoutRemainingSeconds();
@@ -1093,7 +1085,7 @@ class CheckoutController extends Controller
             ->where('id', $orderId)
             ->where('client_id', auth()->id())
             ->where('tenant_id', $tenant->id)
-            ->where('status', Order::STATUS_PENDING_PAYMENT)
+            ->whereIn('status', [Order::STATUS_PENDING_PAYMENT, Order::STATUS_PAYMENT_FAILED])
             ->first();
 
         if ($order) {
@@ -1109,7 +1101,155 @@ class CheckoutController extends Controller
                 ->log('Payment cancelled by client');
         }
 
-        return gale()->redirect(url('/checkout/payment'))
-            ->with('message', __('Payment cancelled. You can try again.'));
+        return gale()->redirect(url('/'))
+            ->with('message', __('Order cancelled.'));
+    }
+
+    /**
+     * F-152: Display the payment retry page.
+     *
+     * BR-376: On payment failure, order remains in "Pending Payment" for retry window.
+     * BR-378: A visible countdown timer shows remaining retry time.
+     * BR-383: Failure reason from Flutterwave displayed to client.
+     * BR-384: After retry limit, "Retry" button is disabled.
+     */
+    public function paymentRetry(Request $request, int $orderId): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        if (! auth()->check()) {
+            return gale()->redirect(route('login'));
+        }
+
+        $order = Order::query()
+            ->where('id', $orderId)
+            ->where('client_id', auth()->id())
+            ->where('tenant_id', $tenant->id)
+            ->first();
+
+        if (! $order) {
+            return gale()->redirect(url('/'))
+                ->with('error', __('Order not found.'));
+        }
+
+        // If order is already paid, redirect to receipt
+        if ($order->status === Order::STATUS_PAID) {
+            return gale()->redirect(url('/checkout/payment/receipt/'.$order->id))
+                ->with('message', __('Payment successful!'));
+        }
+
+        // If order is cancelled (not pending_payment/payment_failed), redirect home
+        if (! in_array($order->status, [Order::STATUS_PENDING_PAYMENT, Order::STATUS_PAYMENT_FAILED], true)) {
+            return gale()->redirect(url('/'))
+                ->with('message', __('This order is no longer active.'));
+        }
+
+        // Init retry window if not set
+        $this->paymentRetryService->initRetryWindow($order);
+        $order->refresh();
+
+        // Check for auto-expiration
+        if ($order->isPaymentTimedOut() && ! $order->hasExhaustedRetries()) {
+            $this->paymentRetryService->cancelExpiredOrders();
+            $order->refresh();
+        }
+
+        $retryData = $this->paymentRetryService->getRetryData($order);
+
+        // Get saved payment methods for the user
+        $user = auth()->user();
+        $savedMethods = PaymentMethod::query()
+            ->where('user_id', $user->id)
+            ->orderByDesc('is_default')
+            ->get();
+
+        // Strip +237 prefix for display
+        $currentPaymentPhone = $order->payment_phone ?? $order->phone;
+        $phoneDigits = $currentPaymentPhone;
+        if (str_starts_with($phoneDigits, '+237')) {
+            $phoneDigits = substr($phoneDigits, 4);
+        }
+
+        return gale()->view('tenant.checkout.payment-retry', [
+            'tenant' => $tenant,
+            'order' => $order,
+            'retryData' => $retryData,
+            'savedMethods' => $savedMethods,
+            'phoneDigits' => $phoneDigits,
+            'currentProvider' => $order->payment_provider,
+        ], web: true);
+    }
+
+    /**
+     * F-152: Process a payment retry attempt.
+     *
+     * BR-379: Maximum 3 retry attempts allowed per order.
+     * BR-380: Each retry creates a new Flutterwave charge.
+     */
+    public function processRetryPayment(Request $request, int $orderId): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        if (! auth()->check()) {
+            return gale()->redirect(route('login'));
+        }
+
+        $order = Order::query()
+            ->where('id', $orderId)
+            ->where('client_id', auth()->id())
+            ->where('tenant_id', $tenant->id)
+            ->first();
+
+        if (! $order) {
+            return gale()->redirect(url('/'))
+                ->with('error', __('Order not found.'));
+        }
+
+        // Validate retry payment selection
+        $validated = $request->validateState([
+            'provider' => 'required|string|in:mtn_momo,orange_money',
+            'payment_phone_digits' => 'nullable|string',
+        ]);
+
+        $provider = $validated['provider'];
+        $rawPhone = $validated['payment_phone_digits'] ?? '';
+        $paymentPhone = PaymentMethod::normalizePhone($rawPhone);
+
+        // Validate phone format
+        if (! preg_match(RegisterRequest::CAMEROON_PHONE_REGEX, $paymentPhone)) {
+            return gale()->messages([
+                'payment_phone_digits' => __('Please enter a valid Cameroon phone number (+237 followed by 9 digits).'),
+            ]);
+        }
+
+        $user = auth()->user();
+
+        // Attempt retry
+        $result = $this->paymentRetryService->retryPayment($order, $user, $provider, $paymentPhone);
+
+        if (! $result['success']) {
+            // Refresh order for latest state
+            $order->refresh();
+
+            // If order got cancelled (max retries or expired), reload the page
+            if ($order->status === Order::STATUS_CANCELLED) {
+                return gale()->redirect(url('/checkout/payment/retry/'.$order->id));
+            }
+
+            return gale()->messages([
+                'retry_error' => $result['error'],
+            ]);
+        }
+
+        // On successful initiation, redirect to waiting page
+        return gale()->redirect(url('/checkout/payment/waiting/'.$order->id));
     }
 }
