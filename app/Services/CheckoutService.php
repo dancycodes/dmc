@@ -14,7 +14,6 @@ use App\Models\QuarterGroup;
 use App\Models\Tenant;
 use App\Models\Town;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Schema;
 
 /**
  * F-140: Delivery/Pickup Choice Selection
@@ -823,12 +822,12 @@ class CheckoutService
     }
 
     /**
-     * F-149: Build wallet payment option data.
+     * F-149/F-153: Build wallet payment option data.
      *
      * BR-346: Wallet Balance only available if admin enabled AND balance >= total.
      * BR-347: If balance < total, visible but disabled with balance shown.
-     *
-     * Forward-compatible: Wallet model (F-166) may not exist yet.
+     * BR-387: Wallet payment is available only when admin has enabled it globally.
+     * BR-388: Wallet balance must be >= order total for the option to be selectable.
      *
      * @return array{enabled: bool, visible: bool, balance: int, sufficient: bool}
      */
@@ -837,7 +836,7 @@ class CheckoutService
         $platformSettingService = app(PlatformSettingService::class);
         $walletEnabled = $platformSettingService->isWalletEnabled();
 
-        // If admin has disabled wallet payments, hide the option entirely
+        // BR-387: If admin has disabled wallet payments, hide the option entirely
         if (! $walletEnabled) {
             return [
                 'enabled' => false,
@@ -847,14 +846,17 @@ class CheckoutService
             ];
         }
 
-        // F-166: Forward-compatible wallet balance check
+        // F-153: Use ClientWallet model for balance lookup
         $balance = 0;
-        if (Schema::hasTable('wallets')) {
-            $balance = (int) \DB::table('wallets')
-                ->where('user_id', $userId)
-                ->value('balance') ?? 0;
+        $wallet = \App\Models\ClientWallet::query()
+            ->where('user_id', $userId)
+            ->first();
+
+        if ($wallet) {
+            $balance = (int) $wallet->balance;
         }
 
+        // BR-388: Wallet balance must be >= order total for the option to be selectable
         $sufficient = $balance >= $orderTotal;
 
         return [

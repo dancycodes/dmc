@@ -20,6 +20,9 @@
         provider: '{{ addslashes($currentProvider ?? '') }}',
         payment_phone_digits: '{{ addslashes($phoneDigits ?? '') }}',
         phoneError: '',
+        showWalletConfirm: false,
+        walletBalance: {{ $paymentOptions['wallet']['balance'] ?? 0 }},
+        grandTotal: {{ $grandTotal }},
         savedMethods: {{ Js::from($paymentOptions['saved_methods']->map(fn($m) => ['id' => $m->id, 'provider' => $m->provider, 'phone' => $m->phone, 'label' => $m->label, 'masked_phone' => $m->maskedPhone(), 'provider_label' => $m->providerLabel(), 'is_default' => $m->is_default])) }},
 
         selectProvider(p) {
@@ -31,7 +34,7 @@
                 return;
             }
 
-            // Check for a saved method for this provider
+            /* Check for a saved method for this provider */
             let saved = this.savedMethods.filter(m => m.provider === p);
             if (saved.length > 0) {
                 let phone = saved[0].phone;
@@ -63,6 +66,10 @@
             return d;
         },
 
+        formatXAF(amount) {
+            return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        },
+
         get isMobileMoney() {
             return this.provider === 'mtn_momo' || this.provider === 'orange_money';
         },
@@ -73,11 +80,21 @@
             return this.payment_phone_digits.replace(/\D/g, '').length >= 9;
         },
 
+        get walletRemainingBalance() {
+            return Math.max(0, this.walletBalance - this.grandTotal);
+        },
+
         submitPayment() {
             this.phoneError = '';
 
             if (!this.provider) {
                 this.phoneError = '{{ __('Please select a payment method.') }}';
+                return;
+            }
+
+            /* F-153: Show confirmation dialog for wallet payment */
+            if (this.provider === 'wallet') {
+                this.showWalletConfirm = true;
                 return;
             }
 
@@ -97,6 +114,17 @@
             $action('{{ route('tenant.checkout.save-payment') }}', {
                 include: ['provider', 'payment_phone_digits']
             });
+        },
+
+        confirmWalletPayment() {
+            this.showWalletConfirm = false;
+            $action('{{ route('tenant.checkout.save-payment') }}', {
+                include: ['provider', 'payment_phone_digits']
+            });
+        },
+
+        cancelWalletConfirm() {
+            this.showWalletConfirm = false;
         }
     }"
 >
@@ -397,6 +425,72 @@
                 <span x-show="$fetching()" x-cloak>{{ __('Processing...') }}</span>
                 <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"></rect><path d="M2 10h20"></path></svg>
             </button>
+        </div>
+    </div>
+
+    {{-- F-153: Wallet payment confirmation dialog --}}
+    <div
+        x-show="showWalletConfirm"
+        x-cloak
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        role="dialog"
+        aria-modal="true"
+        x-on:keydown.escape.window="cancelWalletConfirm()"
+    >
+        {{-- Backdrop --}}
+        <div
+            class="absolute inset-0 bg-black/50 dark:bg-black/70"
+            @click="cancelWalletConfirm()"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+        ></div>
+
+        {{-- Modal content --}}
+        <div
+            class="relative w-full max-w-sm bg-surface dark:bg-surface rounded-2xl shadow-dropdown p-6 text-center"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
+        >
+            {{-- Wallet icon --}}
+            <div class="mx-auto w-14 h-14 rounded-full bg-success-subtle flex items-center justify-center mb-4">
+                <svg class="w-7 h-7 text-success" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"></path><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"></path></svg>
+            </div>
+
+            <h3 class="text-lg font-display font-bold text-on-surface-strong mb-2">
+                {{ __('Confirm Wallet Payment') }}
+            </h3>
+
+            <p class="text-sm text-on-surface mb-1">
+                {{ __('Pay') }} <span class="font-bold text-primary" x-text="formatXAF(grandTotal) + ' XAF'"></span> {{ __('from your wallet?') }}
+            </p>
+            <p class="text-sm text-on-surface mb-5">
+                {{ __('Remaining balance:') }} <span class="font-semibold text-on-surface-strong" x-text="formatXAF(walletRemainingBalance) + ' XAF'"></span>
+            </p>
+
+            <div class="flex gap-3">
+                <button
+                    @click="cancelWalletConfirm()"
+                    class="flex-1 h-11 inline-flex items-center justify-center border border-outline dark:border-outline text-on-surface hover:bg-surface-alt dark:hover:bg-surface-alt font-medium rounded-lg transition-all duration-200 cursor-pointer"
+                >
+                    {{ __('Cancel') }}
+                </button>
+                <button
+                    @click="confirmWalletPayment()"
+                    class="flex-1 h-11 inline-flex items-center justify-center bg-success hover:bg-success/90 text-on-success font-semibold rounded-lg shadow-card transition-all duration-200 cursor-pointer"
+                    :disabled="$fetching()"
+                >
+                    <span x-show="!$fetching()">{{ __('Confirm Payment') }}</span>
+                    <span x-show="$fetching()" x-cloak>{{ __('Processing...') }}</span>
+                </button>
+            </div>
         </div>
     </div>
 </div>
