@@ -1,7 +1,7 @@
-# Mission Directive: F-152 -- Payment Retry with Timeout
+# Mission Directive: F-154 -- Payment Receipt & Confirmation
 
 - **Spec Skill**: dancymeals-specs
-- **Feature File**: references/F-152.md
+- **Feature File**: references/F-154.md
 - **Project Dir**: C:/Users/pc/Herd/dmc
 - **App URL**: https://dmc.test
 - **Test Mode**: full
@@ -10,4 +10,4 @@
   - gate_review: C:/Users/pc/.claude/skills/project-executor/scripts/gate_review.py
   - gate_test: C:/Users/pc/.claude/skills/project-executor/scripts/gate_test.py
 - **Available Plugins**: laravel-simplifier: true
-- **Retry Context**: IMPLEMENT and REVIEW phases already completed. Only TEST phase remains. IMPLEMENT and REVIEW reports are saved in MCP. Skip directly to TEST phase execution.
+- **Retry Context**:
