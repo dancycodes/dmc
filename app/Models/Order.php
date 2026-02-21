@@ -166,6 +166,7 @@ class Order extends Model
         'confirmed_at',
         'completed_at',
         'cancelled_at',
+        'refunded_at',
     ];
 
     /**
@@ -187,6 +188,7 @@ class Order extends Model
             'confirmed_at' => 'datetime',
             'completed_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'refunded_at' => 'datetime',
         ];
     }
 

@@ -45,6 +45,13 @@ class WalletTransaction extends Model
     public const TYPE_BECAME_WITHDRAWABLE = 'became_withdrawable';
 
     /**
+     * F-163: Cook wallet transaction type for order cancellation reversal.
+     *
+     * BR-253: Cook wallet transaction (type: order_cancelled, debit from unwithdrawable).
+     */
+    public const TYPE_ORDER_CANCELLED = 'order_cancelled';
+
+    /**
      * Valid transaction types.
      *
      * @var array<string>
@@ -57,6 +64,7 @@ class WalletTransaction extends Model
         self::TYPE_REFUND_DEDUCTION,
         self::TYPE_WALLET_PAYMENT,
         self::TYPE_BECAME_WITHDRAWABLE,
+        self::TYPE_ORDER_CANCELLED,
     ];
 
     /**
@@ -156,7 +164,13 @@ class WalletTransaction extends Model
      */
     public function isDebit(): bool
     {
-        return in_array($this->type, [self::TYPE_COMMISSION, self::TYPE_WITHDRAWAL, self::TYPE_REFUND_DEDUCTION, self::TYPE_WALLET_PAYMENT], true);
+        return in_array($this->type, [
+            self::TYPE_COMMISSION,
+            self::TYPE_WITHDRAWAL,
+            self::TYPE_REFUND_DEDUCTION,
+            self::TYPE_WALLET_PAYMENT,
+            self::TYPE_ORDER_CANCELLED,
+        ], true);
     }
 
     /**
