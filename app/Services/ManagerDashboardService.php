@@ -48,6 +48,7 @@ class ManagerDashboardService
      */
     public const PATH_PERMISSIONS = [
         'dashboard' => null,               // Home — always visible
+        'dashboard/stats/refresh' => null, // Stats polling endpoint — all dashboard users
         'dashboard/orders' => 'can-manage-orders',
         'dashboard/meals' => 'can-manage-meals',
         'dashboard/tags' => 'can-manage-meals',
@@ -56,6 +57,7 @@ class ManagerDashboardService
         'dashboard/locations' => 'can-manage-locations',
         'dashboard/analytics' => 'can-view-cook-analytics',
         'dashboard/complaints' => 'can-manage-complaints',
+        'dashboard/messages' => 'can-manage-messages',
         'dashboard/testimonials' => null,           // forward-compatible
     ];
 
