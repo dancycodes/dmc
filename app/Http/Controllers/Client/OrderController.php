@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\ClientOrderListRequest;
 use App\Models\Order;
 use App\Services\ClientOrderService;
+use App\Services\OrderCancellationService;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
@@ -95,6 +96,39 @@ class OrderController extends Controller
         }
 
         return gale()->view('client.orders.show', $detailData, web: true);
+    }
+
+    /**
+     * Cancel the client's order.
+     *
+     * F-162: Order Cancellation
+     * BR-236: Cancellation only for Paid or Confirmed orders.
+     * BR-241: Server re-validates status AND time window before processing.
+     * BR-242: Order status → Cancelled; set orders.cancelled_at.
+     * BR-246: Client can only cancel their own orders.
+     * BR-247: All user-facing text via __().
+     */
+    public function cancel(Request $request, Order $order, ClientOrderService $orderService, OrderCancellationService $cancellationService): mixed
+    {
+        // BR-246: Client can only cancel their own orders
+        if ($order->client_id !== $request->user()->id) {
+            abort(403, __('You are not authorized to cancel this order.'));
+        }
+
+        $result = $cancellationService->cancelOrder($order, $request->user());
+
+        if (! $result['success']) {
+            return gale()
+                ->messages(['cancel' => $result['message']])
+                ->dispatch('toast', ['type' => 'error', 'message' => $result['message']]);
+        }
+
+        // Reload the order to get fresh status for the redirect
+        $order->refresh();
+
+        return gale()
+            ->redirect(url('/my-orders/'.$order->id))
+            ->with('success', $result['message']);
     }
 
     /**

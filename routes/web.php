@@ -212,6 +212,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/my-orders/{order}', [\App\Http\Controllers\Client\OrderController::class, 'show'])->name('client.orders.show');
     Route::post('/my-orders/{order}/refresh-status', [\App\Http\Controllers\Client\OrderController::class, 'refreshStatus'])->name('client.orders.refresh-status');
 
+    // Order Cancellation (F-162)
+    // BR-236: Only Paid/Confirmed orders within the cancellation window
+    // BR-241: Server re-validates before processing
+    Route::post('/my-orders/{order}/cancel', [\App\Http\Controllers\Client\OrderController::class, 'cancel'])->name('client.orders.cancel');
+
     // Order Rating (F-176)
     // BR-388: Only Completed orders can be rated
     // BR-390: Each order can be rated exactly once
