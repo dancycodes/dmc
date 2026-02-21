@@ -115,7 +115,7 @@
                     {{ __('Available for Withdrawal') }}
                 </p>
                 <p class="text-2xl font-bold text-success font-mono">
-                    {{ $wallet->formattedWithdrawableBalance() }}
+                    {{ number_format($maxWithdrawable, 0, '.', ',') }} XAF
                 </p>
             </div>
         </div>
