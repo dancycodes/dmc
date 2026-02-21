@@ -32,6 +32,11 @@
         cancelSecondsRemaining: {{ $cancellationSecondsRemaining }},
         canReport: {{ $canReport ? 'true' : 'false' }},
         canRate: {{ $canRate ? 'true' : 'false' }},
+        rated: {{ ($existingRating !== null) ? 'true' : 'false' }},
+        submittedStars: {{ $existingRating?->stars ?? 0 }},
+        hoverStars: 0,
+        selectedStars: 0,
+        stars: 0,
         previousStatus: '{{ $order->status }}',
         showStatusToast: false,
         statusToastMessage: '',
@@ -506,30 +511,99 @@
             </div>
             @endfragment
 
-            {{-- Rating Prompt (BR-228) - Forward-compatible for F-176 --}}
-            <div x-show="canRate" x-cloak>
-                <div class="bg-secondary-subtle border border-secondary/20 rounded-xl p-5">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            {{-- Rating Section (F-176) --}}
+            {{-- BR-228: Rating prompt for completed, unrated orders --}}
+            {{-- BR-392: Rating prompt appears on the order detail page --}}
+            {{-- Scenario 3: Already rated - show submitted rating --}}
+            <div x-show="rated" x-cloak>
+                <div class="bg-surface dark:bg-surface rounded-xl shadow-card border border-outline dark:border-outline overflow-hidden">
+                    <div class="px-5 py-3.5 border-b border-outline dark:border-outline bg-surface-alt dark:bg-surface-alt">
+                        <h2 class="text-sm font-semibold text-on-surface-strong flex items-center gap-2">
+                            {{-- Star icon (Lucide, sm=16) --}}
+                            <svg class="w-4 h-4 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                            {{ __('Your Rating') }}
+                        </h2>
+                    </div>
+                    <div class="p-5">
                         <div class="flex items-center gap-3">
-                            {{-- Star icon (Lucide, md=20) --}}
-                            <div class="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center shrink-0">
-                                <svg class="w-5 h-5 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                            <div class="flex items-center gap-1" aria-label="{{ __('Your rating') }}">
+                                <template x-for="star in 5" :key="star">
+                                    <svg
+                                        class="w-6 h-6 sm:w-7 sm:h-7 transition-colors"
+                                        :class="star <= submittedStars ? 'text-warning fill-warning' : 'text-outline dark:text-outline'"
+                                        xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                    ><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                                </template>
                             </div>
-                            <div>
-                                <p class="text-sm font-semibold text-on-surface-strong">{{ __('How was your order?') }}</p>
-                                <p class="text-xs text-on-surface/60">{{ __('Rate your experience to help other customers.') }}</p>
-                            </div>
+                            <span class="text-sm font-medium text-on-surface" x-text="submittedStars + '/5 {{ __('stars') }}'"></span>
                         </div>
-                        {{-- F-176: Rating will be implemented here --}}
-                        <a
-                            href="{{ url('/my-orders/' . $order->id . '/rate') }}"
-                            class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-secondary text-on-secondary hover:bg-secondary-hover transition-colors"
-                            x-navigate
+                        @if($existingRating?->review)
+                            <p class="mt-3 text-sm text-on-surface/70 italic">{{ $existingRating->review }}</p>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
+            {{-- Scenario 1: Rate after completion - interactive stars --}}
+            <div x-show="canRate && !rated" x-cloak>
+                <div class="bg-surface dark:bg-surface rounded-xl shadow-card border border-outline dark:border-outline overflow-hidden">
+                    <div class="px-5 py-3.5 border-b border-outline dark:border-outline bg-secondary-subtle dark:bg-secondary-subtle">
+                        <h2 class="text-sm font-semibold text-on-surface-strong flex items-center gap-2">
+                            {{-- Star icon (Lucide, sm=16) --}}
+                            <svg class="w-4 h-4 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                            {{ __('How was your order?') }}
+                        </h2>
+                    </div>
+                    <div class="p-5">
+                        <p class="text-sm text-on-surface/60 mb-4">{{ __('Rate your experience to help other customers.') }}</p>
+
+                        {{-- Interactive Star Selector --}}
+                        <div class="flex items-center gap-2 mb-4" role="radiogroup" aria-label="{{ __('Star rating') }}">
+                            <template x-for="star in 5" :key="star">
+                                <button
+                                    type="button"
+                                    class="focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded transition-transform hover:scale-110"
+                                    x-on:click="selectedStars = star"
+                                    x-on:mouseenter="hoverStars = star"
+                                    x-on:mouseleave="hoverStars = 0"
+                                    :aria-label="star + ' {{ __('star') }}'"
+                                    :aria-checked="selectedStars === star"
+                                    role="radio"
+                                >
+                                    <svg
+                                        class="w-8 h-8 sm:w-10 sm:h-10 transition-colors cursor-pointer"
+                                        :class="star <= (hoverStars || selectedStars) ? 'text-warning fill-warning' : 'text-outline dark:text-outline hover:text-warning/50'"
+                                        xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                    ><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                                </button>
+                            </template>
+                            <span
+                                class="text-sm font-medium text-on-surface/70 ml-2"
+                                x-show="selectedStars > 0"
+                                x-text="selectedStars + '/5'"
+                            ></span>
+                        </div>
+
+                        {{-- Validation error --}}
+                        <p x-message="stars" class="text-sm text-danger mb-3"></p>
+
+                        {{-- Submit Button --}}
+                        <button
+                            type="button"
+                            class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-secondary text-on-secondary hover:bg-secondary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            :disabled="selectedStars === 0 || $fetching()"
+                            x-on:click="stars = selectedStars; $action('{{ url('/my-orders/' . $order->id . '/rate') }}', { include: ['stars'] })"
                         >
-                            {{-- Star icon --}}
-                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                            {{ __('Rate Order') }}
-                        </a>
+                            <span x-show="!$fetching()">
+                                {{-- Star icon (Lucide, sm=16) --}}
+                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                            </span>
+                            <span x-show="$fetching()" class="animate-spin-slow">
+                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+                            </span>
+                            <span x-show="!$fetching()">{{ __('Submit Rating') }}</span>
+                            <span x-show="$fetching()">{{ __('Submitting...') }}</span>
+                        </button>
                     </div>
                 </div>
             </div>
