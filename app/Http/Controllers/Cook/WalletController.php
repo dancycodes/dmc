@@ -4,15 +4,18 @@ namespace App\Http\Controllers\Cook;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cook\CookTransactionListRequest;
+use App\Http\Requests\Cook\StoreWithdrawalRequest;
 use App\Services\CookWalletService;
+use App\Services\WithdrawalRequestService;
 use Illuminate\Http\Request;
 
 /**
  * F-169: Cook Wallet Dashboard
  * F-170: Cook Wallet Transaction History
+ * F-172: Cook Withdrawal Request
  *
  * Displays the cook's wallet page showing balance, transactions,
- * earnings summary, and earnings chart.
+ * earnings summary, and earnings chart. Handles withdrawal requests.
  *
  * BR-311: Total balance split into withdrawable and unwithdrawable.
  * BR-314: Withdraw button active only when withdrawable > 0.
@@ -23,6 +26,7 @@ use Illuminate\Http\Request;
  * BR-320: Managers can view but not withdraw.
  * BR-321: Wallet data is tenant-scoped.
  * BR-322: All user-facing text uses __() localization.
+ * BR-353: Only the cook can initiate withdrawals (not managers).
  */
 class WalletController extends Controller
 {
@@ -48,16 +52,6 @@ class WalletController extends Controller
      * Display the cook's full wallet transaction history.
      *
      * F-170: Cook Wallet Transaction History
-     * BR-323: Transaction types: order_payment_received, became_withdrawable, commission_deducted, withdrawal, auto_deduction.
-     * BR-324: Default sort is by date descending (newest first).
-     * BR-325: Paginated with 20 per page.
-     * BR-326: Each transaction shows: date, description, amount, type, order reference.
-     * BR-327: Filter by type allows: All, Order Payments, Commissions, Withdrawals, Auto-Deductions, Clearances.
-     * BR-328: All amounts are in XAF format.
-     * BR-329: Credit transactions (incoming) in green; debit transactions (outgoing) in red.
-     * BR-330: Transaction data is tenant-scoped.
-     * BR-331: Only users with manage-finances permission can access.
-     * BR-332: All user-facing text must use __() localization.
      */
     public function transactions(CookTransactionListRequest $request, CookWalletService $walletService): mixed
     {
@@ -85,5 +79,80 @@ class WalletController extends Controller
         }
 
         return gale()->view('cook.wallet.transactions', $viewData, web: true);
+    }
+
+    /**
+     * Display the withdrawal request form.
+     *
+     * F-172: Cook Withdrawal Request
+     * BR-353: Only the cook can initiate withdrawals (not managers).
+     */
+    public function showWithdraw(Request $request, WithdrawalRequestService $withdrawalService): mixed
+    {
+        $tenant = tenant();
+        $user = $request->user();
+
+        // BR-353: Only the cook (not managers) can withdraw
+        if ($user->id !== $tenant->cook_id) {
+            abort(403);
+        }
+
+        $formData = $withdrawalService->getWithdrawFormData($tenant, $user);
+
+        return gale()->view('cook.wallet.withdraw', $formData, web: true);
+    }
+
+    /**
+     * Process the withdrawal request submission.
+     *
+     * F-172: Cook Withdrawal Request
+     * BR-348: Cook must confirm mobile money number.
+     * BR-350: Confirmation dialog shown before final submission.
+     * BR-352: Withdrawable balance decremented immediately.
+     */
+    public function submitWithdraw(Request $request, WithdrawalRequestService $withdrawalService): mixed
+    {
+        $tenant = tenant();
+        $user = $request->user();
+
+        // BR-353: Only the cook (not managers) can withdraw
+        if ($user->id !== $tenant->cook_id) {
+            abort(403);
+        }
+
+        // Dual Gale/HTTP validation
+        if ($request->isGale()) {
+            $validated = $request->validateState([
+                'amount' => ['required', 'integer', 'min:1'],
+                'mobile_money_number' => ['required', 'string', 'regex:'.StoreWithdrawalRequest::CAMEROON_PHONE_REGEX],
+                'mobile_money_provider' => ['required', 'string', 'in:mtn_momo,orange_money'],
+            ]);
+        } else {
+            $formRequest = app(StoreWithdrawalRequest::class);
+            $validated = $formRequest->validated();
+        }
+
+        // Normalize the phone number
+        $validated['mobile_money_number'] = $withdrawalService->normalizePhone($validated['mobile_money_number']);
+
+        $result = $withdrawalService->submitWithdrawal($tenant, $user, $validated);
+
+        if (! $result['success']) {
+            if ($request->isGale()) {
+                return gale()->messages(['amount' => $result['message']]);
+            }
+
+            return back()->withErrors(['amount' => $result['message']])->withInput();
+        }
+
+        // Success
+        if ($request->isGale()) {
+            return gale()
+                ->redirect('/dashboard/wallet')
+                ->with('toast', $result['message']);
+        }
+
+        return redirect()->route('cook.wallet.index')
+            ->with('toast', $result['message']);
     }
 }

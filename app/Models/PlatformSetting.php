@@ -47,6 +47,8 @@ class PlatformSetting extends Model
         'maintenance_mode' => ['value' => '0', 'type' => 'boolean', 'group' => 'system'],
         'maintenance_reason' => ['value' => '', 'type' => 'string', 'group' => 'system'],
         'withdrawable_hold_hours' => ['value' => '3', 'type' => 'integer', 'group' => 'orders'],
+        'min_withdrawal_amount' => ['value' => '1000', 'type' => 'integer', 'group' => 'orders'],
+        'max_daily_withdrawal_amount' => ['value' => '500000', 'type' => 'integer', 'group' => 'orders'],
     ];
 
     /**
