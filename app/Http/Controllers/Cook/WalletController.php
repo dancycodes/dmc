@@ -149,7 +149,6 @@ class WalletController extends Controller
         if ($request->isGale()) {
             return gale()
                 ->redirect('/dashboard/wallet')
-                ->back()
                 ->with('toast', $result['message']);
         }
 
