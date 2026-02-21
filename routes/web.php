@@ -215,9 +215,11 @@ Route::middleware('auth')->group(function () {
     // BR-390: Each order can be rated exactly once
     Route::post('/my-orders/{order}/rate', [\App\Http\Controllers\Client\RatingController::class, 'store'])->name('client.orders.rate');
 
-    // Client Complaint Submission (F-183)
+    // Client Complaint Submission (F-183) & Status Tracking (F-187)
     // BR-183: Only delivered/completed orders can receive a complaint
     // BR-184: One complaint per order
+    // BR-238: Complaint accessible only by filing client, cook, managers, and admins
+    Route::get('/my-complaints', [\App\Http\Controllers\Client\ComplaintController::class, 'index'])->name('client.complaints.index');
     Route::get('/my-orders/{order}/complaint', [\App\Http\Controllers\Client\ComplaintController::class, 'create'])->name('client.complaints.create');
     Route::post('/my-orders/{order}/complaint', [\App\Http\Controllers\Client\ComplaintController::class, 'store'])->name('client.complaints.store');
     Route::get('/my-orders/{order}/complaint/{complaint}', [\App\Http\Controllers\Client\ComplaintController::class, 'show'])->name('client.complaints.show');
