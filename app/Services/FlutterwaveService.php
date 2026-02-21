@@ -172,6 +172,162 @@ class FlutterwaveService
     }
 
     /**
+     * Initiate a transfer to a mobile money account via Flutterwave Transfer API.
+     *
+     * F-173 BR-356: Withdrawals executed via Flutterwave Transfer API to mobile money.
+     * BR-357: Supported: MTN Mobile Money and Orange Money (Cameroon).
+     *
+     * @param  array{amount: float|int, currency: string, phone: string, provider: string, reference: string, narration: string, idempotency_key: string}  $params
+     * @return array{success: bool, data: array|null, error: string|null, is_timeout: bool}
+     */
+    public function initiateTransfer(array $params): array
+    {
+        $payload = [
+            'account_bank' => $this->getTransferBankCode($params['provider']),
+            'account_number' => preg_replace('/\D/', '', $params['phone']),
+            'amount' => (float) $params['amount'],
+            'currency' => $params['currency'] ?? 'XAF',
+            'reference' => $params['reference'],
+            'narration' => $params['narration'] ?? 'DancyMeals Payout',
+            'debit_currency' => $params['currency'] ?? 'XAF',
+            'meta' => [
+                ['key' => 'source', 'value' => 'DancyMeals'],
+                ['key' => 'platform', 'value' => 'web'],
+            ],
+        ];
+
+        try {
+            $response = Http::withToken($this->getSecretKey())
+                ->withHeaders([
+                    'Idempotency-Key' => $params['idempotency_key'] ?? $params['reference'],
+                ])
+                ->timeout(30)
+                ->post(self::API_BASE_URL.'/transfers', $payload);
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                if (($data['status'] ?? '') === 'success') {
+                    return [
+                        'success' => true,
+                        'data' => $data['data'] ?? [],
+                        'error' => null,
+                        'is_timeout' => false,
+                    ];
+                }
+
+                return [
+                    'success' => false,
+                    'data' => $data['data'] ?? null,
+                    'error' => $data['message'] ?? __('Transfer could not be initiated.'),
+                    'is_timeout' => false,
+                ];
+            }
+
+            $errorData = $response->json();
+
+            Log::warning('Flutterwave transfer failed', [
+                'status' => $response->status(),
+                'response' => $errorData,
+                'reference' => $params['reference'],
+            ]);
+
+            return [
+                'success' => false,
+                'data' => $errorData,
+                'error' => $errorData['message'] ?? __('Transfer failed. Please try again.'),
+                'is_timeout' => false,
+            ];
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('Flutterwave transfer connection timeout', [
+                'error' => $e->getMessage(),
+                'reference' => $params['reference'],
+            ]);
+
+            return [
+                'success' => false,
+                'data' => null,
+                'error' => __('Transfer request timed out.'),
+                'is_timeout' => true,
+            ];
+        } catch (\Exception $e) {
+            Log::error('Flutterwave transfer unexpected error', [
+                'error' => $e->getMessage(),
+                'reference' => $params['reference'],
+            ]);
+
+            return [
+                'success' => false,
+                'data' => null,
+                'error' => $e->getMessage(),
+                'is_timeout' => false,
+            ];
+        }
+    }
+
+    /**
+     * Verify a transfer status by its ID.
+     *
+     * F-173 BR-360: Follow-up checks for pending_verification transfers.
+     *
+     * @return array{success: bool, data: array|null, error: string|null, status: string|null}
+     */
+    public function verifyTransfer(string $transferId): array
+    {
+        try {
+            $response = Http::withToken($this->getSecretKey())
+                ->timeout(15)
+                ->get(self::API_BASE_URL.'/transfers/'.$transferId);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $transferData = $data['data'] ?? null;
+                $transferStatus = $transferData['status'] ?? null;
+
+                return [
+                    'success' => ($data['status'] ?? '') === 'success',
+                    'data' => $transferData,
+                    'error' => null,
+                    'status' => $transferStatus,
+                ];
+            }
+
+            return [
+                'success' => false,
+                'data' => null,
+                'error' => __('Could not verify transfer status.'),
+                'status' => null,
+            ];
+        } catch (\Exception $e) {
+            Log::error('Flutterwave transfer verification error', [
+                'error' => $e->getMessage(),
+                'transfer_id' => $transferId,
+            ]);
+
+            return [
+                'success' => false,
+                'data' => null,
+                'error' => __('Could not verify transfer status.'),
+                'status' => null,
+            ];
+        }
+    }
+
+    /**
+     * Get the Flutterwave bank code for a mobile money provider (transfers).
+     *
+     * BR-357: MTN Mobile Money and Orange Money (Cameroon).
+     */
+    private function getTransferBankCode(string $provider): string
+    {
+        return match ($provider) {
+            'mtn_momo' => 'MPS',
+            'orange_money' => 'FMM',
+            default => 'MPS',
+        };
+    }
+
+    /**
      * Generate a unique transaction reference.
      *
      * BR-359: A transaction reference is generated and stored with the order.

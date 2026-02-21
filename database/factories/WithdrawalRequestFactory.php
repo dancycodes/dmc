@@ -78,7 +78,35 @@ class WithdrawalRequestFactory extends Factory
         return $this->state(fn () => [
             'status' => WithdrawalRequest::STATUS_FAILED,
             'processed_at' => now(),
+            'failed_at' => now(),
             'failure_reason' => 'Insufficient funds on provider side',
+        ]);
+    }
+
+    /**
+     * State: pending verification (timeout).
+     *
+     * F-173 BR-360: Transfer timed out, awaiting verification.
+     */
+    public function pendingVerification(): static
+    {
+        return $this->state(fn () => [
+            'status' => WithdrawalRequest::STATUS_PENDING_VERIFICATION,
+            'processed_at' => now(),
+            'flutterwave_reference' => 'DMC-WD-'.fake()->numerify('###').'-'.time(),
+            'flutterwave_transfer_id' => fake()->numerify('######'),
+        ]);
+    }
+
+    /**
+     * State: with Flutterwave transfer details.
+     */
+    public function withTransferDetails(): static
+    {
+        return $this->state(fn () => [
+            'flutterwave_reference' => 'DMC-WD-'.fake()->numerify('###').'-'.time(),
+            'flutterwave_transfer_id' => fake()->numerify('######'),
+            'idempotency_key' => 'DMC-WD-'.fake()->numerify('###').'-'.md5(fake()->uuid()),
         ]);
     }
 }
