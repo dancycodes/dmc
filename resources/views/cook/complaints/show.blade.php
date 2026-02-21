@@ -1,8 +1,10 @@
 {{--
-    F-184: Cook/Manager Complaint Detail & Response
-    ------------------------------------------------
-    Shows complaint info + client info + order details + response form.
-    UI/UX: Split layout — info (left/top) and response form (right/bottom).
+    F-184/F-187: Cook/Manager Complaint Detail & Response
+    -----------------------------------------------------
+    Shows complaint info, status timeline, message thread, and response form.
+    UI/UX: Split layout — info + timeline (left/top) and response form (right/bottom).
+    BR-232: Status timeline with four states.
+    BR-233: All messages visible to cook/manager.
 --}}
 @extends('layouts.cook-dashboard')
 
@@ -43,6 +45,19 @@
             </p>
         </div>
         @include('cook.complaints._status-badge', ['status' => $complaint->status])
+    </div>
+
+    {{-- Status Timeline --}}
+    <div class="bg-surface dark:bg-surface rounded-xl shadow-card border border-outline dark:border-outline overflow-hidden mb-6">
+        <div class="px-5 py-3.5 border-b border-outline dark:border-outline bg-surface-alt dark:bg-surface-alt">
+            <h2 class="text-sm font-semibold text-on-surface-strong flex items-center gap-2">
+                <svg class="w-4 h-4 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                {{ __('Complaint Progress') }}
+            </h2>
+        </div>
+        <div class="p-5">
+            @include('client.complaints._status-timeline', ['timeline' => $timeline])
+        </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -121,10 +136,6 @@
                         @include('cook.complaints._category-badge', ['category' => $complaint->category])
                     </div>
                     <div>
-                        <p class="text-xs font-medium text-on-surface/50 uppercase tracking-wide mb-1">{{ __('Description') }}</p>
-                        <p class="text-sm text-on-surface leading-relaxed">{{ $complaint->description }}</p>
-                    </div>
-                    <div>
                         <p class="text-xs font-medium text-on-surface/50 uppercase tracking-wide mb-1">{{ __('Submitted') }}</p>
                         <p class="text-sm text-on-surface/70">{{ ($complaint->submitted_at ?? $complaint->created_at)->format('M d, Y H:i') }}</p>
                     </div>
@@ -145,7 +156,7 @@
                             @else
                                 <div class="bg-surface-alt dark:bg-surface-alt rounded-lg p-4 text-center">
                                     <svg class="w-8 h-8 mx-auto text-on-surface/20 mb-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></svg>
-                                    <p class="text-xs text-on-surface/40">{{ __('Image unavailable') }}</p>
+                                    <p class="text-xs text-on-surface/40">{{ __('Image no longer available') }}</p>
                                 </div>
                             @endif
                         </div>
@@ -154,36 +165,94 @@
             </div>
         </div>
 
-        {{-- RIGHT/BOTTOM: Response Form & Previous Responses --}}
+        {{-- RIGHT/BOTTOM: Message Thread & Response Form --}}
         <div class="space-y-6">
-            {{-- Previous Responses --}}
-            @if($complaint->responses->isNotEmpty())
-                <div class="bg-surface dark:bg-surface rounded-xl shadow-card border border-outline dark:border-outline overflow-hidden">
-                    <div class="px-5 py-3.5 border-b border-outline dark:border-outline bg-surface-alt dark:bg-surface-alt">
-                        <h2 class="text-sm font-semibold text-on-surface-strong flex items-center gap-2">
-                            <svg class="w-4 h-4 text-info" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>
-                            {{ __('Previous Responses') }} ({{ $complaint->responses->count() }})
-                        </h2>
-                    </div>
-                    <div class="p-5 space-y-4">
-                        @foreach($complaint->responses as $response)
-                            <div class="bg-surface-alt dark:bg-surface-alt rounded-lg p-4 @if(!$loop->last) border-b border-outline dark:border-outline pb-4 @endif">
-                                <div class="flex items-center justify-between mb-2">
-                                    <span class="text-sm font-medium text-on-surface-strong">{{ $response->user?->name ?? __('Unknown') }}</span>
-                                    <span class="text-xs text-on-surface/40">{{ $response->created_at->format('M d, Y H:i') }}</span>
+            {{-- Message Thread --}}
+            <div class="bg-surface dark:bg-surface rounded-xl shadow-card border border-outline dark:border-outline overflow-hidden">
+                <div class="px-5 py-3.5 border-b border-outline dark:border-outline bg-surface-alt dark:bg-surface-alt">
+                    <h2 class="text-sm font-semibold text-on-surface-strong flex items-center gap-2">
+                        <svg class="w-4 h-4 text-info" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>
+                        {{ __('Messages') }} ({{ count($messages) }})
+                    </h2>
+                </div>
+                <div class="p-5 space-y-4 max-h-80 overflow-y-auto">
+                    @foreach($messages as $msg)
+                        <div class="@if($msg['role'] === 'client') mr-4 @else ml-4 @endif">
+                            <div class="@if($msg['role'] === 'client') bg-surface-alt dark:bg-surface-alt @else bg-primary-subtle/30 dark:bg-primary-subtle/20 @endif rounded-lg p-3">
+                                <div class="flex items-center justify-between mb-1.5">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm font-medium text-on-surface-strong">{{ $msg['sender'] }}</span>
+                                        @php
+                                            $roleBadgeClasses = match($msg['role']) {
+                                                'client' => 'bg-primary-subtle text-primary',
+                                                'cook' => 'bg-secondary-subtle text-secondary',
+                                                'manager' => 'bg-info-subtle text-info',
+                                                'admin' => 'bg-danger-subtle text-danger',
+                                                default => 'bg-surface-alt text-on-surface/60',
+                                            };
+                                            $roleLabel = match($msg['role']) {
+                                                'client' => __('Client'),
+                                                'cook' => __('Cook'),
+                                                'manager' => __('Manager'),
+                                                'admin' => __('Admin'),
+                                                default => __('Unknown'),
+                                            };
+                                        @endphp
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider {{ $roleBadgeClasses }}">
+                                            {{ $roleLabel }}
+                                        </span>
+                                    </div>
+                                    <span class="text-xs text-on-surface/40">{{ $msg['timestamp'] }}</span>
                                 </div>
-                                <p class="text-sm text-on-surface leading-relaxed mb-2">{{ $response->message }}</p>
-                                @if($response->resolution_type)
-                                    <div class="flex items-center gap-2 text-xs">
-                                        <span class="font-medium text-on-surface/50">{{ __('Resolution') }}:</span>
-                                        <span class="font-medium text-primary">{{ $response->resolutionTypeLabel() }}</span>
-                                        @if($response->refund_amount)
-                                            <span class="font-mono text-on-surface/60">({{ number_format($response->refund_amount, 0, '.', ',') }} XAF)</span>
+                                <p class="text-sm text-on-surface leading-relaxed">{{ $msg['message'] }}</p>
+                                @if(isset($msg['resolution_type']))
+                                    <div class="mt-2 pt-2 border-t border-outline/30 dark:border-outline/30 flex items-center gap-2 text-xs">
+                                        <span class="font-medium text-on-surface/50">{{ __('Resolution Offer') }}:</span>
+                                        <span class="font-medium text-primary">{{ $msg['resolution_label'] ?? '' }}</span>
+                                        @if(isset($msg['refund_amount']) && $msg['refund_amount'])
+                                            <span class="font-mono text-on-surface/60">({{ number_format($msg['refund_amount'], 0, '.', ',') }} XAF)</span>
                                         @endif
                                     </div>
                                 @endif
                             </div>
-                        @endforeach
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- Resolution Card (if resolved) --}}
+            @if($resolution)
+                <div class="rounded-xl overflow-hidden
+                    @if(in_array($resolution['type'], ['partial_refund', 'full_refund']))
+                        bg-success-subtle dark:bg-success-subtle border-2 border-success/30
+                    @elseif($resolution['type'] === 'warning')
+                        bg-warning-subtle dark:bg-warning-subtle border-2 border-warning/30
+                    @else
+                        bg-surface-alt dark:bg-surface-alt border-2 border-outline
+                    @endif
+                ">
+                    <div class="p-5">
+                        <div class="flex items-center gap-3 mb-3">
+                            <svg class="w-6 h-6 @if($resolution['type'] === 'warning') text-warning @else text-success @endif" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><path d="m9 11 3 3L22 4"></path></svg>
+                            <div>
+                                <h3 class="text-sm font-semibold text-on-surface-strong">{{ __('Complaint Resolved') }}</h3>
+                                <p class="text-sm text-on-surface/70">{{ $resolution['label'] }}</p>
+                            </div>
+                        </div>
+                        @if($resolution['amount'])
+                            <p class="text-sm font-mono text-on-surface/70 mb-2">{{ __('Refund') }}: {{ number_format($resolution['amount'], 0, '.', ',') }} XAF</p>
+                        @endif
+                        @if($resolution['notes'])
+                            <p class="text-sm text-on-surface/70">{{ $resolution['notes'] }}</p>
+                        @endif
+                        <div class="flex items-center gap-4 text-xs text-on-surface/40 mt-2">
+                            @if($resolution['resolved_at'])
+                                <span>{{ $resolution['resolved_at'] }}</span>
+                            @endif
+                            @if($resolution['resolved_by'])
+                                <span>{{ __('by') }} {{ $resolution['resolved_by'] }}</span>
+                            @endif
+                        </div>
                     </div>
                 </div>
             @endif
@@ -226,7 +295,6 @@
                                 {{ __('Resolution Offer') }} <span class="text-danger">*</span>
                             </label>
                             <div class="space-y-2">
-                                {{-- Apology Only --}}
                                 <label class="flex items-start gap-3 p-3 rounded-lg border border-outline dark:border-outline cursor-pointer hover:bg-surface-alt/50 transition-colors" :class="resolution_type === 'apology_only' ? 'border-primary bg-primary-subtle/30' : ''">
                                     <input type="radio" x-model="resolution_type" x-name="resolution_type" value="apology_only" class="mt-0.5 text-primary focus:ring-primary">
                                     <div>
@@ -234,8 +302,6 @@
                                         <p class="text-xs text-on-surface/50 mt-0.5">{{ __('Apologize and explain without offering a refund') }}</p>
                                     </div>
                                 </label>
-
-                                {{-- Partial Refund --}}
                                 <label class="flex items-start gap-3 p-3 rounded-lg border border-outline dark:border-outline cursor-pointer hover:bg-surface-alt/50 transition-colors" :class="resolution_type === 'partial_refund_offer' ? 'border-primary bg-primary-subtle/30' : ''">
                                     <input type="radio" x-model="resolution_type" x-name="resolution_type" value="partial_refund_offer" class="mt-0.5 text-primary focus:ring-primary">
                                     <div>
@@ -243,8 +309,6 @@
                                         <p class="text-xs text-on-surface/50 mt-0.5">{{ __('Offer a partial refund to the customer') }}</p>
                                     </div>
                                 </label>
-
-                                {{-- Full Refund --}}
                                 <label class="flex items-start gap-3 p-3 rounded-lg border border-outline dark:border-outline cursor-pointer hover:bg-surface-alt/50 transition-colors" :class="resolution_type === 'full_refund_offer' ? 'border-primary bg-primary-subtle/30' : ''">
                                     <input type="radio" x-model="resolution_type" x-name="resolution_type" value="full_refund_offer" class="mt-0.5 text-primary focus:ring-primary">
                                     <div>
@@ -256,7 +320,7 @@
                             <p x-message="resolution_type" class="text-xs text-danger mt-1"></p>
                         </div>
 
-                        {{-- Partial Refund Amount (conditional) --}}
+                        {{-- Partial Refund Amount --}}
                         <div x-show="showRefundAmount" x-cloak class="mb-4">
                             <label class="block text-sm font-medium text-on-surface-strong mb-1.5">
                                 {{ __('Refund Amount (XAF)') }} <span class="text-danger">*</span>
@@ -292,7 +356,7 @@
                             </span>
                         </button>
 
-                        {{-- Info Note --}}
+                        {{-- Info Notes --}}
                         @if($complaint->status === 'open')
                             <div class="mt-4 bg-info-subtle dark:bg-info-subtle rounded-lg p-3 flex items-start gap-2.5">
                                 <svg class="w-4 h-4 text-info shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>

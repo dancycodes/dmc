@@ -7,6 +7,7 @@ use App\Http\Requests\Cook\StoreComplaintResponseRequest;
 use App\Models\Complaint;
 use App\Models\ComplaintResponse;
 use App\Services\ComplaintResponseService;
+use App\Services\ComplaintTrackingService;
 use Illuminate\Http\Request;
 
 /**
@@ -61,12 +62,18 @@ class ComplaintController extends Controller
     }
 
     /**
-     * Display a single complaint with detail and response form.
+     * F-184/F-187: Display complaint detail with status timeline and response form.
      *
-     * UI/UX: Split layout — complaint info + response form.
+     * UI/UX: Split layout — complaint info + timeline (left/top) and response form (right/bottom).
+     * BR-232: Status timeline shows all four states.
+     * BR-233: All messages visible to cook/manager.
      */
-    public function show(Request $request, Complaint $complaint, ComplaintResponseService $service): mixed
-    {
+    public function show(
+        Request $request,
+        Complaint $complaint,
+        ComplaintResponseService $service,
+        ComplaintTrackingService $trackingService
+    ): mixed {
         $user = $request->user();
         $tenant = tenant();
 
@@ -80,15 +87,23 @@ class ComplaintController extends Controller
             abort(403);
         }
 
-        $complaint = $service->getComplaintDetail($complaint);
+        $complaint = $trackingService->getComplaintTrackingData($complaint);
         $orderItems = $service->parseOrderItems($complaint->order?->items_snapshot);
         $orderTotal = (int) ($complaint->order?->grand_total ?? 0);
+
+        // F-187: Build timeline and message thread
+        $timeline = $trackingService->buildTimeline($complaint);
+        $messages = $trackingService->buildMessageThread($complaint);
+        $resolution = $trackingService->getResolutionData($complaint, 'cook');
 
         return gale()->view('cook.complaints.show', [
             'complaint' => $complaint,
             'orderItems' => $orderItems,
             'orderTotal' => $orderTotal,
             'resolutionTypes' => ComplaintResponse::RESOLUTION_TYPES,
+            'timeline' => $timeline,
+            'messages' => $messages,
+            'resolution' => $resolution,
         ], web: true);
     }
 

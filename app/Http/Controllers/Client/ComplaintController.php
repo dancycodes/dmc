@@ -7,16 +7,33 @@ use App\Http\Requests\Client\StoreComplaintRequest;
 use App\Models\Complaint;
 use App\Models\Order;
 use App\Services\ComplaintSubmissionService;
+use App\Services\ComplaintTrackingService;
 use Illuminate\Http\Request;
 
 /**
- * F-183: Client Complaint Submission Controller.
+ * F-183/F-187: Client Complaint Controller.
  *
- * Handles complaint form display and submission on client order detail.
- * Uses Gale SSE for reactive form submission without page reload.
+ * Handles complaint form display, submission, status tracking, and listing.
+ * Uses Gale SSE for reactive UI without page reload.
  */
 class ComplaintController extends Controller
 {
+    /**
+     * F-187: Display the client's complaints list.
+     *
+     * UI/UX: "My Complaints" section accessible from client profile area.
+     */
+    public function index(Request $request, ComplaintTrackingService $trackingService): mixed
+    {
+        $complaints = $trackingService->getClientComplaints($request->user());
+
+        $data = [
+            'complaints' => $complaints,
+        ];
+
+        return gale()->view('client.complaints.index', $data, web: true);
+    }
+
     /**
      * Show the complaint form for an order.
      *
@@ -156,17 +173,21 @@ class ComplaintController extends Controller
     }
 
     /**
-     * Show the complaint status (F-187 stub).
+     * F-187: Show the complaint status tracking page.
      *
-     * Scenario 2: Client views existing complaint status.
+     * BR-232: Visual status timeline with current state highlighted.
+     * BR-233: All messages visible to client.
+     * BR-234: Resolution details shown.
+     * BR-235: No reopen option after resolution.
+     * BR-238: Only accessible by the filing client.
      */
     public function show(
         Request $request,
         Order $order,
         Complaint $complaint,
-        ComplaintSubmissionService $service
+        ComplaintTrackingService $trackingService
     ): mixed {
-        // Ownership check
+        // BR-238: Ownership check
         if ($order->client_id !== $request->user()->id) {
             abort(403, __('You are not authorized to view this complaint.'));
         }
@@ -176,10 +197,21 @@ class ComplaintController extends Controller
             abort(404);
         }
 
+        // Load all related data
+        $complaint = $trackingService->getComplaintTrackingData($complaint);
+
+        // Build timeline and message thread
+        $timeline = $trackingService->buildTimeline($complaint);
+        $messages = $trackingService->buildMessageThread($complaint);
+        $resolution = $trackingService->getResolutionData($complaint, 'client');
+
         return gale()->view('client.complaints.show', [
             'order' => $order,
             'complaint' => $complaint,
-            'cookName' => $order->tenant?->name ?? __('Unknown Cook'),
+            'cookName' => $complaint->tenant?->name ?? __('Unknown Cook'),
+            'timeline' => $timeline,
+            'messages' => $messages,
+            'resolution' => $resolution,
         ], web: true);
     }
 }
