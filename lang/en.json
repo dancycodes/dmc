@@ -2690,5 +2690,16 @@
     "This user is not a manager for your team.": "This user is not a manager for your team.",
     "You cannot invite managers while your account is deactivated.": "You cannot invite managers while your account is deactivated.",
     "Please enter an email address.": "Please enter an email address.",
-    "Please enter a valid email address.": "Please enter a valid email address."
+    "Please enter a valid email address.": "Please enter a valid email address.",
+    "No Permissions Configured": "No Permissions Configured",
+    "Your permissions haven't been configured yet. Please contact :name to configure your access.": "Your permissions haven't been configured yet. Please contact :name to configure your access.",
+    "You do not have permission to access this section.": "You do not have permission to access this section.",
+    "Go back to dashboard": "Go back to dashboard",
+    "Switch tenant": "Switch tenant",
+    "Your Tenants": "Your Tenants",
+    "Search tenants...": "Search tenants...",
+    "Current": "Current",
+    "Inactive": "Inactive",
+    "Switch Tenant": "Switch Tenant",
+    "Manager": "Manager"
 }

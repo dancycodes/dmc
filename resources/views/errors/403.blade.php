@@ -31,19 +31,35 @@
                 <h1 class="text-6xl font-bold text-on-surface-strong dark:text-on-surface-strong mb-2 font-display">403</h1>
                 <h2 class="text-xl font-semibold text-on-surface-strong dark:text-on-surface-strong mb-4">{{ __('Forbidden') }}</h2>
                 <p class="text-on-surface dark:text-on-surface text-base leading-relaxed mb-6">
-                    {{ __('You do not have permission to access this page.') }}
+                    @if(isset($exception) && $exception->getMessage())
+                        {{ $exception->getMessage() }}
+                    @else
+                        {{ __('You do not have permission to access this page.') }}
+                    @endif
                 </p>
             </div>
 
             <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <a href="{{ url('/') }}"
-                   class="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-primary dark:bg-primary text-on-primary dark:text-on-primary font-medium text-sm hover:bg-primary-hover dark:hover:bg-primary-hover transition-colors duration-200">
-                    <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                    </svg>
-                    {{ __('Return to Homepage') }}
-                </a>
+                {{-- F-211: Show "Go back to dashboard" link on tenant domains for authenticated users --}}
+                @if(tenant() && auth()->check())
+                    <a href="{{ url('/dashboard') }}"
+                       class="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-primary dark:bg-primary text-on-primary dark:text-on-primary font-medium text-sm hover:bg-primary-hover dark:hover:bg-primary-hover transition-colors duration-200">
+                        <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                        </svg>
+                        {{ __('Go back to dashboard') }}
+                    </a>
+                @else
+                    <a href="{{ url('/') }}"
+                       class="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-primary dark:bg-primary text-on-primary dark:text-on-primary font-medium text-sm hover:bg-primary-hover dark:hover:bg-primary-hover transition-colors duration-200">
+                        <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                        </svg>
+                        {{ __('Return to Homepage') }}
+                    </a>
+                @endif
             </div>
 
             <p class="mt-8 text-sm text-on-surface/60 dark:text-on-surface/60">
