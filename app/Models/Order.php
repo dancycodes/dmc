@@ -159,6 +159,8 @@ class Order extends Model
         'payment_retry_expires_at',
         'items_snapshot',
         'notes',
+        'commission_amount',
+        'commission_rate',
         'paid_at',
         'confirmed_at',
         'completed_at',
@@ -175,6 +177,8 @@ class Order extends Model
         return [
             'items_snapshot' => 'array',
             'wallet_amount' => 'decimal:2',
+            'commission_amount' => 'decimal:2',
+            'commission_rate' => 'decimal:2',
             'retry_count' => 'integer',
             'payment_retry_expires_at' => 'datetime',
             'paid_at' => 'datetime',
