@@ -118,9 +118,9 @@ class ComplaintNotificationService
             $seenIds[] = $cook->id;
         }
 
-        // Add managers with can-manage-complaints-escalated permission
+        // Add managers with can-manage-complaints permission (F-210 delegatable permission)
         try {
-            $managers = User::permission('can-manage-complaints-escalated')->get();
+            $managers = User::permission('can-manage-complaints')->get();
             foreach ($managers as $manager) {
                 if (! in_array($manager->id, $seenIds, true)) {
                     $recipients[] = $manager;

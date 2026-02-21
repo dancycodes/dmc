@@ -21,6 +21,7 @@ use App\Http\Controllers\Cook\CookScheduleController;
 use App\Http\Controllers\Cook\CoverImageController;
 use App\Http\Controllers\Cook\DeliveryFeeController;
 use App\Http\Controllers\Cook\ManagerController;
+use App\Http\Controllers\Cook\ManagerPermissionController;
 use App\Http\Controllers\Cook\MealComponentController;
 use App\Http\Controllers\Cook\MealController;
 use App\Http\Controllers\Cook\MealImageController;
@@ -581,6 +582,13 @@ Route::middleware('tenant.domain')->group(function () {
         Route::get('/managers', [ManagerController::class, 'index'])->name('cook.managers.index');
         Route::post('/managers/invite', [ManagerController::class, 'invite'])->name('cook.managers.invite');
         Route::delete('/managers/{manager}', [ManagerController::class, 'remove'])->name('cook.managers.remove');
+
+        // F-210: Manager Permission Configuration
+        // BR-477: Only the cook can configure manager permissions
+        // BR-474: Permissions toggled on/off per manager per tenant
+        // BR-482: All interactions via Gale (no page reloads)
+        Route::post('/managers/{manager}/permissions', [ManagerPermissionController::class, 'show'])->name('cook.managers.permissions.show');
+        Route::post('/managers/{manager}/permissions/toggle', [ManagerPermissionController::class, 'toggle'])->name('cook.managers.permissions.toggle');
     });
 
     // F-135: Meal Search Bar (public, on tenant domain)
