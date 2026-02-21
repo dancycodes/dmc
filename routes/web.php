@@ -546,6 +546,12 @@ Route::middleware('tenant.domain')->group(function () {
         // BR-324: Default sort by date descending
         // BR-325: Paginated with 20 per page
         Route::get('/wallet/transactions', [CookWalletController::class, 'transactions'])->name('cook.wallet.transactions');
+
+        // F-172: Cook Withdrawal Request
+        // BR-353: Only the cook can initiate withdrawals (not managers) -- enforced in controller
+        // BR-350: Confirmation dialog shows amount and destination before submission
+        Route::get('/wallet/withdraw', [CookWalletController::class, 'showWithdraw'])->name('cook.wallet.withdraw');
+        Route::post('/wallet/withdraw', [CookWalletController::class, 'submitWithdraw'])->name('cook.wallet.submit-withdraw');
     });
 
     // F-135: Meal Search Bar (public, on tenant domain)

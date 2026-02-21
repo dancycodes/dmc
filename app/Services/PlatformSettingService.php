@@ -217,6 +217,26 @@ class PlatformSettingService
     }
 
     /**
+     * Get the minimum withdrawal amount in XAF.
+     *
+     * F-172 BR-345: Default 1,000 XAF, configurable by admin.
+     */
+    public function getMinWithdrawalAmount(): int
+    {
+        return (int) $this->get('min_withdrawal_amount');
+    }
+
+    /**
+     * Get the maximum daily withdrawal amount in XAF.
+     *
+     * F-172 BR-346: Default 500,000 XAF, configurable by admin.
+     */
+    public function getMaxDailyWithdrawalAmount(): int
+    {
+        return (int) $this->get('max_daily_withdrawal_amount');
+    }
+
+    /**
      * Check if maintenance mode is enabled.
      */
     public function isMaintenanceMode(): bool
