@@ -1,11 +1,14 @@
 <?php
 
 use App\Models\Complaint;
+use App\Models\Order;
 use App\Models\PaymentTransaction;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\ComplaintResolutionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 use Spatie\Activitylog\Models\Activity;
 
 uses(Tests\TestCase::class, RefreshDatabase::class);
@@ -81,7 +84,7 @@ test('service resolves complaint with dismiss', function () {
     $admin = $this->createUserWithRole('admin');
     $complaint = Complaint::factory()->escalated()->create();
 
-    $service = new ComplaintResolutionService;
+    $service = app(ComplaintResolutionService::class);
     $result = $service->resolve($complaint, [
         'resolution_type' => 'dismiss',
         'resolution_notes' => 'This is a subjective taste preference.',
@@ -98,7 +101,7 @@ test('service resolves complaint with partial refund', function () {
     $admin = $this->createUserWithRole('admin');
     $complaint = Complaint::factory()->escalated()->create();
 
-    $service = new ComplaintResolutionService;
+    $service = app(ComplaintResolutionService::class);
     $result = $service->resolve($complaint, [
         'resolution_type' => 'partial_refund',
         'resolution_notes' => 'Partial refund for late delivery issue.',
@@ -111,18 +114,32 @@ test('service resolves complaint with partial refund', function () {
 });
 
 test('service resolves complaint with full refund using payment amount', function () {
+    Notification::fake();
+    Mail::fake();
+
     $admin = $this->createUserWithRole('admin');
+    $client = User::factory()->create();
+    $tenant = Tenant::factory()->create();
+    $order = Order::factory()->create([
+        'client_id' => $client->id,
+        'tenant_id' => $tenant->id,
+        'grand_total' => 8500,
+    ]);
     $complaint = Complaint::factory()->escalated()->create([
-        'order_id' => 1001,
+        'order_id' => $order->id,
+        'client_id' => $client->id,
+        'tenant_id' => $tenant->id,
     ]);
 
     PaymentTransaction::factory()->create([
-        'order_id' => 1001,
+        'order_id' => $order->id,
+        'client_id' => $client->id,
+        'tenant_id' => $tenant->id,
         'status' => 'successful',
         'amount' => 8500,
     ]);
 
-    $service = new ComplaintResolutionService;
+    $service = app(ComplaintResolutionService::class);
     $result = $service->resolve($complaint, [
         'resolution_type' => 'full_refund',
         'resolution_notes' => 'Full refund issued due to wrong order.',
@@ -138,7 +155,7 @@ test('service resolves complaint with warning and logs activity', function () {
     $cook = User::factory()->create();
     $complaint = Complaint::factory()->escalated()->create(['cook_id' => $cook->id]);
 
-    $service = new ComplaintResolutionService;
+    $service = app(ComplaintResolutionService::class);
     $service->resolve($complaint, [
         'resolution_type' => 'warning',
         'resolution_notes' => 'Unprofessional communication with client noted.',
@@ -166,7 +183,7 @@ test('service resolves complaint with suspension and deactivates tenant', functi
         'tenant_id' => $tenant->id,
     ]);
 
-    $service = new ComplaintResolutionService;
+    $service = app(ComplaintResolutionService::class);
     $service->resolve($complaint, [
         'resolution_type' => 'suspend',
         'resolution_notes' => 'Multiple complaints about food quality.',
@@ -185,7 +202,7 @@ test('service throws exception when resolving already resolved complaint', funct
     $admin = $this->createUserWithRole('admin');
     $complaint = Complaint::factory()->resolved()->create();
 
-    $service = new ComplaintResolutionService;
+    $service = app(ComplaintResolutionService::class);
 
     expect(fn () => $service->resolve($complaint, [
         'resolution_type' => 'dismiss',
@@ -197,7 +214,7 @@ test('service logs resolution in activity log', function () {
     $admin = $this->createUserWithRole('admin');
     $complaint = Complaint::factory()->escalated()->create();
 
-    $service = new ComplaintResolutionService;
+    $service = app(ComplaintResolutionService::class);
     $service->resolve($complaint, [
         'resolution_type' => 'dismiss',
         'resolution_notes' => 'No actionable issue found.',
@@ -226,7 +243,7 @@ test('getCookWarningCount returns correct count', function () {
         ->performedOn($cook)
         ->log('cook_suspended');
 
-    $service = new ComplaintResolutionService;
+    $service = app(ComplaintResolutionService::class);
     expect($service->getCookWarningCount($cook))->toBe(2);
 });
 
@@ -234,7 +251,7 @@ test('getCookComplaintCount returns correct count', function () {
     $cook = User::factory()->create();
     Complaint::factory()->count(3)->create(['cook_id' => $cook->id]);
 
-    $service = new ComplaintResolutionService;
+    $service = app(ComplaintResolutionService::class);
     expect($service->getCookComplaintCount($cook))->toBe(3);
 });
 
@@ -244,7 +261,7 @@ test('getCookPreviousSuspensions returns suspension history', function () {
     Complaint::factory()->resolvedWithSuspension(5)->create(['cook_id' => $cook->id]);
     Complaint::factory()->resolvedWithSuspension(14)->create(['cook_id' => $cook->id]);
 
-    $service = new ComplaintResolutionService;
+    $service = app(ComplaintResolutionService::class);
     $suspensions = $service->getCookPreviousSuspensions($cook);
 
     expect($suspensions)->toHaveCount(2);
@@ -259,7 +276,7 @@ test('isOrderAlreadyRefunded returns true when order has been refunded', functio
         'order_id' => 999,
     ]);
 
-    $service = new ComplaintResolutionService;
+    $service = app(ComplaintResolutionService::class);
     expect($service->isOrderAlreadyRefunded($complaint2))->toBeTrue();
 });
 
@@ -268,7 +285,7 @@ test('isOrderAlreadyRefunded returns false when no refund exists', function () {
         'order_id' => 888,
     ]);
 
-    $service = new ComplaintResolutionService;
+    $service = app(ComplaintResolutionService::class);
     expect($service->isOrderAlreadyRefunded($complaint))->toBeFalse();
 });
 

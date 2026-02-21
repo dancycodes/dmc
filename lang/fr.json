@@ -2430,5 +2430,18 @@
     "Pay :amount XAF from your wallet?": "Payer :amount XAF depuis votre portefeuille ?",
     "Your remaining balance will be :balance XAF.": "Votre solde restant sera de :balance XAF.",
     "Cancel": "Annuler",
-    "Confirm Payment": "Confirmer le paiement"
+    "Confirm Payment": "Confirmer le paiement",
+    "Refund Credited!": "Remboursement cr\u00e9dit\u00e9 !",
+    "Refund Credited - Order :number": "Remboursement cr\u00e9dit\u00e9 - Commande :number",
+    ":amount has been credited to your wallet for order :number.": ":amount a \u00e9t\u00e9 cr\u00e9dit\u00e9 sur votre portefeuille pour la commande :number.",
+    "Refund for cancelled order :number": "Remboursement pour la commande annul\u00e9e :number",
+    "Complaint resolution refund for order :number": "Remboursement suite \u00e0 la r\u00e9solution de r\u00e9clamation pour la commande :number",
+    "A refund has been credited to your DancyMeals wallet.": "Un remboursement a \u00e9t\u00e9 cr\u00e9dit\u00e9 sur votre portefeuille DancyMeals.",
+    "Refund Amount": "Montant du remboursement",
+    "Credited To": "Cr\u00e9dit\u00e9 sur",
+    "Wallet Balance": "Solde du portefeuille",
+    "Your refund has been added to your DancyMeals wallet. You can use this balance to pay for future orders.": "Votre remboursement a \u00e9t\u00e9 ajout\u00e9 \u00e0 votre portefeuille DancyMeals. Vous pouvez utiliser ce solde pour payer vos prochaines commandes.",
+    "View Wallet": "Voir le portefeuille",
+    "Refund of :amount credited to your wallet for order :number": "Remboursement de :amount cr\u00e9dit\u00e9 sur votre portefeuille pour la commande :number",
+    "Thank you for using DancyMeals!": "Merci d'utiliser DancyMeals !"
 }

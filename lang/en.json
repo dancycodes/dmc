@@ -2430,5 +2430,18 @@
     "Pay :amount XAF from your wallet?": "Pay :amount XAF from your wallet?",
     "Your remaining balance will be :balance XAF.": "Your remaining balance will be :balance XAF.",
     "Cancel": "Cancel",
-    "Confirm Payment": "Confirm Payment"
+    "Confirm Payment": "Confirm Payment",
+    "Refund Credited!": "Refund Credited!",
+    "Refund Credited - Order :number": "Refund Credited - Order :number",
+    ":amount has been credited to your wallet for order :number.": ":amount has been credited to your wallet for order :number.",
+    "Refund for cancelled order :number": "Refund for cancelled order :number",
+    "Complaint resolution refund for order :number": "Complaint resolution refund for order :number",
+    "A refund has been credited to your DancyMeals wallet.": "A refund has been credited to your DancyMeals wallet.",
+    "Refund Amount": "Refund Amount",
+    "Credited To": "Credited To",
+    "Wallet Balance": "Wallet Balance",
+    "Your refund has been added to your DancyMeals wallet. You can use this balance to pay for future orders.": "Your refund has been added to your DancyMeals wallet. You can use this balance to pay for future orders.",
+    "View Wallet": "View Wallet",
+    "Refund of :amount credited to your wallet for order :number": "Refund of :amount credited to your wallet for order :number",
+    "Thank you for using DancyMeals!": "Thank you for using DancyMeals!"
 }

@@ -1,10 +1,11 @@
 # Current Orchestrator Context
 ## Last Action
-- Completed F-166: Client Wallet Dashboard (0 retries). Started F-153.
+- Reset and re-started F-167: Client Wallet Refund Credit (previous agent interrupted)
 ## Active Features
-- F-153: IMPLEMENT phase (retry 0)
+- F-167: IMPLEMENT phase (retry 0, re-spawning agent)
 ## Next Up
-- F-153 in progress, 32 eligible features remaining
+- F-167 in progress, then next eligible from 31 remaining Must-have features
 ## Recent Patterns
-- F-158 through F-166 completed with 0 retries each
+- F-153 through F-166 completed with 0 retries each
+- F-167 had interrupted session, partial files in working tree
 ## Mode: sequential, max_parallel: 1
