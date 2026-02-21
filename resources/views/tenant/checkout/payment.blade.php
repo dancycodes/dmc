@@ -1,5 +1,6 @@
 {{--
     F-149: Payment Method Selection
+    F-168: Client Wallet Payment for Orders (partial wallet support)
     BR-345: Available payment methods: MTN Mobile Money, Orange Money, Wallet Balance
     BR-346: Wallet Balance only if admin enabled AND balance >= total
     BR-347: Wallet visible but disabled if balance < total
@@ -9,6 +10,9 @@
     BR-351: Phone number must match Cameroon format
     BR-352: Pay Now triggers F-150 (Flutterwave) or F-153 (wallet)
     BR-353: All text localized via __()
+    BR-299: Wallet only when admin-enabled
+    BR-300: Hide wallet when balance is 0
+    BR-302: Partial wallet + mobile money
 --}}
 @extends('layouts.tenant-public')
 
@@ -19,9 +23,14 @@
     x-data="{
         provider: '{{ addslashes($currentProvider ?? '') }}',
         payment_phone_digits: '{{ addslashes($phoneDigits ?? '') }}',
+        use_wallet: {{ ($useWallet ?? false) ? 'true' : 'false' }},
         phoneError: '',
         showWalletConfirm: false,
         walletBalance: {{ $paymentOptions['wallet']['balance'] ?? 0 }},
+        walletVisible: {{ $paymentOptions['wallet']['visible'] ? 'true' : 'false' }},
+        walletSufficient: {{ $paymentOptions['wallet']['sufficient'] ? 'true' : 'false' }},
+        walletPartialAvailable: {{ $paymentOptions['wallet']['partial_available'] ? 'true' : 'false' }},
+        walletRemainder: {{ $paymentOptions['wallet']['remainder'] ?? 0 }},
         grandTotal: {{ $grandTotal }},
         savedMethods: {{ Js::from($paymentOptions['saved_methods']->map(fn($m) => ['id' => $m->id, 'provider' => $m->provider, 'phone' => $m->phone, 'label' => $m->label, 'masked_phone' => $m->maskedPhone(), 'provider_label' => $m->providerLabel(), 'is_default' => $m->is_default])) }},
 
@@ -31,6 +40,7 @@
 
             if (p === 'wallet') {
                 this.payment_phone_digits = '';
+                this.use_wallet = false;
                 return;
             }
 
@@ -53,6 +63,10 @@
             }
             this.payment_phone_digits = phone;
             this.phoneError = '';
+        },
+
+        toggleWallet() {
+            this.use_wallet = !this.use_wallet;
         },
 
         formatDisplay() {
@@ -81,7 +95,24 @@
         },
 
         get walletRemainingBalance() {
-            return Math.max(0, this.walletBalance - this.grandTotal);
+            if (this.provider === 'wallet') {
+                return Math.max(0, this.walletBalance - this.grandTotal);
+            }
+            return this.walletBalance;
+        },
+
+        get effectiveChargeAmount() {
+            if (this.use_wallet && this.isMobileMoney && this.walletPartialAvailable) {
+                return this.walletRemainder;
+            }
+            return this.grandTotal;
+        },
+
+        get walletDeductionAmount() {
+            if (this.use_wallet && this.isMobileMoney && this.walletPartialAvailable) {
+                return Math.min(this.walletBalance, this.grandTotal);
+            }
+            return 0;
         },
 
         submitPayment() {
@@ -112,14 +143,14 @@
             }
 
             $action('{{ route('tenant.checkout.save-payment') }}', {
-                include: ['provider', 'payment_phone_digits']
+                include: ['provider', 'payment_phone_digits', 'use_wallet']
             });
         },
 
         confirmWalletPayment() {
             this.showWalletConfirm = false;
             $action('{{ route('tenant.checkout.save-payment') }}', {
-                include: ['provider', 'payment_phone_digits']
+                include: ['provider', 'payment_phone_digits', 'use_wallet']
             });
         },
 
@@ -183,7 +214,12 @@
         <div class="mb-6 bg-primary-subtle rounded-xl p-4 sm:p-5 text-center">
             <p class="text-sm font-medium text-on-surface mb-1">{{ __('Total to pay') }}</p>
             <p class="text-2xl sm:text-3xl font-display font-bold text-primary">
-                {{ number_format($grandTotal, 0, '.', ',') }} XAF
+                <span x-text="formatXAF(effectiveChargeAmount) + ' XAF'">{{ number_format($grandTotal, 0, '.', ',') }} XAF</span>
+            </p>
+            {{-- F-168: Show wallet deduction note when partial wallet is active --}}
+            <p x-show="use_wallet && walletDeductionAmount > 0" x-cloak class="text-xs text-success mt-1 font-medium">
+                <span x-text="'{{ __('Wallet:') }} ' + formatXAF(walletDeductionAmount) + ' XAF'"></span>
+                {{ __('applied') }}
             </p>
         </div>
 
@@ -286,17 +322,15 @@
                 </button>
             @endforeach
 
-            {{-- BR-346/BR-347: Wallet Balance option --}}
-            @if($paymentOptions['wallet']['visible'])
+            {{-- BR-346/BR-347/BR-301: Full Wallet Balance option (when sufficient) --}}
+            @if($paymentOptions['wallet']['visible'] && $paymentOptions['wallet']['sufficient'])
                 <button
                     type="button"
-                    @if($paymentOptions['wallet']['enabled'])
-                        @click="selectProvider('wallet')"
-                    @endif
-                    class="w-full text-left rounded-xl border-2 p-4 sm:p-5 transition-all duration-200"
+                    @click="selectProvider('wallet')"
+                    class="w-full text-left rounded-xl border-2 p-4 sm:p-5 transition-all duration-200 cursor-pointer"
                     :class="provider === 'wallet'
-                        ? 'border-primary bg-primary-subtle/30 shadow-card cursor-pointer'
-                        : '{{ $paymentOptions['wallet']['enabled'] ? 'border-outline dark:border-outline bg-surface-alt dark:bg-surface-alt hover:border-primary/50 cursor-pointer' : 'border-outline dark:border-outline bg-surface-alt dark:bg-surface-alt opacity-60 cursor-not-allowed' }}'"
+                        ? 'border-primary bg-primary-subtle/30 shadow-card'
+                        : 'border-outline dark:border-outline bg-surface-alt dark:bg-surface-alt hover:border-primary/50'"
                 >
                     <div class="flex items-center gap-4">
                         {{-- Wallet icon --}}
@@ -307,14 +341,9 @@
                             <h3 class="text-base font-semibold text-on-surface-strong">
                                 {{ __('Wallet Balance') }}
                             </h3>
-                            <p class="text-sm mt-0.5 {{ $paymentOptions['wallet']['sufficient'] ? 'text-success' : 'text-on-surface/60' }}">
+                            <p class="text-sm mt-0.5 text-success">
                                 {{ __('Available:') }} {{ number_format($paymentOptions['wallet']['balance'], 0, '.', ',') }} XAF
                             </p>
-                            @if(!$paymentOptions['wallet']['sufficient'])
-                                <p class="text-xs text-danger mt-0.5">
-                                    {{ __('Insufficient balance') }}
-                                </p>
-                            @endif
                         </div>
                         {{-- Radio indicator --}}
                         <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0"
@@ -378,6 +407,64 @@
             </div>
         </div>
 
+        {{-- F-168 BR-302: Partial wallet toggle (shown when mobile money is selected and wallet has partial balance) --}}
+        @if($paymentOptions['wallet']['visible'] && $paymentOptions['wallet']['partial_available'])
+            <div x-show="isMobileMoney" x-cloak x-transition class="mt-4">
+                <div class="rounded-xl border-2 p-4 sm:p-5 transition-all duration-200"
+                     :class="use_wallet
+                         ? 'border-success bg-success-subtle/30 shadow-card'
+                         : 'border-outline dark:border-outline bg-surface-alt dark:bg-surface-alt'"
+                >
+                    <div class="flex items-start gap-4">
+                        {{-- Wallet icon --}}
+                        <div class="w-10 h-10 rounded-full bg-success-subtle flex items-center justify-center shrink-0 mt-0.5">
+                            <svg class="w-5 h-5 text-success" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"></path><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"></path></svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-sm font-semibold text-on-surface-strong">
+                                    {{ __('Apply wallet balance') }}
+                                </h3>
+                                {{-- Toggle switch --}}
+                                <button
+                                    type="button"
+                                    @click="toggleWallet()"
+                                    class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                    :class="use_wallet ? 'bg-success' : 'bg-outline'"
+                                    role="switch"
+                                    :aria-checked="use_wallet"
+                                >
+                                    <span
+                                        class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transform transition-transform duration-200"
+                                        :class="use_wallet ? 'translate-x-6' : 'translate-x-1'"
+                                    ></span>
+                                </button>
+                            </div>
+                            <p class="text-sm text-on-surface mt-1">
+                                {{ __('Use your') }} <span class="font-semibold text-success">{{ number_format($paymentOptions['wallet']['balance'], 0, '.', ',') }} XAF</span> {{ __('wallet balance to reduce the amount charged.') }}
+                            </p>
+
+                            {{-- Breakdown (shown when toggle is on) --}}
+                            <div x-show="use_wallet" x-cloak x-transition class="mt-3 space-y-1.5 text-sm">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-on-surface">{{ __('Wallet deduction') }}</span>
+                                    <span class="font-semibold text-success" x-text="'- ' + formatXAF(walletDeductionAmount) + ' XAF'"></span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-on-surface">{{ __('Mobile money charge') }}</span>
+                                    <span class="font-semibold text-on-surface-strong" x-text="formatXAF(effectiveChargeAmount) + ' XAF'"></span>
+                                </div>
+                                <div class="pt-1.5 mt-1.5 border-t border-outline dark:border-outline flex items-center justify-between">
+                                    <span class="font-medium text-on-surface-strong">{{ __('Total') }}</span>
+                                    <span class="font-bold text-primary" x-text="formatXAF(grandTotal) + ' XAF'"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         {{-- Action buttons (hidden on mobile since sticky bar is shown) --}}
         <div class="mt-6 flex flex-col sm:flex-row gap-3 hidden sm:flex">
             <a href="{{ $backUrl }}" class="flex-1 h-11 inline-flex items-center justify-center gap-2 border border-outline dark:border-outline text-on-surface hover:bg-surface-alt dark:hover:bg-surface-alt font-medium rounded-lg transition-all duration-200" x-navigate>
@@ -414,7 +501,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-xs font-medium text-on-surface">{{ __('Total') }}</p>
-                <p class="text-base font-bold text-primary">{{ number_format($grandTotal, 0, '.', ',') }} XAF</p>
+                <p class="text-base font-bold text-primary" x-text="formatXAF(effectiveChargeAmount) + ' XAF'">{{ number_format($grandTotal, 0, '.', ',') }} XAF</p>
             </div>
             <button
                 @click="submitPayment()"

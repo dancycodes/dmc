@@ -151,6 +151,7 @@ class Order extends Model
         'delivery_fee',
         'promo_discount',
         'grand_total',
+        'wallet_amount',
         'phone',
         'payment_provider',
         'payment_phone',
@@ -173,6 +174,7 @@ class Order extends Model
     {
         return [
             'items_snapshot' => 'array',
+            'wallet_amount' => 'decimal:2',
             'retry_count' => 'integer',
             'payment_retry_expires_at' => 'datetime',
             'paid_at' => 'datetime',
@@ -513,6 +515,8 @@ class Order extends Model
             'mtn_momo' => 'MTN MoMo',
             'orange_money' => 'Orange Money',
             'wallet' => __('Wallet Balance'),
+            'wallet_mtn_momo' => __('Wallet + MTN MoMo'),
+            'wallet_orange_money' => __('Wallet + Orange Money'),
             default => $this->payment_provider ?? __('Unknown'),
         };
     }

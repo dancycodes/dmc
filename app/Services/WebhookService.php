@@ -261,6 +261,7 @@ class WebhookService
      * Handle a failed payment.
      *
      * BR-370: Order status changes to "Payment Failed"
+     * F-168 BR-308: If order has wallet_amount > 0, reverse the wallet deduction.
      *
      * @param  array<string, mixed>  $data
      * @param  array<string, mixed>  $fullPayload
@@ -291,6 +292,22 @@ class WebhookService
                 ]);
             });
 
+            // F-168 BR-308: Reverse wallet deduction if order had partial wallet payment
+            $walletAmount = (float) ($order->wallet_amount ?? 0);
+            if ($walletAmount > 0) {
+                $client = $order->client;
+                if ($client) {
+                    $walletPaymentService = app(WalletPaymentService::class);
+                    $reversed = $walletPaymentService->reverseWalletDeduction($order, $client);
+
+                    Log::info('F-168: Wallet reversal on payment failure', [
+                        'order_id' => $order->id,
+                        'wallet_amount' => $walletAmount,
+                        'reversed' => $reversed,
+                    ]);
+                }
+            }
+
             // BR-374: Log webhook processing
             activity('webhooks')
                 ->withProperties([
@@ -299,6 +316,7 @@ class WebhookService
                     'order_id' => $order->id,
                     'order_number' => $order->order_number,
                     'tx_ref' => $transaction->flutterwave_tx_ref,
+                    'wallet_reversed' => $walletAmount > 0,
                 ])
                 ->log('Payment webhook processed: failed');
 

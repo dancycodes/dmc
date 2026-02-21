@@ -787,6 +787,9 @@ class CheckoutController extends Controller
 
         $backUrl = $this->checkoutService->getPaymentBackUrl();
 
+        // F-168: Persist use_wallet toggle state
+        $useWallet = $this->checkoutService->getUseWallet($tenant->id);
+
         return gale()->view('tenant.checkout.payment', [
             'tenant' => $tenant,
             'grandTotal' => $grandTotal,
@@ -794,6 +797,7 @@ class CheckoutController extends Controller
             'currentProvider' => $currentProvider,
             'phoneDigits' => $phoneDigits,
             'backUrl' => $backUrl,
+            'useWallet' => $useWallet,
         ], web: true);
     }
 
@@ -830,13 +834,15 @@ class CheckoutController extends Controller
                 ->with('message', __('Please select a delivery method first.'));
         }
 
-        // Validate provider selection
+        // F-168: Validate provider selection (use_wallet flag for partial payments)
         $validated = $request->validateState([
             'provider' => 'required|string|in:mtn_momo,orange_money,wallet',
             'payment_phone_digits' => 'nullable|string',
+            'use_wallet' => 'nullable|boolean',
         ]);
 
         $provider = $validated['provider'];
+        $useWallet = (bool) ($validated['use_wallet'] ?? false);
         $paymentPhone = null;
 
         // For mobile money, normalize the phone number
@@ -849,12 +855,13 @@ class CheckoutController extends Controller
         $orderSummary = $this->checkoutService->getOrderSummary($tenant->id, $cart);
         $grandTotal = $orderSummary['grand_total'];
 
-        // Validate payment selection
+        // Validate payment selection (BR-302: partial wallet validation)
         $validation = $this->checkoutService->validatePaymentSelection(
             $provider,
             $paymentPhone,
             auth()->id(),
-            $grandTotal
+            $grandTotal,
+            $useWallet
         );
 
         if (! $validation['valid']) {
@@ -863,19 +870,18 @@ class CheckoutController extends Controller
             ]);
         }
 
-        // Save to checkout session
-        $this->checkoutService->setPaymentMethod($tenant->id, $provider, $paymentPhone);
+        // F-168: Save to checkout session with use_wallet flag
+        $this->checkoutService->setPaymentMethod($tenant->id, $provider, $paymentPhone, $useWallet);
 
         // BR-352: Redirect to payment initiation
-        // F-150 (Flutterwave) for mobile money, F-153 for wallet
-        // Forward-compatible: these routes will be created by F-150/F-153
+        // F-153 for full wallet, F-150 for mobile money (with or without partial wallet)
         if ($provider === 'wallet') {
-            // F-153: Wallet Balance Payment (forward-compatible stub)
+            // F-153: Full Wallet Balance Payment
             return gale()->redirect(url('/checkout/payment/wallet'))
                 ->with('message', __('Processing wallet payment...'));
         }
 
-        // F-150: Flutterwave Payment Initiation
+        // F-150/F-168: Flutterwave Payment Initiation (with optional partial wallet)
         return gale()->redirect(url('/checkout/payment/initiate'))
             ->with('message', __('Initiating payment...'));
     }
@@ -939,6 +945,9 @@ class CheckoutController extends Controller
             return gale()->redirect(url('/checkout/payment/waiting/'.$existingOrder->id));
         }
 
+        // F-168: Check if partial wallet payment is requested
+        $useWallet = $this->checkoutService->getUseWallet($tenant->id);
+
         // Create the order
         $orderResult = $this->paymentService->createOrder($tenant, $user);
 
@@ -949,11 +958,35 @@ class CheckoutController extends Controller
 
         $order = $orderResult['order'];
 
-        // Initiate payment via Flutterwave
+        // F-168 BR-302: Deduct wallet portion before Flutterwave initiation
+        if ($useWallet) {
+            $walletResult = $this->walletPaymentService->deductWalletForPartialPayment($order, $user, $tenant);
+
+            if (! $walletResult['success']) {
+                // Wallet deduction failed — proceed without wallet (pure mobile money)
+                Log::warning('F-168: Wallet deduction failed, proceeding without wallet', [
+                    'order_id' => $order->id,
+                    'error' => $walletResult['error'],
+                ]);
+            } else {
+                // F-168: Update order payment_provider to reflect partial wallet
+                $currentProvider = $order->payment_provider;
+                $order->update([
+                    'payment_provider' => 'wallet_'.$currentProvider,
+                ]);
+            }
+        }
+
+        // F-168 BR-305: Initiate Flutterwave for the remainder amount
         $paymentResult = $this->paymentService->initiatePayment($order, $user);
 
         if (! $paymentResult['success']) {
             // BR-362: Show error to client
+            // F-168 BR-308: Reverse wallet deduction if Flutterwave initiation fails
+            if ($useWallet && (float) $order->wallet_amount > 0) {
+                $this->walletPaymentService->reverseWalletDeduction($order, $user);
+            }
+
             // Mark order as payment_failed so it can be retried
             $order->update(['status' => Order::STATUS_PAYMENT_FAILED]);
 
