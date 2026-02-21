@@ -261,7 +261,7 @@
                                         @include('cook._order-status-badge', ['status' => $order->status])
                                     </td>
                                     <td class="px-5 py-3.5 text-sm text-on-surface-strong dark:text-on-surface-strong text-right font-mono">
-                                        {{ \App\Services\CookDashboardService::formatXAF($order->total_amount ?? 0) }}
+                                        {{ \App\Services\CookDashboardService::formatXAF($order->grand_total ?? 0) }}
                                     </td>
                                     <td class="px-5 py-3.5 text-xs text-on-surface/60 dark:text-on-surface/60 text-right">
                                         {{ $order->time_ago }}
@@ -287,7 +287,7 @@
                                     {{ $order->customer_name ?? __('Guest') }}
                                 </span>
                                 <span class="text-sm font-mono text-on-surface-strong dark:text-on-surface-strong">
-                                    {{ \App\Services\CookDashboardService::formatXAF($order->total_amount ?? 0) }}
+                                    {{ \App\Services\CookDashboardService::formatXAF($order->grand_total ?? 0) }}
                                 </span>
                             </div>
                             <p class="text-xs text-on-surface/60 dark:text-on-surface/60 mt-1">{{ $order->time_ago }}</p>

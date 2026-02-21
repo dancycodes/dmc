@@ -96,7 +96,7 @@ class CookDashboardService
             ->where('tenant_id', $tenant->id)
             ->where('created_at', '>=', $weekStart)
             ->whereIn('status', ['delivered', 'picked_up', 'completed'])
-            ->sum('total_amount');
+            ->sum('grand_total');
     }
 
     /**
@@ -143,12 +143,12 @@ class CookDashboardService
 
         return DB::table('orders')
             ->where('orders.tenant_id', $tenant->id)
-            ->leftJoin('users', 'orders.user_id', '=', 'users.id')
+            ->leftJoin('users', 'orders.client_id', '=', 'users.id')
             ->select(
                 'orders.id',
                 'orders.order_number',
                 'orders.status',
-                'orders.total_amount',
+                'orders.grand_total',
                 'orders.created_at',
                 'users.name as customer_name',
             )
