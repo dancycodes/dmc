@@ -2689,5 +2689,16 @@
     "This user is not a manager for your team.": "Cet utilisateur n'est pas gestionnaire de votre equipe.",
     "You cannot invite managers while your account is deactivated.": "Vous ne pouvez pas inviter de gestionnaires tant que votre compte est desactive.",
     "Please enter an email address.": "Veuillez saisir une adresse e-mail.",
-    "Please enter a valid email address.": "Veuillez saisir une adresse e-mail valide."
+    "Please enter a valid email address.": "Veuillez saisir une adresse e-mail valide.",
+    "No Permissions Configured": "Aucune permission configuree",
+    "Your permissions haven't been configured yet. Please contact :name to configure your access.": "Vos permissions n'ont pas encore ete configurees. Veuillez contacter :name pour configurer votre acces.",
+    "You do not have permission to access this section.": "Vous n'avez pas l'autorisation d'acceder a cette section.",
+    "Go back to dashboard": "Retourner au tableau de bord",
+    "Switch tenant": "Changer de boutique",
+    "Your Tenants": "Vos boutiques",
+    "Search tenants...": "Rechercher des boutiques...",
+    "Current": "Actuelle",
+    "Inactive": "Inactive",
+    "Switch Tenant": "Changer de boutique",
+    "Manager": "Gestionnaire"
 }

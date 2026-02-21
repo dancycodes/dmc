@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\CookDashboardService;
+use App\Services\ManagerDashboardService;
 use App\Services\TenantLandingService;
 use Illuminate\Http\Request;
 
@@ -21,14 +22,40 @@ class DashboardController extends Controller
      *
      * F-076: Cook Dashboard Layout & Navigation
      * F-077: Cook Dashboard Home — at-a-glance business overview
+     * F-211: Manager Dashboard Access — manager-specific data and states
      * BR-157: Only accessible to cook/manager role (enforced by cook.access middleware)
+     * BR-486: Manager with no permissions sees a "no permissions" message
+     * BR-487: Managers with multiple tenants see a tenant switcher
      */
-    public function cookDashboard(Request $request, CookDashboardService $dashboardService): mixed
+    public function cookDashboard(Request $request, CookDashboardService $dashboardService, ManagerDashboardService $managerDashboardService): mixed
     {
         $tenant = tenant();
         $user = $request->user();
 
         $dashboardData = $dashboardService->getDashboardData($tenant, $user);
+
+        // F-211: Determine if the current user is a manager (not the cook)
+        $isManager = $managerDashboardService->isManager($user, $tenant);
+        $hasAnyPermission = true;
+        $managedTenants = collect();
+        $managedTenantsWithUrls = [];
+
+        if ($isManager) {
+            $hasAnyPermission = $managerDashboardService->hasAnyPermission($user);
+            $managedTenants = $managerDashboardService->getManagedTenants($user);
+
+            // Build tenant switcher data with URLs (BR-487, BR-488, BR-489)
+            foreach ($managedTenants as $managedTenant) {
+                $managedTenantsWithUrls[] = [
+                    'id' => $managedTenant->id,
+                    'name' => $managedTenant->name,
+                    'first_letter' => $managedTenant->first_letter,
+                    'is_active' => $managedTenant->is_active,
+                    'dashboard_url' => $managerDashboardService->getTenantDashboardUrl($managedTenant),
+                    'is_current' => $managedTenant->id === $tenant->id,
+                ];
+            }
+        }
 
         return gale()->view('cook.dashboard', [
             'tenant' => $tenant,
@@ -40,6 +67,10 @@ class DashboardController extends Controller
             'recentOrders' => $dashboardData['recentOrders'],
             'recentNotifications' => $dashboardData['recentNotifications'],
             'ratingStats' => $dashboardData['ratingStats'],
+            // F-211: Manager-specific data
+            'isManager' => $isManager,
+            'managerHasAnyPermission' => $hasAnyPermission,
+            'managedTenants' => $managedTenantsWithUrls,
         ], web: true);
     }
 

@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureAdminAccess;
 use App\Http\Middleware\EnsureMainDomain;
+use App\Http\Middleware\EnsureManagerSectionAccess;
 use App\Http\Middleware\EnsureTenantDomain;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\InjectTenantTheme;
@@ -45,6 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant.domain' => EnsureTenantDomain::class,
             'admin.access' => EnsureAdminAccess::class,
             'cook.access' => \App\Http\Middleware\EnsureCookAccess::class,
+            'manager.section' => EnsureManagerSectionAccess::class,
             'honeypot' => ProtectAgainstSpam::class,
         ]);
     })

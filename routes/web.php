@@ -384,7 +384,7 @@ Route::middleware('tenant.domain')->group(function () {
     // Cook/Manager dashboard (F-076: Cook Dashboard Layout & Navigation)
     // BR-156: Dashboard routes are only accessible on tenant domains
     // BR-157: Only users with cook or manager role for the current tenant
-    Route::prefix('dashboard')->middleware(['auth', 'cook.access', 'throttle:moderate'])->group(function () {
+    Route::prefix('dashboard')->middleware(['auth', 'cook.access', 'manager.section', 'throttle:moderate'])->group(function () {
         Route::get('/', [DashboardController::class, 'cookDashboard'])->name('cook.dashboard');
 
         // Dashboard stats refresh (F-077: Cook Dashboard Home)

@@ -20,6 +20,25 @@
 @section('page-title', __('Dashboard'))
 
 @section('content')
+{{-- F-211: BR-486 — Manager with no permissions sees a "no permissions" message --}}
+@if($isManager && ! $managerHasAnyPermission)
+    <div class="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
+        <span class="w-16 h-16 rounded-full bg-warning-subtle dark:bg-warning-subtle flex items-center justify-center mb-5">
+            <svg class="w-8 h-8 text-warning dark:text-warning" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+        </span>
+        <h2 class="text-xl font-bold text-on-surface-strong dark:text-on-surface-strong mb-2">
+            {{ __('No Permissions Configured') }}
+        </h2>
+        <p class="text-on-surface dark:text-on-surface text-base max-w-sm leading-relaxed">
+            {{ __('Your permissions haven\'t been configured yet. Please contact :name to configure your access.', ['name' => tenant()?->name ?? __('the cook')]) }}
+        </p>
+    </div>
+@else
 <div
     x-data="{
         async refreshStats() {
@@ -370,4 +389,5 @@
         </div>
     @endif
 </div>
+@endif
 @endsection
