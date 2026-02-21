@@ -357,6 +357,26 @@
             @include('tenant._delivery-section', ['deliveryDisplay' => $deliveryDisplay])
         </div>
     </section>
+
+    {{-- ============================================ --}}
+    {{-- F-212: Cancellation Policy                   --}}
+    {{-- BR-501: Cancellation policy displayed on     --}}
+    {{-- tenant landing page.                         --}}
+    {{-- BR-505: All text uses __() localization.     --}}
+    {{-- ============================================ --}}
+    <section id="cancellation-policy" class="scroll-mt-16 py-8 sm:py-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3 bg-info-subtle dark:bg-info-subtle border border-info/30 dark:border-info/30 rounded-xl px-6 py-4 text-center sm:text-left">
+                <div class="flex items-center gap-2 shrink-0">
+                    <svg class="w-5 h-5 text-info shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+                    <span class="font-semibold text-info text-sm">{{ __('Cancellation Policy') }}</span>
+                </div>
+                <p class="text-sm text-on-surface">
+                    {{ __('Free cancellation within :minutes minutes of placing your order.', ['minutes' => $cancellationWindowMinutes]) }}
+                </p>
+            </div>
+        </div>
+    </section>
 </div>
 
 {{-- ============================================ --}}

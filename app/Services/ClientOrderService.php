@@ -358,15 +358,21 @@ class ClientOrderService
     }
 
     /**
-     * Get the cancellation window in minutes for the order's cook.
+     * Get the cancellation window in minutes for this order.
      *
-     * Forward-compatible: F-212 will add per-cook override in tenant settings.
-     * Falls back to platform default.
+     * F-212 BR-498: Existing orders use the snapshotted value from when they were placed.
+     * F-212 BR-500: New orders have the cancellation window snapshotted at creation time.
+     * Falls back to tenant setting, then platform default.
      */
     private function getCancellationWindowMinutes(Order $order): int
     {
-        // Check tenant-level override (F-212 will populate this)
-        $tenantOverride = $order->tenant?->getSetting('cancellation_window');
+        // BR-498/BR-500: Use the snapshotted value from the order record (set at creation)
+        if ($order->cancellation_window_minutes !== null) {
+            return (int) $order->cancellation_window_minutes;
+        }
+
+        // F-212: Check tenant-level setting (cancellation_window_minutes key)
+        $tenantOverride = $order->tenant?->getSetting(\App\Services\CookSettingsService::SETTINGS_KEY);
         if ($tenantOverride !== null) {
             return (int) $tenantOverride;
         }
@@ -376,7 +382,7 @@ class ClientOrderService
             return app(PlatformSettingService::class)->getDefaultCancellationWindow();
         }
 
-        return 30; // Fallback 30 minutes
+        return \App\Services\CookSettingsService::DEFAULT_CANCELLATION_WINDOW;
     }
 
     /**

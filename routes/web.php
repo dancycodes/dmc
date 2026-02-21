@@ -589,6 +589,12 @@ Route::middleware('tenant.domain')->group(function () {
         // BR-482: All interactions via Gale (no page reloads)
         Route::post('/managers/{manager}/permissions', [ManagerPermissionController::class, 'show'])->name('cook.managers.permissions.show');
         Route::post('/managers/{manager}/permissions/toggle', [ManagerPermissionController::class, 'toggle'])->name('cook.managers.permissions.toggle');
+
+        // F-212: Cancellation Window Configuration
+        // BR-503: Only cook can access (cook_reserved in nav + COOK_RESERVED_PATHS in ManagerDashboardService)
+        // BR-506: Gale handles form interaction without page reloads
+        Route::get('/settings', [\App\Http\Controllers\Cook\CookSettingsController::class, 'index'])->name('cook.settings.index');
+        Route::post('/settings/cancellation-window', [\App\Http\Controllers\Cook\CookSettingsController::class, 'updateCancellationWindow'])->name('cook.settings.update-cancellation-window');
     });
 
     // F-135: Meal Search Bar (public, on tenant domain)
