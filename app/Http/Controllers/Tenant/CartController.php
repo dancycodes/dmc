@@ -24,11 +24,13 @@ class CartController extends Controller
 
     /**
      * F-139: Display the cart page.
+     * F-213: Passes minimum order amount for cart checkout enforcement.
      *
      * BR-253: Cart items displayed grouped by meal.
      * BR-254: Each item shows meal name, component name, quantity, unit price, line subtotal.
      * BR-259: Cart persists in session.
      * BR-262: All cart interactions use Gale.
+     * BR-513: Minimum order amount is displayed in the cart view.
      */
     public function index(Request $request): mixed
     {
@@ -40,9 +42,13 @@ class CartController extends Controller
 
         $cart = $this->cartService->getCartWithAvailability($tenant->id);
 
+        // F-213 BR-513/BR-516: Minimum order amount for cart checkout enforcement
+        $minimumOrderAmount = $tenant->getMinimumOrderAmount();
+
         return gale()->view('tenant.cart', [
             'tenant' => $tenant,
             'cart' => $cart,
+            'minimumOrderAmount' => $minimumOrderAmount,
         ], web: true);
     }
 

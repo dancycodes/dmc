@@ -293,6 +293,20 @@ class Tenant extends Model implements HasMedia
     }
 
     /**
+     * Get the minimum order amount in XAF for this tenant.
+     *
+     * F-213: BR-507 — Default is 0 XAF (no minimum).
+     * Stored as `minimum_order_amount` in the settings JSON column.
+     * BR-514: 0 effectively disables the minimum order requirement.
+     */
+    public function getMinimumOrderAmount(): int
+    {
+        $value = $this->getSetting(\App\Services\CookSettingsService::MINIMUM_ORDER_AMOUNT_KEY);
+
+        return $value !== null ? (int) $value : \App\Services\CookSettingsService::DEFAULT_MINIMUM_ORDER_AMOUNT;
+    }
+
+    /**
      * Get the current commission rate for this tenant.
      *
      * BR-175: Default commission rate is 10%

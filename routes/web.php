@@ -596,10 +596,12 @@ Route::middleware('tenant.domain')->group(function () {
         Route::post('/managers/{manager}/permissions/toggle', [ManagerPermissionController::class, 'toggle'])->name('cook.managers.permissions.toggle');
 
         // F-212: Cancellation Window Configuration
-        // BR-503: Only cook can access (cook_reserved in nav + COOK_RESERVED_PATHS in ManagerDashboardService)
+        // F-213: Minimum Order Amount Configuration
+        // BR-503/BR-515: Only cook can access (cook_reserved in nav + COOK_RESERVED_PATHS in ManagerDashboardService)
         // BR-506: Gale handles form interaction without page reloads
         Route::get('/settings', [\App\Http\Controllers\Cook\CookSettingsController::class, 'index'])->name('cook.settings.index');
         Route::post('/settings/cancellation-window', [\App\Http\Controllers\Cook\CookSettingsController::class, 'updateCancellationWindow'])->name('cook.settings.update-cancellation-window');
+        Route::post('/settings/minimum-order-amount', [\App\Http\Controllers\Cook\CookSettingsController::class, 'updateMinimumOrderAmount'])->name('cook.settings.update-minimum-order-amount');
     });
 
     // F-135: Meal Search Bar (public, on tenant domain)
