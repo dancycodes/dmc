@@ -207,6 +207,16 @@ class PlatformSettingService
     }
 
     /**
+     * Get the withdrawable hold period in hours.
+     *
+     * F-171 BR-334: Default hold period is 3 hours, configurable by admin.
+     */
+    public function getWithdrawableHoldHours(): int
+    {
+        return (int) $this->get('withdrawable_hold_hours');
+    }
+
+    /**
      * Check if maintenance mode is enabled.
      */
     public function isMaintenanceMode(): bool

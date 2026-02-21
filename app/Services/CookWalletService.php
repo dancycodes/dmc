@@ -285,7 +285,7 @@ class CookWalletService
      * Returns counts per transaction type for the summary cards.
      * BR-330: All data is tenant-scoped.
      *
-     * @return array{total: int, order_payments: int, commissions: int, withdrawals: int, auto_deductions: int, clearances: int}
+     * @return array{total: int, order_payments: int, commissions: int, withdrawals: int, auto_deductions: int, clearances: int, became_withdrawable: int}
      */
     public function getTransactionSummaryCounts(Tenant $tenant, User $cook): array
     {
@@ -300,6 +300,7 @@ class CookWalletService
             'withdrawals' => (clone $baseQuery)->where('type', WalletTransaction::TYPE_WITHDRAWAL)->count(),
             'auto_deductions' => (clone $baseQuery)->where('type', WalletTransaction::TYPE_REFUND_DEDUCTION)->count(),
             'clearances' => (clone $baseQuery)->where('type', WalletTransaction::TYPE_REFUND)->count(),
+            'became_withdrawable' => (clone $baseQuery)->where('type', WalletTransaction::TYPE_BECAME_WITHDRAWABLE)->count(),
         ];
     }
 
@@ -318,6 +319,7 @@ class CookWalletService
             ['value' => WalletTransaction::TYPE_WITHDRAWAL, 'label' => __('Withdrawals')],
             ['value' => WalletTransaction::TYPE_REFUND_DEDUCTION, 'label' => __('Auto-Deductions')],
             ['value' => WalletTransaction::TYPE_REFUND, 'label' => __('Clearances')],
+            ['value' => WalletTransaction::TYPE_BECAME_WITHDRAWABLE, 'label' => __('Became Withdrawable')],
         ];
     }
 
@@ -335,6 +337,7 @@ class CookWalletService
             WalletTransaction::TYPE_REFUND_DEDUCTION => __('Auto-Deduction'),
             WalletTransaction::TYPE_REFUND => __('Clearance'),
             WalletTransaction::TYPE_WALLET_PAYMENT => __('Wallet Payment'),
+            WalletTransaction::TYPE_BECAME_WITHDRAWABLE => __('Became Withdrawable'),
             default => __('Transaction'),
         };
     }

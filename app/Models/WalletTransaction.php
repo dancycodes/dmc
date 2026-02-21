@@ -42,6 +42,8 @@ class WalletTransaction extends Model
 
     public const TYPE_WALLET_PAYMENT = 'wallet_payment';
 
+    public const TYPE_BECAME_WITHDRAWABLE = 'became_withdrawable';
+
     /**
      * Valid transaction types.
      *
@@ -54,6 +56,7 @@ class WalletTransaction extends Model
         self::TYPE_WITHDRAWAL,
         self::TYPE_REFUND_DEDUCTION,
         self::TYPE_WALLET_PAYMENT,
+        self::TYPE_BECAME_WITHDRAWABLE,
     ];
 
     /**

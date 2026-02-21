@@ -2495,5 +2495,13 @@
     "Description": "Description",
     "Type": "Type",
     "Order": "Order",
-    "Amount": "Amount"
+    "Amount": "Amount",
+    "Funds Now Withdrawable": "Funds Now Withdrawable",
+    ":amount from Order #:order is now withdrawable.": ":amount from Order #:order is now withdrawable.",
+    ":amount from :count orders is now withdrawable.": ":amount from :count orders is now withdrawable.",
+    "Funds from order became withdrawable": "Funds from order became withdrawable",
+    "Became Withdrawable": "Became Withdrawable",
+    "No eligible clearances to process.": "No eligible clearances to process.",
+    "Processed :count clearances totaling :amount XAF. Notified :cooks cook(s).": "Processed :count clearances totaling :amount XAF. Notified :cooks cook(s).",
+    "Withdrawable Hold Period (Hours)": "Withdrawable Hold Period (Hours)"
 }

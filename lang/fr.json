@@ -2495,5 +2495,13 @@
     "Description": "Description",
     "Type": "Type",
     "Order": "Commande",
-    "Amount": "Montant"
+    "Amount": "Montant",
+    "Funds Now Withdrawable": "Fonds maintenant retirables",
+    ":amount from Order #:order is now withdrawable.": ":amount de la commande #:order est maintenant retirable.",
+    ":amount from :count orders is now withdrawable.": ":amount de :count commandes est maintenant retirable.",
+    "Funds from order became withdrawable": "Les fonds de la commande sont devenus retirables",
+    "Became Withdrawable": "Devenu Retirable",
+    "No eligible clearances to process.": "Aucune compensation \u00e9ligible \u00e0 traiter.",
+    "Processed :count clearances totaling :amount XAF. Notified :cooks cook(s).": ":count compensations trait\u00e9es pour un total de :amount XAF. :cooks cuisinier(s) notifi\u00e9(s).",
+    "Withdrawable Hold Period (Hours)": "P\u00e9riode de r\u00e9tention des retraits (Heures)"
 }
