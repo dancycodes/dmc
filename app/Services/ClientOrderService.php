@@ -278,6 +278,9 @@ class ClientOrderService
             Order::STATUS_COMPLETED,
         ], true);
 
+        // F-183 BR-184: Check for existing complaint
+        $existingComplaint = $this->getExistingComplaint($order);
+
         // BR-228/F-176: Rating prompt for completed, unrated orders
         $existingRating = $this->getExistingRating($order);
         $canRate = $order->status === Order::STATUS_COMPLETED && $existingRating === null;
@@ -293,6 +296,7 @@ class ClientOrderService
             'canCancel' => $canCancel,
             'cancellationSecondsRemaining' => $cancellationSecondsRemaining,
             'canReport' => $canReport,
+            'existingComplaint' => $existingComplaint,
             'canRate' => $canRate,
             'existingRating' => $existingRating,
             'cookWhatsapp' => $cookWhatsapp,
@@ -376,6 +380,18 @@ class ClientOrderService
     }
 
     /**
+     * F-183 BR-184: Get existing complaint for this order.
+     *
+     * Returns null if no complaint has been filed.
+     */
+    private function getExistingComplaint(Order $order): ?\App\Models\Complaint
+    {
+        return \App\Models\Complaint::query()
+            ->where('order_id', $order->id)
+            ->first();
+    }
+
+    /**
      * F-161/F-176 BR-228: Check if the order has been rated.
      *
      * BR-390: Each order can be rated exactly once.
@@ -423,6 +439,7 @@ class ClientOrderService
         $statusTimeline = $cookOrderService->getStatusTimeline($order);
 
         $existingRating = $this->getExistingRating($order);
+        $existingComplaint = $this->getExistingComplaint($order);
 
         return [
             'status' => $order->status,
@@ -435,6 +452,7 @@ class ClientOrderService
                 Order::STATUS_PICKED_UP,
                 Order::STATUS_COMPLETED,
             ], true),
+            'hasComplaint' => $existingComplaint !== null,
             'canRate' => $order->status === Order::STATUS_COMPLETED && $existingRating === null,
             'rated' => $existingRating !== null,
             'submittedStars' => $existingRating?->stars ?? 0,

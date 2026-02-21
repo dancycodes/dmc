@@ -119,6 +119,7 @@ class OrderController extends Controller
                 'canCancel' => $statusData['canCancel'],
                 'cancelSecondsRemaining' => $statusData['cancellationSecondsRemaining'],
                 'canReport' => $statusData['canReport'],
+                'hasComplaint' => $statusData['hasComplaint'],
                 'canRate' => $statusData['canRate'],
                 'rated' => $statusData['rated'],
                 'submittedStars' => $statusData['submittedStars'],
