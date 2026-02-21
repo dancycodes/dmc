@@ -283,6 +283,16 @@ class Order extends Model
     }
 
     /**
+     * Get the rating for this order.
+     *
+     * F-176: Each order can be rated exactly once (BR-390).
+     */
+    public function rating(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Rating::class);
+    }
+
+    /**
      * Generate a unique order number.
      *
      * Format: DMC-{YYMMDD}-{4 digit sequence}

@@ -210,6 +210,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/my-orders/{order}', [\App\Http\Controllers\Client\OrderController::class, 'show'])->name('client.orders.show');
     Route::post('/my-orders/{order}/refresh-status', [\App\Http\Controllers\Client\OrderController::class, 'refreshStatus'])->name('client.orders.refresh-status');
 
+    // Order Rating (F-176)
+    // BR-388: Only Completed orders can be rated
+    // BR-390: Each order can be rated exactly once
+    Route::post('/my-orders/{order}/rate', [\App\Http\Controllers\Client\RatingController::class, 'store'])->name('client.orders.rate');
+
     // Client Transaction History (F-164)
     // BR-260: All transactions across all tenants
     // BR-269: Authentication required

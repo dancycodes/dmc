@@ -278,8 +278,9 @@ class ClientOrderService
             Order::STATUS_COMPLETED,
         ], true);
 
-        // BR-228: Rating prompt for completed, unrated orders
-        $canRate = $order->status === Order::STATUS_COMPLETED && ! $this->hasBeenRated($order);
+        // BR-228/F-176: Rating prompt for completed, unrated orders
+        $existingRating = $this->getExistingRating($order);
+        $canRate = $order->status === Order::STATUS_COMPLETED && $existingRating === null;
 
         // BR-229: Cook's WhatsApp number
         $cookWhatsapp = $order->tenant?->whatsapp;
@@ -293,6 +294,7 @@ class ClientOrderService
             'cancellationSecondsRemaining' => $cancellationSecondsRemaining,
             'canReport' => $canReport,
             'canRate' => $canRate,
+            'existingRating' => $existingRating,
             'cookWhatsapp' => $cookWhatsapp,
             'cookName' => $order->tenant?->name ?? __('Unknown Cook'),
             'tenantUrl' => self::getTenantUrl($order->tenant),
@@ -374,19 +376,27 @@ class ClientOrderService
     }
 
     /**
-     * F-161 BR-228: Check if the order has been rated.
+     * F-161/F-176 BR-228: Check if the order has been rated.
      *
-     * Forward-compatible: F-176 will create the ratings table.
+     * BR-390: Each order can be rated exactly once.
      */
     private function hasBeenRated(Order $order): bool
     {
-        if (Schema::hasTable('ratings')) {
-            return \DB::table('ratings')
-                ->where('order_id', $order->id)
-                ->exists();
-        }
+        return \App\Models\Rating::query()
+            ->where('order_id', $order->id)
+            ->exists();
+    }
 
-        return false;
+    /**
+     * F-176: Get the existing rating for an order.
+     *
+     * Returns null if the order has not been rated.
+     */
+    private function getExistingRating(Order $order): ?\App\Models\Rating
+    {
+        return \App\Models\Rating::query()
+            ->where('order_id', $order->id)
+            ->first();
     }
 
     /**
@@ -412,6 +422,8 @@ class ClientOrderService
         $cookOrderService = new CookOrderService;
         $statusTimeline = $cookOrderService->getStatusTimeline($order);
 
+        $existingRating = $this->getExistingRating($order);
+
         return [
             'status' => $order->status,
             'statusLabel' => Order::getStatusLabel($order->status),
@@ -423,7 +435,9 @@ class ClientOrderService
                 Order::STATUS_PICKED_UP,
                 Order::STATUS_COMPLETED,
             ], true),
-            'canRate' => $order->status === Order::STATUS_COMPLETED && ! $this->hasBeenRated($order),
+            'canRate' => $order->status === Order::STATUS_COMPLETED && $existingRating === null,
+            'rated' => $existingRating !== null,
+            'submittedStars' => $existingRating?->stars ?? 0,
         ];
     }
 }
