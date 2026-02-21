@@ -279,6 +279,20 @@ class Tenant extends Model implements HasMedia
     }
 
     /**
+     * Get the cancellation window in minutes for this tenant.
+     *
+     * F-212: BR-494 — Default is 15 minutes.
+     * BR-499: Stored as `cancellation_window_minutes` in the settings JSON column.
+     * BR-498: This is the CURRENT setting; snapshotted value on the order for existing orders.
+     */
+    public function getCancellationWindowMinutes(): int
+    {
+        $value = $this->getSetting(\App\Services\CookSettingsService::SETTINGS_KEY);
+
+        return $value !== null ? (int) $value : \App\Services\CookSettingsService::DEFAULT_CANCELLATION_WINDOW;
+    }
+
+    /**
      * Get the current commission rate for this tenant.
      *
      * BR-175: Default commission rate is 10%
