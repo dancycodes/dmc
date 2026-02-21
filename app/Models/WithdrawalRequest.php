@@ -36,6 +36,8 @@ class WithdrawalRequest extends Model
 
     public const STATUS_FAILED = 'failed';
 
+    public const STATUS_PENDING_VERIFICATION = 'pending_verification';
+
     /**
      * All valid statuses.
      *
@@ -46,6 +48,7 @@ class WithdrawalRequest extends Model
         self::STATUS_PROCESSING,
         self::STATUS_COMPLETED,
         self::STATUS_FAILED,
+        self::STATUS_PENDING_VERIFICATION,
     ];
 
     /**
@@ -68,9 +71,14 @@ class WithdrawalRequest extends Model
         'mobile_money_provider',
         'status',
         'flutterwave_reference',
+        'flutterwave_transfer_id',
+        'flutterwave_response',
+        'idempotency_key',
         'failure_reason',
         'requested_at',
         'processed_at',
+        'completed_at',
+        'failed_at',
     ];
 
     /**
@@ -80,8 +88,11 @@ class WithdrawalRequest extends Model
     {
         return [
             'amount' => 'decimal:2',
+            'flutterwave_response' => 'array',
             'requested_at' => 'datetime',
             'processed_at' => 'datetime',
+            'completed_at' => 'datetime',
+            'failed_at' => 'datetime',
         ];
     }
 
@@ -154,6 +165,44 @@ class WithdrawalRequest extends Model
     }
 
     /**
+     * Check if this withdrawal is processing.
+     */
+    public function isProcessing(): bool
+    {
+        return $this->status === self::STATUS_PROCESSING;
+    }
+
+    /**
+     * Check if this withdrawal is pending verification (timeout).
+     *
+     * BR-360: Transfer timeout marked as pending_verification.
+     */
+    public function isPendingVerification(): bool
+    {
+        return $this->status === self::STATUS_PENDING_VERIFICATION;
+    }
+
+    /**
+     * Check if this withdrawal can be processed (idempotency check).
+     *
+     * BR-364: Only pending withdrawals can be processed.
+     */
+    public function canBeProcessed(): bool
+    {
+        return $this->status === self::STATUS_PENDING;
+    }
+
+    /**
+     * Generate an idempotency key for this withdrawal.
+     *
+     * BR-364: Duplicate API call prevention.
+     */
+    public function generateIdempotencyKey(): string
+    {
+        return 'DMC-WD-'.$this->id.'-'.md5($this->id.$this->amount.$this->mobile_money_number);
+    }
+
+    /**
      * Scope: filter by tenant.
      */
     public function scopeForTenant(Builder $query, int $tenantId): Builder
@@ -175,6 +224,16 @@ class WithdrawalRequest extends Model
     public function scopeWithStatus(Builder $query, string $status): Builder
     {
         return $query->where('status', $status);
+    }
+
+    /**
+     * Scope: filter by pending verification status.
+     *
+     * BR-360: Follow-up job re-checks pending_verification transfers.
+     */
+    public function scopePendingVerification(Builder $query): Builder
+    {
+        return $query->where('status', self::STATUS_PENDING_VERIFICATION);
     }
 
     /**

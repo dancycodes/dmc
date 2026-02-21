@@ -5,11 +5,14 @@ namespace App\Services;
 use App\Models\PayoutTask;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class PayoutService
 {
+    public function __construct(
+        private FlutterwaveService $flutterwaveService
+    ) {}
+
     /**
      * Mark a payout task as manually completed.
      *
@@ -126,79 +129,38 @@ class PayoutService
     }
 
     /**
-     * Initiate a Flutterwave transfer.
+     * Initiate a Flutterwave transfer via FlutterwaveService.
      *
-     * This is a stub that will be fully implemented when the Flutterwave
-     * Transfer API integration is built (F-173). For now, it simulates
-     * the transfer attempt.
+     * F-173: Uses FlutterwaveService.initiateTransfer() for actual API calls.
      *
      * @return array{success: bool, message: string, response: array<string, mixed>|null}
      */
     private function initiateFlutterwaveTransfer(PayoutTask $task): array
     {
-        try {
-            $apiKey = config('flutterwave.secret_key');
-
-            // If no API key configured, treat as API down
-            if (! $apiKey) {
-                return [
-                    'success' => false,
-                    'message' => __('Flutterwave API key not configured'),
-                    'response' => ['error' => 'API key not configured'],
-                ];
-            }
-
-            $response = Http::withToken($apiKey)
-                ->timeout(30)
-                ->post('https://api.flutterwave.com/v3/transfers', [
-                    'account_bank' => $this->getBankCode($task->payment_method),
-                    'account_number' => preg_replace('/\D/', '', $task->mobile_money_number),
-                    'amount' => (float) $task->amount,
-                    'currency' => $task->currency,
-                    'reference' => 'DMC-RETRY-'.$task->id.'-'.time(),
-                    'narration' => 'DancyMeals Payout - Retry #'.($task->retry_count + 1),
-                    'debit_currency' => $task->currency,
-                ]);
-
-            $responseData = $response->json();
-
-            if ($response->successful() && ($responseData['status'] ?? '') === 'success') {
-                return [
-                    'success' => true,
-                    'message' => __('Transfer successful'),
-                    'response' => $responseData,
-                ];
-            }
-
-            return [
-                'success' => false,
-                'message' => $responseData['message'] ?? __('Transfer failed'),
-                'response' => $responseData,
-            ];
-        } catch (\Exception $e) {
-            Log::error('Flutterwave transfer retry failed', [
-                'payout_task_id' => $task->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return [
-                'success' => false,
-                'message' => __('Transfer failed: :error', ['error' => $e->getMessage()]),
-                'response' => ['error' => $e->getMessage()],
-            ];
-        }
-    }
-
-    /**
-     * Get the Flutterwave bank code for a payment method.
-     */
-    private function getBankCode(string $paymentMethod): string
-    {
-        return match ($paymentMethod) {
-            'mtn_mobile_money' => 'MPS',
-            'orange_money' => 'FMM',
-            default => 'MPS',
+        // Map PayoutTask payment_method to withdrawal provider format
+        $provider = match ($task->payment_method) {
+            'mtn_mobile_money' => 'mtn_momo',
+            'orange_money' => 'orange_money',
+            default => 'mtn_momo',
         };
+
+        $reference = 'DMC-RETRY-'.$task->id.'-'.time();
+
+        $result = $this->flutterwaveService->initiateTransfer([
+            'amount' => (float) $task->amount,
+            'currency' => $task->currency,
+            'phone' => $task->mobile_money_number,
+            'provider' => $provider,
+            'reference' => $reference,
+            'narration' => 'DancyMeals Payout - Retry #'.($task->retry_count + 1),
+            'idempotency_key' => $reference,
+        ]);
+
+        return [
+            'success' => $result['success'],
+            'message' => $result['error'] ?? ($result['success'] ? __('Transfer successful') : __('Transfer failed')),
+            'response' => $result['data'],
+        ];
     }
 
     /**

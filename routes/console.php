@@ -26,3 +26,15 @@ Schedule::command('dancymeals:cancel-expired-orders')->everyMinute();
  * unwithdrawable funds to withdrawable after the hold period expires.
  */
 Schedule::command('dancymeals:process-withdrawable-timers')->everyFiveMinutes();
+
+/*
+ * F-173 BR-356: Process pending withdrawal requests via Flutterwave Transfer API.
+ * Runs every 2 minutes to promptly process new withdrawal requests.
+ */
+Schedule::command('dancymeals:process-withdrawals')->everyTwoMinutes();
+
+/*
+ * F-173 BR-360: Verify pending_verification transfers with Flutterwave.
+ * Runs every 5 minutes to resolve transfers stuck in pending_verification.
+ */
+Schedule::command('dancymeals:verify-pending-transfers')->everyFiveMinutes();

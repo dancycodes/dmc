@@ -299,7 +299,7 @@ it('marks task as manually completed', function () {
         'tenant_id' => $tenant->id,
     ]);
 
-    $service = new PayoutService;
+    $service = app(PayoutService::class);
     $result = $service->markAsManuallyCompleted($task, [
         'reference_number' => 'MAN-123456',
         'resolution_notes' => 'Sent via bank app',
@@ -322,7 +322,7 @@ it('marks task as manually completed with only reference number', function () {
         'tenant_id' => $tenant->id,
     ]);
 
-    $service = new PayoutService;
+    $service = app(PayoutService::class);
     $result = $service->markAsManuallyCompleted($task, [
         'reference_number' => 'REF-789',
     ], $admin);
@@ -342,7 +342,7 @@ it('prevents retry when max retries reached', function () {
         'tenant_id' => $tenant->id,
     ]);
 
-    $service = new PayoutService;
+    $service = app(PayoutService::class);
     $result = $service->retryTransfer($task, $admin);
 
     expect($result['success'])->toBeFalse();
@@ -357,7 +357,7 @@ it('returns pending count correctly', function () {
     PayoutTask::factory()->completed()->create(['cook_id' => $cook->id, 'tenant_id' => $tenant->id]);
     PayoutTask::factory()->manuallyCompleted()->create(['cook_id' => $cook->id, 'tenant_id' => $tenant->id]);
 
-    $service = new PayoutService;
+    $service = app(PayoutService::class);
     expect($service->getPendingCount())->toBe(3);
 });
 
@@ -375,7 +375,7 @@ it('logs activity when manually completing a task', function () {
         'tenant_id' => $tenant->id,
     ]);
 
-    $service = new PayoutService;
+    $service = app(PayoutService::class);
     $service->markAsManuallyCompleted($task, [
         'reference_number' => 'MAN-LOG-TEST',
     ], $admin);
