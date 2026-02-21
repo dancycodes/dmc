@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 /**
  * F-138: Meal Component Selection & Cart Add
  * F-139: Order Cart Management
+ * F-144: Minimum Order Amount Validation (server-side enforcement)
  *
  * Handles cart operations on tenant domains via Gale SSE.
  * BR-246: Cart state maintained in session.
@@ -149,6 +150,23 @@ class CartController extends Controller
         if (empty($cart['items'])) {
             return gale()
                 ->state('cartError', __('Your cart is empty.'));
+        }
+
+        // F-144 BR-299/BR-300/BR-302/BR-304: Server-side minimum order amount validation.
+        // Validates food subtotal only (before delivery fee), per BR-300.
+        // BR-304: Skip check if minimum is 0 or null.
+        $minimumOrderAmount = $tenant->getMinimumOrderAmount();
+        $foodSubtotal = (int) ($cart['summary']['total'] ?? 0);
+
+        if ($minimumOrderAmount > 0 && $foodSubtotal < $minimumOrderAmount) {
+            // BR-301/BR-306: remaining = minimum - cart_subtotal
+            $remaining = $minimumOrderAmount - $foodSubtotal;
+
+            return gale()
+                ->state('cartError', __('Minimum order is :minimum XAF. Add :remaining XAF more to proceed.', [
+                    'minimum' => number_format($minimumOrderAmount),
+                    'remaining' => number_format($remaining),
+                ]));
         }
 
         // F-140: Redirect to delivery method selection
