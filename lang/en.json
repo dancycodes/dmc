@@ -2609,5 +2609,11 @@
     "submitted rating": "submitted rating",
     "Write a review": "Write a review",
     "Share your experience (optional)": "Share your experience (optional)",
-    "Review text cannot exceed :max characters.": "Review text cannot exceed :max characters."
+    "Review text cannot exceed :max characters.": "Review text cannot exceed :max characters.",
+    "Ratings & Reviews": "Ratings & Reviews",
+    "No reviews yet": "No reviews yet",
+    "Be the first to try this meal!": "Be the first to try this meal!",
+    ":count review|:count reviews": ":count review|:count reviews",
+    "Load more reviews": "Load more reviews",
+    "Anonymous": "Anonymous"
 }

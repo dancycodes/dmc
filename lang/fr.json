@@ -2608,5 +2608,11 @@
     "submitted rating": "a soumis une note",
     "Write a review": "Écrire un avis",
     "Share your experience (optional)": "Partagez votre expérience (optionnel)",
-    "Review text cannot exceed :max characters.": "Le texte de l'avis ne peut pas dépasser :max caractères."
+    "Review text cannot exceed :max characters.": "Le texte de l'avis ne peut pas dépasser :max caractères.",
+    "Ratings & Reviews": "Notes & Avis",
+    "No reviews yet": "Aucun avis pour le moment",
+    "Be the first to try this meal!": "Soyez le premier à essayer ce plat !",
+    ":count review|:count reviews": ":count avis|:count avis",
+    "Load more reviews": "Charger plus d'avis",
+    "Anonymous": "Anonyme"
 }
