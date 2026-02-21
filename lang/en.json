@@ -2606,5 +2606,8 @@
     "Rating must be between :min and :max stars.": "Rating must be between :min and :max stars.",
     "New Rating Received!": "New Rating Received!",
     "Order :number rated :stars": "Order :number rated :stars",
-    "submitted rating": "submitted rating"
+    "submitted rating": "submitted rating",
+    "Write a review": "Write a review",
+    "Share your experience (optional)": "Share your experience (optional)",
+    "Review text cannot exceed :max characters.": "Review text cannot exceed :max characters."
 }

@@ -10,13 +10,18 @@ use Illuminate\Http\Request;
 
 /**
  * F-176: Order Rating Prompt Controller
+ * F-177: Order Review Text Submission
  *
- * Handles star rating submission for completed orders.
- * Rating is submitted inline on the order detail page via Gale $action.
+ * Handles star rating and optional review text submission for completed orders.
+ * Rating + review are submitted inline on the order detail page via Gale $action.
  *
  * BR-388: Rating only for Completed orders.
  * BR-390: Each order can be rated exactly once.
  * BR-391: Once submitted, rating cannot be edited or deleted.
+ * BR-399: Review text is optional.
+ * BR-400: Maximum review length is 500 characters.
+ * BR-401: Review submitted simultaneously with the star rating.
+ * BR-402: Once submitted, review cannot be edited or deleted.
  */
 class RatingController extends Controller
 {
@@ -44,6 +49,7 @@ class RatingController extends Controller
         if ($request->isGale()) {
             $validated = $request->validateState([
                 'stars' => ['required', 'integer', 'min:1', 'max:5'],
+                'review_text' => ['nullable', 'string', 'max:'.\App\Models\Rating::MAX_REVIEW_LENGTH],
             ]);
         } else {
             $validated = app(StoreRatingRequest::class)->validated();
@@ -53,6 +59,7 @@ class RatingController extends Controller
             order: $order,
             user: $user,
             stars: (int) $validated['stars'],
+            reviewText: $validated['review_text'] ?? null,
         );
 
         if (! $result['success']) {
@@ -71,6 +78,7 @@ class RatingController extends Controller
             return gale()
                 ->state('rated', true)
                 ->state('submittedStars', $rating->stars)
+                ->state('submittedReview', $rating->review ?? '')
                 ->state('canRate', false)
                 ->dispatch('toast', [
                     'type' => 'success',

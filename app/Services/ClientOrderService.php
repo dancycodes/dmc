@@ -438,6 +438,7 @@ class ClientOrderService
             'canRate' => $order->status === Order::STATUS_COMPLETED && $existingRating === null,
             'rated' => $existingRating !== null,
             'submittedStars' => $existingRating?->stars ?? 0,
+            'submittedReview' => $existingRating?->review ?? '',
         ];
     }
 }

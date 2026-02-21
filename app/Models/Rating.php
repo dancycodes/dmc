@@ -41,6 +41,11 @@ class Rating extends Model
     public const MAX_STARS = 5;
 
     /**
+     * F-177: Maximum review text length (BR-400).
+     */
+    public const MAX_REVIEW_LENGTH = 500;
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>

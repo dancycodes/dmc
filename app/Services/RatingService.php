@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * F-176: Order Rating Service
+ * F-177: Order Review Text Submission
  *
  * Handles rating submission, validation, and related operations.
  * BR-388: Rating only for Completed orders.
@@ -19,6 +20,11 @@ use Illuminate\Support\Facades\DB;
  * BR-395: Triggers cook's overall rating recalculation (F-179).
  * BR-396: Cook is notified of new ratings.
  * BR-397: Rating submission is logged via Spatie Activitylog.
+ * BR-399: Review text is optional.
+ * BR-400: Maximum review length is 500 characters.
+ * BR-401: Review is submitted simultaneously with the star rating.
+ * BR-402: Once submitted, review cannot be edited or deleted.
+ * BR-406: Review text is sanitized (Blade escaping handles XSS).
  */
 class RatingService
 {
@@ -64,7 +70,7 @@ class RatingService
     }
 
     /**
-     * Submit a rating for a completed order.
+     * Submit a rating (with optional review text) for a completed order.
      *
      * BR-389: 1-5 stars (integer only).
      * BR-390: Each order can be rated exactly once.
@@ -72,10 +78,13 @@ class RatingService
      * BR-395: Triggers cook's overall rating recalculation.
      * BR-396: Cook is notified.
      * BR-397: Activity logged.
+     * BR-399: Review text is optional.
+     * BR-400: Maximum review length is 500 characters.
+     * BR-401: Review submitted simultaneously with rating.
      *
      * @return array{success: bool, rating?: Rating, error?: string}
      */
-    public function submitRating(Order $order, User $user, int $stars): array
+    public function submitRating(Order $order, User $user, int $stars, ?string $reviewText = null): array
     {
         // BR-388: Only Completed orders
         if ($order->status !== Order::STATUS_COMPLETED) {
@@ -112,12 +121,29 @@ class RatingService
             ];
         }
 
-        $rating = DB::transaction(function () use ($order, $user, $stars) {
+        // BR-399: Whitespace-only review treated as empty (no review text saved)
+        $sanitizedReview = $reviewText !== null ? trim($reviewText) : null;
+        if ($sanitizedReview === '') {
+            $sanitizedReview = null;
+        }
+
+        // BR-400: Validate review length
+        if ($sanitizedReview !== null && mb_strlen($sanitizedReview) > Rating::MAX_REVIEW_LENGTH) {
+            return [
+                'success' => false,
+                'error' => __('Review text cannot exceed :max characters.', [
+                    'max' => Rating::MAX_REVIEW_LENGTH,
+                ]),
+            ];
+        }
+
+        $rating = DB::transaction(function () use ($order, $user, $stars, $sanitizedReview) {
             $rating = Rating::create([
                 'order_id' => $order->id,
                 'user_id' => $user->id,
                 'tenant_id' => $order->tenant_id,
                 'stars' => $stars,
+                'review' => $sanitizedReview,
             ]);
 
             // BR-395: Trigger cook's overall rating recalculation (F-179 forward-compatible)
@@ -127,15 +153,18 @@ class RatingService
         });
 
         // BR-397: Activity logging
+        $logProperties = [
+            'order_id' => $order->id,
+            'order_number' => $order->order_number,
+            'stars' => $stars,
+            'tenant_id' => $order->tenant_id,
+            'has_review' => $sanitizedReview !== null,
+        ];
+
         activity('ratings')
             ->performedOn($rating)
             ->causedBy($user)
-            ->withProperties([
-                'order_id' => $order->id,
-                'order_number' => $order->order_number,
-                'stars' => $stars,
-                'tenant_id' => $order->tenant_id,
-            ])
+            ->withProperties($logProperties)
             ->log('submitted rating');
 
         // BR-396: Notify cook

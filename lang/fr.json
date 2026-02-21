@@ -2605,5 +2605,8 @@
     "Rating must be between :min and :max stars.": "La note doit \u00eatre entre :min et :max \u00e9toiles.",
     "New Rating Received!": "Nouvelle note re\u00e7ue !",
     "Order :number rated :stars": "Commande :number not\u00e9e :stars",
-    "submitted rating": "a soumis une note"
+    "submitted rating": "a soumis une note",
+    "Write a review": "Écrire un avis",
+    "Share your experience (optional)": "Partagez votre expérience (optionnel)",
+    "Review text cannot exceed :max characters.": "Le texte de l'avis ne peut pas dépasser :max caractères."
 }
