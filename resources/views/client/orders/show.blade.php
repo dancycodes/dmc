@@ -34,6 +34,7 @@
         hasComplaint: {{ ($existingComplaint !== null) ? 'true' : 'false' }},
         canRate: {{ $canRate ? 'true' : 'false' }},
         rated: {{ ($existingRating !== null) ? 'true' : 'false' }},
+        showCancelConfirm: false,
         submittedStars: {{ $existingRating?->stars ?? 0 }},
         submittedReview: '{{ addslashes($existingRating?->review ?? '') }}',
         hoverStars: 0,
@@ -211,17 +212,115 @@
                         </p>
                     </div>
                 </div>
-                {{-- F-162: Cancel Order button (forward-compatible) --}}
-                <a
-                    href="{{ url('/my-orders/' . $order->id . '/cancel') }}"
+                {{-- F-162: Cancel Order button — opens confirmation modal (BR-240) --}}
+                <button
+                    type="button"
                     class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border-2 border-danger text-danger hover:bg-danger hover:text-on-danger transition-colors"
-                    x-navigate
+                    x-on:click="showCancelConfirm = true"
+                    :disabled="$fetching()"
                 >
                     {{-- XCircle icon (Lucide, sm=16) --}}
                     <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>
                     {{ __('Cancel Order') }}
                     <span class="font-mono text-xs" x-text="'(' + formatCountdown(cancelSecondsRemaining) + ')'"></span>
-                </a>
+                </button>
+            </div>
+        </div>
+
+        {{-- F-162 BR-239: Cancellation window expired note --}}
+        {{-- Shown when order is Paid/Confirmed but the window has passed --}}
+        @if(in_array($order->status, [\App\Models\Order::STATUS_PAID, \App\Models\Order::STATUS_CONFIRMED]) && !$canCancel && $order->cancellation_window_minutes !== 0)
+            <div class="mb-6">
+                <div class="bg-surface-alt border border-outline dark:border-outline rounded-xl p-4 flex items-center gap-3">
+                    {{-- Clock icon (Lucide, md=20) --}}
+                    <svg class="w-5 h-5 text-on-surface/40 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    <p class="text-sm text-on-surface/60">{{ __('The cancellation window for this order has expired. Contact the cook for assistance.') }}</p>
+                </div>
+            </div>
+        @endif
+
+        {{-- F-162 BR-240: Cancellation Confirmation Modal --}}
+        {{-- Inline (not x-teleport) so it stays within the x-data scope (F-055 pattern) --}}
+        <div
+            x-show="showCancelConfirm"
+            x-cloak
+            class="fixed inset-0 z-50 flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cancel-modal-title"
+        >
+            {{-- Backdrop --}}
+            <div
+                class="absolute inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm"
+                x-on:click="showCancelConfirm = false"
+            ></div>
+
+            {{-- Modal Panel --}}
+            <div
+                class="relative z-10 bg-surface dark:bg-surface rounded-2xl shadow-dropdown border border-outline dark:border-outline w-full max-w-sm p-6"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0 scale-95"
+                x-transition:enter-end="opacity-100 scale-100"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100 scale-100"
+                x-transition:leave-end="opacity-0 scale-95"
+            >
+                {{-- Warning Icon --}}
+                <div class="flex justify-center mb-4">
+                    <div class="w-14 h-14 rounded-full bg-danger-subtle flex items-center justify-center">
+                        {{-- AlertTriangle icon (Lucide, lg=24) --}}
+                        <svg class="w-7 h-7 text-danger" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    </div>
+                </div>
+
+                {{-- Title --}}
+                <h3 id="cancel-modal-title" class="text-lg font-display font-bold text-on-surface-strong text-center mb-2">
+                    {{ __('Cancel this order?') }}
+                </h3>
+
+                {{-- Description with refund amount (BR-240) --}}
+                <p class="text-sm text-on-surface/70 text-center mb-1">
+                    {{ __('A full refund of') }}
+                    <span class="font-mono font-semibold text-on-surface-strong">{{ \App\Services\ClientOrderService::formatXAF($order->grand_total) }}</span>
+                    {{ __('will be credited to your wallet.') }}
+                </p>
+                <p class="text-xs text-on-surface/40 text-center mb-6">
+                    {{ __('This action cannot be undone.') }}
+                </p>
+
+                {{-- Validation error (if server rejects) --}}
+                <p x-message="cancel" class="text-sm text-danger text-center mb-3"></p>
+
+                {{-- Actions --}}
+                <div class="flex flex-col sm:flex-row gap-3">
+                    {{-- Keep Order button --}}
+                    <button
+                        type="button"
+                        class="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium border border-outline dark:border-outline text-on-surface hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors"
+                        x-on:click="showCancelConfirm = false"
+                        :disabled="$fetching()"
+                    >
+                        {{ __('Keep Order') }}
+                    </button>
+
+                    {{-- Cancel Order button — submits via Gale $action --}}
+                    <button
+                        type="button"
+                        class="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium bg-danger text-on-danger hover:bg-danger/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        :disabled="$fetching()"
+                        x-on:click="$action('{{ url('/my-orders/' . $order->id . '/cancel') }}')"
+                    >
+                        <span x-show="!$fetching()">
+                            {{-- XCircle icon (Lucide, sm=16) --}}
+                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>
+                        </span>
+                        <span x-show="$fetching()" class="animate-spin-slow">
+                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+                        </span>
+                        <span x-show="!$fetching()">{{ __('Cancel Order') }}</span>
+                        <span x-show="$fetching()">{{ __('Cancelling...') }}</span>
+                    </button>
+                </div>
             </div>
         </div>
 

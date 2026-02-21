@@ -194,7 +194,7 @@ test('canCancelOrder respects tenant-level cancellation window override', functi
     $service = new ClientOrderService;
     $client = User::factory()->create();
     $tenant = Tenant::factory()->create([
-        'settings' => ['cancellation_window' => 60],
+        'settings' => ['cancellation_window_minutes' => 60],
     ]);
 
     // Order paid 45 minutes ago -- outside 30-min default but within 60-min override
