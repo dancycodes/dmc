@@ -4,6 +4,12 @@
     Email sent to the client for key order status transitions.
     Extends the base DancyMeals email layout for consistent branding.
 
+    Dark mode: Email clients do not support Tailwind dark: classes.
+    Instead, the base layout uses @media (prefers-color-scheme: dark) CSS blocks.
+    Color mapping: bg-surface / dark:bg-surface => #FFFFFF / #18181B
+    text-on-surface / dark:text-on-surface => #3F3F46 / #D4D4D8
+    text-on-surface-strong / dark:text-on-surface-strong => #18181B / #F4F4F5
+
     Variables:
     - $order: Order model instance
     - $newStatus: the new order status string constant
