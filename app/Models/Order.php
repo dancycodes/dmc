@@ -283,6 +283,16 @@ class Order extends Model
     }
 
     /**
+     * F-183 BR-184: Get the single complaint for this order.
+     *
+     * Each order can have exactly one complaint.
+     */
+    public function complaint(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Complaint::class);
+    }
+
+    /**
      * Get the rating for this order.
      *
      * F-176: Each order can be rated exactly once (BR-390).

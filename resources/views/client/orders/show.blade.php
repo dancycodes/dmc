@@ -31,6 +31,7 @@
         canCancel: {{ $canCancel ? 'true' : 'false' }},
         cancelSecondsRemaining: {{ $cancellationSecondsRemaining }},
         canReport: {{ $canReport ? 'true' : 'false' }},
+        hasComplaint: {{ ($existingComplaint !== null) ? 'true' : 'false' }},
         canRate: {{ $canRate ? 'true' : 'false' }},
         rated: {{ ($existingRating !== null) ? 'true' : 'false' }},
         submittedStars: {{ $existingRating?->stars ?? 0 }},
@@ -639,14 +640,31 @@
                 </div>
             </div>
 
-            {{-- Report a Problem (BR-227) --}}
-            <div x-show="canReport" x-cloak>
+            {{-- Report a Problem / View Complaint (BR-227, F-183) --}}
+            {{-- Scenario 2: Already complained - show View Complaint link --}}
+            <div x-show="hasComplaint" x-cloak>
+                <div class="text-center py-2">
+                    <a
+                        href="{{ url('/my-orders/' . $order->id . '/complaint/' . ($existingComplaint?->id ?? 0)) }}"
+                        class="inline-flex items-center gap-1.5 text-sm text-warning hover:text-warning/80 transition-colors underline decoration-dotted underline-offset-4"
+                        x-navigate
+                    >
+                        {{-- Eye icon (Lucide, sm=16) --}}
+                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        {{ __('View Complaint') }}
+                    </a>
+                </div>
+            </div>
+            {{-- Scenario 1: Can report - show Report a Problem link --}}
+            <div x-show="canReport && !hasComplaint" x-cloak>
                 <div class="text-center py-2">
                     <a
                         href="{{ url('/my-orders/' . $order->id . '/complaint') }}"
-                        class="text-sm text-on-surface/50 hover:text-danger transition-colors underline decoration-dotted underline-offset-4"
+                        class="inline-flex items-center gap-1.5 text-sm text-on-surface/50 hover:text-danger transition-colors underline decoration-dotted underline-offset-4"
                         x-navigate
                     >
+                        {{-- AlertTriangle icon (Lucide, sm=16) --}}
+                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                         {{ __('Report a Problem') }}
                     </a>
                 </div>

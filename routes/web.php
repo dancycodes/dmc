@@ -215,6 +215,13 @@ Route::middleware('auth')->group(function () {
     // BR-390: Each order can be rated exactly once
     Route::post('/my-orders/{order}/rate', [\App\Http\Controllers\Client\RatingController::class, 'store'])->name('client.orders.rate');
 
+    // Client Complaint Submission (F-183)
+    // BR-183: Only delivered/completed orders can receive a complaint
+    // BR-184: One complaint per order
+    Route::get('/my-orders/{order}/complaint', [\App\Http\Controllers\Client\ComplaintController::class, 'create'])->name('client.complaints.create');
+    Route::post('/my-orders/{order}/complaint', [\App\Http\Controllers\Client\ComplaintController::class, 'store'])->name('client.complaints.store');
+    Route::get('/my-orders/{order}/complaint/{complaint}', [\App\Http\Controllers\Client\ComplaintController::class, 'show'])->name('client.complaints.show');
+
     // Client Transaction History (F-164)
     // BR-260: All transactions across all tenants
     // BR-269: Authentication required

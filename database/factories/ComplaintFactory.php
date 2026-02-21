@@ -24,6 +24,17 @@ class ComplaintFactory extends Factory
             'The plantains were burnt and the sauce was watery.',
             'Eru was not properly cooked, the vegetables were still raw.',
         ],
+        'delivery_issue' => [
+            'My order was supposed to arrive at 12:30 PM but came at 2:15 PM.',
+            'Delivery was over 1 hour late with no communication.',
+            'I waited 90 minutes past the estimated delivery time.',
+            'The food was cold when it arrived due to late delivery.',
+        ],
+        'missing_item' => [
+            'I ordered 3 portions but only received 2.',
+            'The drink I ordered was not included in the delivery.',
+            'Side dishes were missing from my order.',
+        ],
         'late_delivery' => [
             'My order was supposed to arrive at 12:30 PM but came at 2:15 PM.',
             'Delivery was over 1 hour late with no communication.',
@@ -76,6 +87,35 @@ class ComplaintFactory extends Factory
             'escalated_by' => null,
             'submitted_at' => $submittedAt,
         ];
+    }
+
+    /**
+     * State: F-183 client-facing complaint with valid client categories.
+     */
+    public function clientSubmitted(): static
+    {
+        return $this->state(function (array $attributes) {
+            $category = $this->faker->randomElement(Complaint::CLIENT_CATEGORIES);
+            $descriptions = self::DESCRIPTIONS[$category] ?? self::DESCRIPTIONS['other'];
+
+            return [
+                'category' => $category,
+                'description' => $this->faker->randomElement($descriptions),
+                'status' => 'open',
+                'is_escalated' => false,
+                'submitted_at' => now(),
+            ];
+        });
+    }
+
+    /**
+     * State: with photo path.
+     */
+    public function withPhoto(): static
+    {
+        return $this->state(fn () => [
+            'photo_path' => 'complaints/tenant-1/complaint-'.$this->faker->uuid().'.jpg',
+        ]);
     }
 
     /**

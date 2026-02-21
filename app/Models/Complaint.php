@@ -19,7 +19,7 @@ class Complaint extends Model
     protected $table = 'complaints';
 
     /**
-     * BR-161: Complaint categories.
+     * BR-161: Admin-facing complaint categories (F-060).
      */
     public const CATEGORIES = [
         'food_quality',
@@ -27,6 +27,19 @@ class Complaint extends Model
         'missing_items',
         'wrong_order',
         'rude_behavior',
+        'other',
+    ];
+
+    /**
+     * F-183 BR-185: Client-facing complaint categories.
+     *
+     * These are the categories shown to clients when submitting complaints.
+     */
+    public const CLIENT_CATEGORIES = [
+        'food_quality',
+        'delivery_issue',
+        'missing_item',
+        'wrong_order',
         'other',
     ];
 
@@ -85,6 +98,7 @@ class Complaint extends Model
         'tenant_id',
         'category',
         'description',
+        'photo_path',
         'status',
         'is_escalated',
         'escalation_reason',
@@ -179,12 +193,30 @@ class Complaint extends Model
     }
 
     /**
+     * F-183: Get localized client-facing category labels.
+     *
+     * @return array<string, string>
+     */
+    public static function getClientCategoryLabels(): array
+    {
+        return [
+            'food_quality' => __('Food Quality'),
+            'delivery_issue' => __('Delivery Issue'),
+            'missing_item' => __('Missing Item'),
+            'wrong_order' => __('Wrong Order'),
+            'other' => __('Other'),
+        ];
+    }
+
+    /**
      * Get the human-readable category label.
      */
     public function categoryLabel(): string
     {
         return match ($this->category) {
             'food_quality' => __('Food Quality'),
+            'delivery_issue' => __('Delivery Issue'),
+            'missing_item' => __('Missing Item'),
             'late_delivery' => __('Late Delivery'),
             'missing_items' => __('Missing Items'),
             'wrong_order' => __('Wrong Order'),
@@ -296,7 +328,9 @@ class Complaint extends Model
      */
     public function scopeOfCategory(Builder $query, ?string $category): Builder
     {
-        if (! $category || ! in_array($category, self::CATEGORIES, true)) {
+        $allCategories = array_unique(array_merge(self::CATEGORIES, self::CLIENT_CATEGORIES));
+
+        if (! $category || ! in_array($category, $allCategories, true)) {
             return $query;
         }
 
