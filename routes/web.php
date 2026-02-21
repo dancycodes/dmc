@@ -548,6 +548,12 @@ Route::middleware('tenant.domain')->group(function () {
         // BR-197: Only users with can-manage-orders permission (enforced in controller)
         Route::post('/orders/mass-update-status', [OrderController::class, 'massUpdateStatus'])->name('cook.orders.mass-update-status');
 
+        // F-184: Cook/Manager Complaint Response
+        // BR-195: Only cook or manager with manage-complaints permission (enforced in controller)
+        Route::get('/complaints', [\App\Http\Controllers\Cook\ComplaintController::class, 'index'])->name('cook.complaints.index');
+        Route::get('/complaints/{complaint}', [\App\Http\Controllers\Cook\ComplaintController::class, 'show'])->name('cook.complaints.show');
+        Route::post('/complaints/{complaint}/respond', [\App\Http\Controllers\Cook\ComplaintController::class, 'respond'])->name('cook.complaints.respond');
+
         // F-169: Cook Wallet Dashboard
         // BR-319: Only cook or users with can-manage-cook-wallet permission (enforced in controller)
         // BR-320: Managers can view but not withdraw

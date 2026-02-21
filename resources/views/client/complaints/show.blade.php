@@ -41,6 +41,7 @@
             @php
                 $statusClasses = match($complaint->status) {
                     'open' => 'bg-warning-subtle text-warning',
+                    'in_review' => 'bg-info-subtle text-info',
                     'responded' => 'bg-info-subtle text-info',
                     'escalated' => 'bg-danger-subtle text-danger',
                     'resolved' => 'bg-success-subtle text-success',
