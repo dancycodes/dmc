@@ -130,6 +130,13 @@ class PaymentService
     {
         $tenant = $order->tenant;
 
+        // F-168 BR-305: For partial wallet payments, charge only the remainder
+        $chargeAmount = (float) $order->grand_total;
+        $walletAmount = (float) ($order->wallet_amount ?? 0);
+        if ($walletAmount > 0) {
+            $chargeAmount = round($chargeAmount - $walletAmount, 2);
+        }
+
         // Generate transaction reference
         $txRef = $this->flutterwaveService->generateTxRef($order->id);
 
@@ -139,7 +146,7 @@ class PaymentService
             'client_id' => $client->id,
             'cook_id' => $order->cook_id,
             'tenant_id' => $order->tenant_id,
-            'amount' => $order->grand_total,
+            'amount' => $chargeAmount,
             'currency' => config('flutterwave.currency', 'XAF'),
             'payment_method' => $this->mapProviderToPaymentMethod($order->payment_provider),
             'status' => 'pending',
@@ -159,9 +166,9 @@ class PaymentService
         // Build callback URL (webhook handled by F-151)
         $callbackUrl = url('/checkout/payment/callback');
 
-        // Initiate charge via Flutterwave
+        // Initiate charge via Flutterwave (amount = remainder after wallet deduction)
         $chargeResult = $this->flutterwaveService->initiateCharge([
-            'amount' => $order->grand_total,
+            'amount' => $chargeAmount,
             'currency' => config('flutterwave.currency', 'XAF'),
             'phone' => $order->payment_phone ?? $order->phone,
             'email' => $client->email,

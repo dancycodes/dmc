@@ -2443,5 +2443,21 @@
     "Your refund has been added to your DancyMeals wallet. You can use this balance to pay for future orders.": "Your refund has been added to your DancyMeals wallet. You can use this balance to pay for future orders.",
     "View Wallet": "View Wallet",
     "Refund of :amount credited to your wallet for order :number": "Refund of :amount credited to your wallet for order :number",
-    "Thank you for using DancyMeals!": "Thank you for using DancyMeals!"
+    "Thank you for using DancyMeals!": "Thank you for using DancyMeals!",
+
+    "Apply wallet balance": "Apply wallet balance",
+    "wallet balance to reduce the amount charged.": "wallet balance to reduce the amount charged.",
+    "Wallet deduction": "Wallet deduction",
+    "Mobile money charge": "Mobile money charge",
+    "Wallet:": "Wallet:",
+    "applied": "applied",
+    "Use your": "Use your",
+    "Wallet + MTN MoMo": "Wallet + MTN MoMo",
+    "Wallet + Orange Money": "Wallet + Orange Money",
+    "Partial wallet payment for order :number": "Partial wallet payment for order :number",
+    "No wallet balance available.": "No wallet balance available.",
+    "Wallet payments have been disabled.": "Wallet payments have been disabled.",
+    "Failed to process wallet payment. Please try again.": "Failed to process wallet payment. Please try again.",
+    "No wallet balance to apply.": "No wallet balance to apply.",
+    "Wallet payment reversed for order :number": "Wallet payment reversed for order :number"
 }

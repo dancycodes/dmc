@@ -2443,5 +2443,21 @@
     "Your refund has been added to your DancyMeals wallet. You can use this balance to pay for future orders.": "Votre remboursement a \u00e9t\u00e9 ajout\u00e9 \u00e0 votre portefeuille DancyMeals. Vous pouvez utiliser ce solde pour payer vos prochaines commandes.",
     "View Wallet": "Voir le portefeuille",
     "Refund of :amount credited to your wallet for order :number": "Remboursement de :amount cr\u00e9dit\u00e9 sur votre portefeuille pour la commande :number",
-    "Thank you for using DancyMeals!": "Merci d'utiliser DancyMeals !"
+    "Thank you for using DancyMeals!": "Merci d'utiliser DancyMeals !",
+
+    "Apply wallet balance": "Appliquer le solde du portefeuille",
+    "wallet balance to reduce the amount charged.": "solde du portefeuille pour r\u00e9duire le montant factur\u00e9.",
+    "Wallet deduction": "D\u00e9duction du portefeuille",
+    "Mobile money charge": "Frais mobile money",
+    "Wallet:": "Portefeuille :",
+    "applied": "appliqu\u00e9",
+    "Use your": "Utilisez votre",
+    "Wallet + MTN MoMo": "Portefeuille + MTN MoMo",
+    "Wallet + Orange Money": "Portefeuille + Orange Money",
+    "Partial wallet payment for order :number": "Paiement partiel par portefeuille pour la commande :number",
+    "No wallet balance available.": "Aucun solde de portefeuille disponible.",
+    "Wallet payments have been disabled.": "Les paiements par portefeuille ont \u00e9t\u00e9 d\u00e9sactiv\u00e9s.",
+    "Failed to process wallet payment. Please try again.": "\u00c9chec du traitement du paiement par portefeuille. Veuillez r\u00e9essayer.",
+    "No wallet balance to apply.": "Aucun solde de portefeuille \u00e0 appliquer.",
+    "Wallet payment reversed for order :number": "Paiement par portefeuille annul\u00e9 pour la commande :number"
 }

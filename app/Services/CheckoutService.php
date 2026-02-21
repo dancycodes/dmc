@@ -54,7 +54,7 @@ class CheckoutService
     /**
      * Get checkout session data for a tenant.
      *
-     * @return array{delivery_method: string|null, delivery_location: array|null, delivery_fee: int|null, pickup_location_id: int|null, phone: string|null, payment_provider: string|null, payment_phone: string|null}
+     * @return array{delivery_method: string|null, delivery_location: array|null, delivery_fee: int|null, pickup_location_id: int|null, phone: string|null, payment_provider: string|null, payment_phone: string|null, use_wallet: bool}
      */
     public function getCheckoutData(int $tenantId): array
     {
@@ -66,6 +66,7 @@ class CheckoutService
             'phone' => null,
             'payment_provider' => null,
             'payment_phone' => null,
+            'use_wallet' => false,
         ]);
     }
 
@@ -745,13 +746,24 @@ class CheckoutService
      * BR-345: Available payment methods: MTN Mobile Money, Orange Money, Wallet Balance.
      * BR-352: Pay Now triggers F-150 (Flutterwave) for mobile money or F-153 for wallet.
      */
-    public function setPaymentMethod(int $tenantId, string $provider, ?string $phone = null): void
+    public function setPaymentMethod(int $tenantId, string $provider, ?string $phone = null, bool $useWallet = false): void
     {
         $data = $this->getCheckoutData($tenantId);
         $data['payment_provider'] = $provider;
         $data['payment_phone'] = $phone;
+        $data['use_wallet'] = $useWallet;
 
         session([$this->getSessionKey($tenantId) => $data]);
+    }
+
+    /**
+     * F-168: Check if the client has opted to use wallet for partial payment.
+     */
+    public function getUseWallet(int $tenantId): bool
+    {
+        $data = $this->getCheckoutData($tenantId);
+
+        return $data['use_wallet'] ?? false;
     }
 
     /**
@@ -822,31 +834,33 @@ class CheckoutService
     }
 
     /**
-     * F-149/F-153: Build wallet payment option data.
+     * F-149/F-153/F-168: Build wallet payment option data.
      *
-     * BR-346: Wallet Balance only available if admin enabled AND balance >= total.
-     * BR-347: If balance < total, visible but disabled with balance shown.
-     * BR-387: Wallet payment is available only when admin has enabled it globally.
-     * BR-388: Wallet balance must be >= order total for the option to be selectable.
+     * BR-299: Wallet payment is only available when enabled by admin via platform settings.
+     * BR-300: Wallet payment option is hidden when wallet balance is 0 XAF.
+     * BR-301: Client can pay fully from wallet if balance is sufficient.
+     * BR-302: Client can pay partially from wallet + remainder via mobile money.
      *
-     * @return array{enabled: bool, visible: bool, balance: int, sufficient: bool}
+     * @return array{enabled: bool, visible: bool, balance: int, sufficient: bool, partial_available: bool, remainder: int}
      */
     private function getWalletOption(int $userId, int $orderTotal): array
     {
         $platformSettingService = app(PlatformSettingService::class);
         $walletEnabled = $platformSettingService->isWalletEnabled();
 
-        // BR-387: If admin has disabled wallet payments, hide the option entirely
+        // BR-299: If admin has disabled wallet payments, hide the option entirely
         if (! $walletEnabled) {
             return [
                 'enabled' => false,
                 'visible' => false,
                 'balance' => 0,
                 'sufficient' => false,
+                'partial_available' => false,
+                'remainder' => $orderTotal,
             ];
         }
 
-        // F-153: Use ClientWallet model for balance lookup
+        // Use ClientWallet model for balance lookup
         $balance = 0;
         $wallet = \App\Models\ClientWallet::query()
             ->where('user_id', $userId)
@@ -856,14 +870,32 @@ class CheckoutService
             $balance = (int) $wallet->balance;
         }
 
-        // BR-388: Wallet balance must be >= order total for the option to be selectable
+        // BR-300: Hide wallet option when balance is 0 XAF
+        if ($balance <= 0) {
+            return [
+                'enabled' => false,
+                'visible' => false,
+                'balance' => 0,
+                'sufficient' => false,
+                'partial_available' => false,
+                'remainder' => $orderTotal,
+            ];
+        }
+
+        // BR-301: Full wallet payment if balance >= total
         $sufficient = $balance >= $orderTotal;
 
+        // BR-302: Partial wallet payment if balance > 0 but < total
+        $partialAvailable = $balance > 0 && ! $sufficient;
+        $remainder = max(0, $orderTotal - $balance);
+
         return [
-            'enabled' => $sufficient,
+            'enabled' => true,
             'visible' => true,
             'balance' => $balance,
             'sufficient' => $sufficient,
+            'partial_available' => $partialAvailable,
+            'remainder' => $remainder,
         ];
     }
 
@@ -908,15 +940,17 @@ class CheckoutService
     }
 
     /**
-     * F-149: Validate the payment method selection.
+     * F-149/F-168: Validate the payment method selection.
      *
      * BR-345: Provider must be mtn_momo, orange_money, or wallet.
-     * BR-346: Wallet requires admin enablement and sufficient balance.
+     * BR-299: Wallet requires admin enablement.
+     * BR-301: Full wallet requires sufficient balance.
+     * BR-302: Partial wallet + mobile money requires balance > 0 and valid phone.
      * BR-351: Phone must match Cameroon format for mobile money.
      *
      * @return array{valid: bool, error: string|null}
      */
-    public function validatePaymentSelection(string $provider, ?string $phone, int $userId, int $orderTotal): array
+    public function validatePaymentSelection(string $provider, ?string $phone, int $userId, int $orderTotal, bool $useWallet = false): array
     {
         $validProviders = [PaymentMethod::PROVIDER_MTN_MOMO, PaymentMethod::PROVIDER_ORANGE_MONEY, 'wallet'];
 
@@ -927,7 +961,7 @@ class CheckoutService
             ];
         }
 
-        // Wallet validation
+        // BR-301: Full wallet validation
         if ($provider === 'wallet') {
             $walletOption = $this->getWalletOption($userId, $orderTotal);
 
@@ -941,11 +975,30 @@ class CheckoutService
             if (! $walletOption['sufficient']) {
                 return [
                     'valid' => false,
-                    'error' => __('Insufficient wallet balance.'),
+                    'error' => __('Insufficient wallet balance for full payment.'),
                 ];
             }
 
             return ['valid' => true, 'error' => null];
+        }
+
+        // BR-302: Partial wallet + mobile money validation
+        if ($useWallet) {
+            $walletOption = $this->getWalletOption($userId, $orderTotal);
+
+            if (! $walletOption['visible']) {
+                return [
+                    'valid' => false,
+                    'error' => __('Wallet payments are not available.'),
+                ];
+            }
+
+            if ($walletOption['balance'] <= 0) {
+                return [
+                    'valid' => false,
+                    'error' => __('No wallet balance to apply.'),
+                ];
+            }
         }
 
         // Mobile money: phone is required

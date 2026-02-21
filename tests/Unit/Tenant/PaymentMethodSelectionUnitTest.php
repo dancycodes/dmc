@@ -135,7 +135,7 @@ test('wallet option is hidden when admin disables wallet payments (BR-346)', fun
     expect($options['wallet']['enabled'])->toBeFalse();
 });
 
-test('wallet option is visible but disabled when balance insufficient (BR-347)', function () {
+test('wallet option is visible but insufficient when balance < total (BR-347/BR-300)', function () {
     $data = test()->createTenantWithCook();
     $user = test()->createUserWithRole('client');
 
@@ -146,13 +146,20 @@ test('wallet option is visible but disabled when balance insufficient (BR-347)',
     );
     app(PlatformSettingService::class)->clearCache();
 
-    // No wallets table yet, so balance is 0
+    // F-168 BR-300: Wallet is hidden when balance is 0, so create wallet with partial balance
+    \App\Models\ClientWallet::create([
+        'user_id' => $user->id,
+        'balance' => 1000,
+        'currency' => 'XAF',
+    ]);
+
     $options = $this->service->getPaymentOptions($data['tenant']->id, $user->id, 5000);
 
     expect($options['wallet']['visible'])->toBeTrue();
-    expect($options['wallet']['enabled'])->toBeFalse();
+    expect($options['wallet']['enabled'])->toBeTrue();
     expect($options['wallet']['sufficient'])->toBeFalse();
-    expect($options['wallet']['balance'])->toBe(0);
+    expect($options['wallet']['balance'])->toBe(1000);
+    expect($options['wallet']['partial_available'])->toBeTrue();
 });
 
 test('wallet option visible and enabled when balance sufficient and admin enabled', function () {
@@ -165,11 +172,15 @@ test('wallet option visible and enabled when balance sufficient and admin enable
     );
     app(PlatformSettingService::class)->clearCache();
 
-    // Since wallets table does not exist yet, balance will always be 0
-    // This test verifies forward-compatible behavior
-    $options = $this->service->getPaymentOptions($data['tenant']->id, $user->id, 0);
+    // F-168: Create wallet with sufficient balance
+    \App\Models\ClientWallet::create([
+        'user_id' => $user->id,
+        'balance' => 10000,
+        'currency' => 'XAF',
+    ]);
 
-    // With order total 0, even 0 balance is sufficient
+    $options = $this->service->getPaymentOptions($data['tenant']->id, $user->id, 5000);
+
     expect($options['wallet']['visible'])->toBeTrue();
     expect($options['wallet']['sufficient'])->toBeTrue();
     expect($options['wallet']['enabled'])->toBeTrue();
@@ -253,11 +264,18 @@ test('validatePaymentSelection rejects wallet when insufficient balance', functi
     );
     app(PlatformSettingService::class)->clearCache();
 
-    // No wallets table, balance is 0
+    // F-168 BR-300: With 0 balance, wallet is hidden entirely
+    // Create wallet with some balance but insufficient for full payment
+    \App\Models\ClientWallet::create([
+        'user_id' => $user->id,
+        'balance' => 1000,
+        'currency' => 'XAF',
+    ]);
+
     $result = $this->service->validatePaymentSelection('wallet', null, $user->id, 5000);
 
     expect($result['valid'])->toBeFalse();
-    expect($result['error'])->toContain(__('Insufficient wallet balance.'));
+    expect($result['error'])->toContain(__('Insufficient wallet balance for full payment.'));
 });
 
 // -- getPaymentPrefillPhone tests (BR-348) --
