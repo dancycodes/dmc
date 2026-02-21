@@ -9,6 +9,10 @@ use Spatie\Activitylog\Models\Activity;
 
 class ComplaintResolutionService
 {
+    public function __construct(
+        private WalletRefundService $walletRefundService
+    ) {}
+
     /**
      * Resolve a complaint with the specified action.
      *
@@ -54,23 +58,53 @@ class ComplaintResolutionService
     }
 
     /**
-     * BR-167: Process partial refund — record amount on complaint.
-     * BR-168: Refunds credited to client wallet (wallet feature F-166 pending).
+     * BR-167: Process partial refund — record amount and credit to client wallet.
+     * BR-168: Refunds credited to client wallet via F-167 WalletRefundService.
      */
     private function handlePartialRefund(Complaint $complaint, array $data): void
     {
         $complaint->refund_amount = $data['refund_amount'];
+
+        $this->creditRefundToWallet($complaint, (float) $data['refund_amount']);
     }
 
     /**
-     * BR-169: Process full refund — record full order amount.
-     * BR-168: Refunds credited to client wallet (wallet feature F-166 pending).
+     * BR-169: Process full refund — record full order amount and credit to client wallet.
+     * BR-168: Refunds credited to client wallet via F-167 WalletRefundService.
      */
     private function handleFullRefund(Complaint $complaint): void
     {
-        // The order_id references a future Order model.
-        // For now, the refund amount will be set from the payment transaction if available.
-        $complaint->refund_amount = $this->getOrderAmount($complaint);
+        $amount = $this->getOrderAmount($complaint);
+        $complaint->refund_amount = $amount;
+
+        if ($amount !== null && $amount > 0) {
+            $this->creditRefundToWallet($complaint, $amount);
+        }
+    }
+
+    /**
+     * F-167: Credit refund amount to the client's wallet.
+     * Delegates to WalletRefundService for atomic wallet operations.
+     */
+    private function creditRefundToWallet(Complaint $complaint, float $amount): void
+    {
+        if ($amount <= 0 || ! $complaint->order_id) {
+            return;
+        }
+
+        $order = \App\Models\Order::find($complaint->order_id);
+        $client = $complaint->client;
+
+        if (! $order || ! $client) {
+            return;
+        }
+
+        $this->walletRefundService->creditComplaintRefund(
+            $client,
+            $amount,
+            $order,
+            $complaint->id
+        );
     }
 
     /**
