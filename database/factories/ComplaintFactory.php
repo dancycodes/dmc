@@ -252,6 +252,55 @@ class ComplaintFactory extends Factory
     }
 
     /**
+     * F-185: State: open complaint older than 24 hours (eligible for auto-escalation).
+     */
+    public function overdueOpen(): static
+    {
+        return $this->state(fn () => [
+            'status' => 'open',
+            'is_escalated' => false,
+            'escalation_reason' => null,
+            'escalated_at' => null,
+            'cook_response' => null,
+            'cook_responded_at' => null,
+            'created_at' => now()->subHours(25),
+            'submitted_at' => now()->subHours(25),
+        ]);
+    }
+
+    /**
+     * F-185: State: open complaint less than 24 hours old (not eligible for escalation).
+     */
+    public function recentOpen(): static
+    {
+        return $this->state(fn () => [
+            'status' => 'open',
+            'is_escalated' => false,
+            'escalation_reason' => null,
+            'escalated_at' => null,
+            'cook_response' => null,
+            'cook_responded_at' => null,
+            'created_at' => now()->subHours(12),
+            'submitted_at' => now()->subHours(12),
+        ]);
+    }
+
+    /**
+     * F-185: State: in_review complaint older than 24 hours (should NOT be escalated).
+     */
+    public function inReviewOverdue(): static
+    {
+        return $this->state(fn () => [
+            'status' => 'in_review',
+            'is_escalated' => false,
+            'cook_response' => $this->faker->sentence(),
+            'cook_responded_at' => now()->subHours(20),
+            'created_at' => now()->subHours(25),
+            'submitted_at' => now()->subHours(25),
+        ]);
+    }
+
+    /**
      * State: with a specific category.
      */
     public function withCategory(string $category): static

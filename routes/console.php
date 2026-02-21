@@ -38,3 +38,10 @@ Schedule::command('dancymeals:process-withdrawals')->everyTwoMinutes();
  * Runs every 5 minutes to resolve transfers stuck in pending_verification.
  */
 Schedule::command('dancymeals:verify-pending-transfers')->everyFiveMinutes();
+
+/*
+ * F-185 BR-207: Auto-escalate open complaints that have not received
+ * a cook response within 24 hours of submission.
+ * Runs every 15 minutes to detect and escalate overdue complaints.
+ */
+Schedule::command('dancymeals:escalate-overdue-complaints')->everyFifteenMinutes();
