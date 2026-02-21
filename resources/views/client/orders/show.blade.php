@@ -600,8 +600,8 @@
                                 x-model="review_text"
                                 x-name="review_text"
                                 rows="3"
-                                maxlength="500"
                                 class="w-full rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface placeholder-on-surface/40 text-sm px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors resize-none"
+                                :class="review_text.length > 500 ? 'border-danger focus:ring-danger/50 focus:border-danger' : ''"
                                 placeholder="{{ __('Share your experience (optional)') }}"
                             ></textarea>
                             {{-- Character counter (BR-400) --}}
