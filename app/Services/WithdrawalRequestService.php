@@ -55,7 +55,8 @@ class WithdrawalRequestService
         $maxWithdrawable = min((float) $wallet->withdrawable_balance, $remainingDaily);
 
         // Pre-fill cook's mobile money number from tenant whatsapp/phone
-        $defaultPhone = $tenant->whatsapp ?: $tenant->phone ?: ($cook->phone ?: '');
+        $rawPhone = $tenant->whatsapp ?: $tenant->phone ?: ($cook->phone ?: '');
+        $defaultPhone = $rawPhone ? $this->normalizePhone($rawPhone) : '';
         $defaultProvider = $this->detectProvider($defaultPhone);
 
         return [
