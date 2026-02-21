@@ -7,9 +7,9 @@ use App\Models\User;
 
 /**
  * F-212: Cancellation Window Configuration
+ * F-213: Minimum Order Amount Configuration
  *
- * Handles reading and updating the cook's cancellation window setting.
- * The setting is stored in the tenant's settings JSON column.
+ * Handles reading and updating cook settings stored in the tenant's settings JSON column.
  */
 class CookSettingsService
 {
@@ -41,6 +41,34 @@ class CookSettingsService
      * in the tenant settings JSON column.
      */
     public const SETTINGS_KEY = 'cancellation_window_minutes';
+
+    /**
+     * Default minimum order amount in XAF.
+     *
+     * BR-507: Default minimum order amount is 0 XAF (no minimum).
+     */
+    public const DEFAULT_MINIMUM_ORDER_AMOUNT = 0;
+
+    /**
+     * Minimum allowed minimum order amount in XAF.
+     *
+     * BR-508: Allowed range: 0 to 100,000 XAF (inclusive).
+     */
+    public const MIN_ORDER_AMOUNT = 0;
+
+    /**
+     * Maximum allowed minimum order amount in XAF.
+     *
+     * BR-508: Allowed range: 0 to 100,000 XAF (inclusive).
+     */
+    public const MAX_ORDER_AMOUNT = 100000;
+
+    /**
+     * Settings JSON key for minimum order amount.
+     *
+     * BR-507: Stored as `minimum_order_amount` in tenant settings JSON column.
+     */
+    public const MINIMUM_ORDER_AMOUNT_KEY = 'minimum_order_amount';
 
     /**
      * Get the current cancellation window for a tenant.
@@ -88,6 +116,53 @@ class CookSettingsService
         return [
             'old_value' => $oldValue,
             'new_value' => $minutes,
+        ];
+    }
+
+    /**
+     * Get the current minimum order amount for a tenant.
+     *
+     * BR-507: Default is 0 XAF (no minimum) if not configured.
+     */
+    public function getMinimumOrderAmount(Tenant $tenant): int
+    {
+        $value = $tenant->getSetting(self::MINIMUM_ORDER_AMOUNT_KEY);
+
+        if ($value === null) {
+            return self::DEFAULT_MINIMUM_ORDER_AMOUNT;
+        }
+
+        return (int) $value;
+    }
+
+    /**
+     * Update the minimum order amount for a tenant.
+     *
+     * BR-515: Only the cook can modify this setting (enforced at controller level).
+     * BR-517: All changes are logged via Spatie Activitylog with old and new values.
+     *
+     * @return array{old_value: int, new_value: int}
+     */
+    public function updateMinimumOrderAmount(Tenant $tenant, int $amount, User $cook): array
+    {
+        $oldValue = $this->getMinimumOrderAmount($tenant);
+
+        $tenant->setSetting(self::MINIMUM_ORDER_AMOUNT_KEY, $amount);
+        $tenant->save();
+
+        // BR-517: Log the change with old and new values
+        activity('tenants')
+            ->performedOn($tenant)
+            ->causedBy($cook)
+            ->withProperties([
+                'old' => [self::MINIMUM_ORDER_AMOUNT_KEY => $oldValue],
+                'attributes' => [self::MINIMUM_ORDER_AMOUNT_KEY => $amount],
+            ])
+            ->log('minimum_order_amount_updated');
+
+        return [
+            'old_value' => $oldValue,
+            'new_value' => $amount,
         ];
     }
 }

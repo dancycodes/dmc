@@ -1,5 +1,6 @@
 {{--
     F-139: Order Cart Management
+    F-213: Minimum Order Amount Enforcement
     BR-253: Cart items displayed grouped by meal
     BR-254: Each item shows meal name, component name, quantity, unit price, line subtotal
     BR-255: Quantity adjustment respects component stock limits and minimum of 1
@@ -11,6 +12,12 @@
     BR-261: Cart cannot proceed to checkout if empty
     BR-262: All cart interactions use Gale (no page reload)
     BR-263: All text localized via __()
+    BR-510: Cart total below minimum disables checkout button
+    BR-511: Disabled checkout shows "Add X XAF more to meet the minimum order of Y XAF"
+    BR-513: Minimum order amount displayed in cart view
+    BR-514: 0 = no minimum (no mention anywhere)
+    BR-516: Minimum evaluated against food subtotal after promo, excluding delivery fees
+    BR-519: Gale reactively updates checkout button as cart changes
 --}}
 @extends('layouts.tenant-public')
 
@@ -27,11 +34,20 @@
         component_id: 0,
         quantity: 0,
         confirmClear: false,
+        minimumOrderAmount: {{ (int) $minimumOrderAmount }},
         formatPrice(amount) {
             return new Intl.NumberFormat('en').format(amount) + ' XAF';
         },
         get isEmpty() {
             return !this.cartMeals || this.cartMeals.length === 0;
+        },
+        // BR-510/BR-516: Minimum evaluated against food subtotal (cartTotal = food subtotal, excludes delivery)
+        get isBelowMinimum() {
+            return this.minimumOrderAmount > 0 && this.cartTotal < this.minimumOrderAmount;
+        },
+        // BR-511: Amount still needed to meet minimum
+        get amountStillNeeded() {
+            return Math.max(0, this.minimumOrderAmount - this.cartTotal);
         },
         increment(componentId, currentQty, maxQty) {
             if (currentQty >= maxQty) return;
@@ -69,7 +85,7 @@
             $action('{{ route('tenant.cart.checkout') }}');
         }
     }"
-    x-sync="['cartCount', 'cartTotal', 'cartMeals', 'cartError', 'cartSuccess']"
+    x-sync="['cartCount', 'cartTotal', 'cartMeals', 'cartError', 'cartSuccess', 'minimumOrderAmount']"
 >
     {{-- Back navigation --}}
     <div class="bg-surface dark:bg-surface border-b border-outline dark:border-outline">
@@ -235,7 +251,27 @@
                         <span class="text-xl font-bold text-primary" x-text="formatPrice(cartTotal)"></span>
                     </div>
                     <p class="text-xs text-on-surface mt-1">{{ __('Delivery fees calculated at checkout') }}</p>
+
+                    {{-- BR-513: Minimum order display in cart (when > 0 per BR-514) --}}
+                    <template x-if="minimumOrderAmount > 0">
+                        <div class="mt-3 pt-3 border-t border-outline dark:border-outline">
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-on-surface">{{ __('Minimum order') }}</span>
+                                <span class="font-semibold text-on-surface-strong" x-text="formatPrice(minimumOrderAmount)"></span>
+                            </div>
+                        </div>
+                    </template>
                 </div>
+
+                {{-- BR-510/BR-511: Minimum order not met — show message (BR-519: reactive) --}}
+                <template x-if="isBelowMinimum">
+                    <div class="mt-3 flex items-start gap-2 bg-warning-subtle dark:bg-warning-subtle border border-warning/30 dark:border-warning/30 rounded-lg px-4 py-3">
+                        <svg class="w-4 h-4 text-warning mt-0.5 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+                        <p class="text-sm text-on-surface">
+                            <span x-text="'{{ __('Add') }} ' + formatPrice(amountStillNeeded) + ' {{ __('more to meet the minimum order of') }} ' + formatPrice(minimumOrderAmount) + '.'"></span>
+                        </p>
+                    </div>
+                </template>
 
                 {{-- Action buttons --}}
                 <div class="mt-6 flex flex-col sm:flex-row gap-3">
@@ -243,11 +279,11 @@
                         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
                         {{ __('Continue Shopping') }}
                     </a>
-                    {{-- BR-260/BR-261: Proceed to checkout --}}
+                    {{-- BR-260/BR-261/BR-510: Proceed to checkout (disabled when empty OR below minimum) --}}
                     <button
                         @click="doCheckout()"
                         class="flex-1 h-11 inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg shadow-card transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        :disabled="$fetching() || isEmpty"
+                        :disabled="$fetching() || isEmpty || isBelowMinimum"
                     >
                         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
                         <span x-show="!$fetching()">{{ __('Proceed to Checkout') }}</span>
@@ -317,15 +353,24 @@
         x-transition:leave-start="translate-y-0"
         x-transition:leave-end="translate-y-full"
     >
+        {{-- BR-511: Minimum order not met warning (mobile) --}}
+        <template x-if="isBelowMinimum">
+            <p class="text-xs text-warning font-medium mb-2" x-text="'{{ __('Add') }} ' + formatPrice(amountStillNeeded) + ' {{ __('more') }}'"></p>
+        </template>
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-xs text-on-surface">{{ __('Subtotal') }}</p>
                 <p class="text-lg font-bold text-primary" x-text="formatPrice(cartTotal)"></p>
+                {{-- BR-513: Show minimum on mobile bar (when > 0, BR-514) --}}
+                <template x-if="minimumOrderAmount > 0">
+                    <p class="text-xs text-on-surface opacity-70" x-text="'{{ __('Min:') }} ' + formatPrice(minimumOrderAmount)"></p>
+                </template>
             </div>
+            {{-- BR-510: Disabled when below minimum --}}
             <button
                 @click="doCheckout()"
-                class="h-11 px-6 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg shadow-card transition-all duration-200 cursor-pointer inline-flex items-center gap-2"
-                :disabled="$fetching()"
+                class="h-11 px-6 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg shadow-card transition-all duration-200 cursor-pointer inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                :disabled="$fetching() || isBelowMinimum"
             >
                 <span x-show="!$fetching()">{{ __('Checkout') }}</span>
                 <span x-show="$fetching()" x-cloak>{{ __('Processing...') }}</span>

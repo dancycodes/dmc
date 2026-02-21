@@ -43,7 +43,7 @@ class TenantLandingService
      * BR-126: Only renders on tenant domains
      * BR-127: Cook's selected theme applied dynamically
      *
-     * @return array{tenant: Tenant, themeConfig: array, sections: array, cookProfile: array, meals: LengthAwarePaginator, scheduleDisplay: array, deliveryDisplay: array, filterData: array, cancellationWindowMinutes: int}
+     * @return array{tenant: Tenant, themeConfig: array, sections: array, cookProfile: array, meals: LengthAwarePaginator, scheduleDisplay: array, deliveryDisplay: array, filterData: array, cancellationWindowMinutes: int, minimumOrderAmount: int}
      */
     public function getLandingPageData(Tenant $tenant, int $page = 1): array
     {
@@ -58,6 +58,9 @@ class TenantLandingService
         // F-212 BR-501: The cancellation policy is displayed on the tenant landing page.
         $cancellationWindowMinutes = $tenant->getCancellationWindowMinutes();
 
+        // F-213 BR-512: The minimum order amount is displayed on the tenant landing page (when > 0).
+        $minimumOrderAmount = $tenant->getMinimumOrderAmount();
+
         return [
             'tenant' => $tenant,
             'themeConfig' => $themeConfig,
@@ -68,6 +71,7 @@ class TenantLandingService
             'deliveryDisplay' => $deliveryDisplay,
             'filterData' => $filterData,
             'cancellationWindowMinutes' => $cancellationWindowMinutes,
+            'minimumOrderAmount' => $minimumOrderAmount,
         ];
     }
 

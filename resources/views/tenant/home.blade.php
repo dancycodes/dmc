@@ -360,20 +360,39 @@
 
     {{-- ============================================ --}}
     {{-- F-212: Cancellation Policy                   --}}
+    {{-- F-213: Minimum Order Amount Display          --}}
     {{-- BR-501: Cancellation policy displayed on     --}}
     {{-- tenant landing page.                         --}}
-    {{-- BR-505: All text uses __() localization.     --}}
+    {{-- BR-512: Minimum order displayed when > 0.    --}}
+    {{-- BR-514: Hidden when minimum is 0.            --}}
+    {{-- BR-505/BR-518: All text uses __().           --}}
     {{-- ============================================ --}}
-    <section id="cancellation-policy" class="scroll-mt-16 py-8 sm:py-10">
+    <section id="ordering-info" class="scroll-mt-16 py-8 sm:py-10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-3 bg-info-subtle dark:bg-info-subtle border border-info/30 dark:border-info/30 rounded-xl px-6 py-4 text-center sm:text-left">
-                <div class="flex items-center gap-2 shrink-0">
-                    <svg class="w-5 h-5 text-info shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
-                    <span class="font-semibold text-info text-sm">{{ __('Cancellation Policy') }}</span>
+            <div class="flex flex-col sm:flex-row items-stretch justify-center gap-3">
+                {{-- Cancellation Policy badge --}}
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-3 bg-info-subtle dark:bg-info-subtle border border-info/30 dark:border-info/30 rounded-xl px-6 py-4 text-center sm:text-left flex-1">
+                    <div class="flex items-center gap-2 shrink-0">
+                        <svg class="w-5 h-5 text-info shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+                        <span class="font-semibold text-info text-sm">{{ __('Cancellation Policy') }}</span>
+                    </div>
+                    <p class="text-sm text-on-surface">
+                        {{ __('Free cancellation within :minutes minutes of placing your order.', ['minutes' => $cancellationWindowMinutes]) }}
+                    </p>
                 </div>
-                <p class="text-sm text-on-surface">
-                    {{ __('Free cancellation within :minutes minutes of placing your order.', ['minutes' => $cancellationWindowMinutes]) }}
-                </p>
+
+                {{-- BR-512: Minimum order badge — only shown when minimum > 0 (BR-514) --}}
+                @if($minimumOrderAmount > 0)
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 bg-secondary-subtle dark:bg-secondary-subtle border border-secondary/30 dark:border-secondary/30 rounded-xl px-6 py-4 text-center sm:text-left flex-1">
+                        <div class="flex items-center gap-2 shrink-0">
+                            <svg class="w-5 h-5 text-secondary shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                            <span class="font-semibold text-secondary text-sm">{{ __('Minimum Order') }}</span>
+                        </div>
+                        <p class="text-sm text-on-surface">
+                            {{ __('Minimum order: :amount XAF', ['amount' => number_format($minimumOrderAmount)]) }}
+                        </p>
+                    </div>
+                @endif
             </div>
         </div>
     </section>
