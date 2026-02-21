@@ -4,22 +4,20 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
-use App\Mail\PaymentReceiptMail;
 use App\Models\Order;
 use App\Models\PaymentMethod;
 use App\Models\Quarter;
 use App\Models\Tenant;
-use App\Notifications\PaymentConfirmedNotification;
 use App\Services\CartService;
 use App\Services\CheckoutService;
 use App\Services\OrderNotificationService;
+use App\Services\PaymentNotificationService;
 use App\Services\PaymentReceiptService;
 use App\Services\PaymentRetryService;
 use App\Services\PaymentService;
 use App\Services\WalletPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 /**
  * F-140: Delivery/Pickup Choice Selection
@@ -1448,13 +1446,14 @@ class CheckoutController extends Controller
     /**
      * Send payment notifications (push, database, email).
      *
-     * BR-400: Push notification to client.
-     * BR-401: Push notification to cook.
-     * BR-402: Email receipt to client.
-     * BR-407: All three channels.
+     * F-194 BR-299: Client receives push + DB + email receipt on payment success.
+     * F-191 BR-269/BR-270: Cook + managers receive push + DB + email for new order.
      *
      * Uses a session flag to prevent duplicate notifications on page refresh.
-     * Edge case: If email/push fails, order is still confirmed (BR-407 fallback).
+     * The webhook (WebhookService) also dispatches the client notification to cover
+     * clients who navigate away before reaching the receipt page.
+     *
+     * Edge case: If email/push fails, order is still confirmed (BR-299 edge case).
      */
     private function sendPaymentNotifications(Order $order, Tenant $tenant): void
     {
@@ -1469,44 +1468,33 @@ class CheckoutController extends Controller
 
         $client = auth()->user();
 
+        // F-194 BR-299: Push + DB + Email receipt to client (N-006)
         try {
-            // BR-400: Push + database notification to client (N-006)
-            $client->notify(new PaymentConfirmedNotification($order, $tenant));
-        } catch (\Exception $e) {
-            // Edge case: Push notification fails — log but don't block
-            Log::warning('F-154: Client payment notification failed', [
-                'order_id' => $order->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
-
-        try {
-            // F-191 BR-269/BR-270: Push + DB + Email to cook AND all managers (N-001)
-            $notificationService = app(OrderNotificationService::class);
-            $notificationService->notifyNewOrder($order, $tenant);
-        } catch (\Exception $e) {
-            // Edge case: Notification dispatch fails — log but don't block
-            Log::warning('F-191: Cook/manager order notification failed', [
-                'order_id' => $order->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
-
-        try {
-            // BR-402: Email receipt to client
             $transaction = $order->paymentTransactions()
                 ->where('status', 'successful')
                 ->latest()
                 ->first();
 
-            Mail::to($client->email)
-                ->send(
-                    (new PaymentReceiptMail($order, $tenant, $transaction))
-                        ->forRecipient($client)
-                );
+            $paymentNotificationService = app(PaymentNotificationService::class);
+            $paymentNotificationService->notifyPaymentSuccess(
+                order: $order,
+                tenant: $tenant,
+                client: $client,
+                transaction: $transaction,
+            );
         } catch (\Exception $e) {
-            // Edge case: Email fails — receipt still available on-page
-            Log::warning('F-154: Email receipt failed', [
+            Log::warning('F-194: Client payment success notification failed', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        // F-191 BR-269/BR-270: Push + DB + Email to cook AND all managers (N-001)
+        try {
+            $notificationService = app(OrderNotificationService::class);
+            $notificationService->notifyNewOrder($order, $tenant);
+        } catch (\Exception $e) {
+            Log::warning('F-191: Cook/manager order notification failed', [
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),
             ]);

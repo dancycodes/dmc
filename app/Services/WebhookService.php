@@ -237,6 +237,10 @@ class WebhookService
                 'amount' => $order->grand_total,
             ]);
 
+            // F-194 BR-299: Notify client of payment success (push + DB + email receipt)
+            // Dispatched OUTSIDE the DB transaction per BR-309 (no block on processing)
+            $this->dispatchPaymentSuccessNotification($transaction, $order);
+
             return [
                 'success' => true,
                 'message' => 'Payment processed successfully',
@@ -324,6 +328,10 @@ class WebhookService
                 'order_id' => $order->id,
                 'tx_ref' => $transaction->flutterwave_tx_ref,
             ]);
+
+            // F-194 BR-300: Notify client of payment failure (push + DB only, no email)
+            // Dispatched OUTSIDE the DB transaction per BR-309 (no block on processing)
+            $this->dispatchPaymentFailedNotification($order, $data);
 
             return [
                 'success' => true,
@@ -449,6 +457,73 @@ class WebhookService
     private function isAlreadyProcessed(PaymentTransaction $transaction): bool
     {
         return in_array($transaction->status, ['successful', 'failed'], true);
+    }
+
+    /**
+     * F-194 BR-299: Dispatch payment success notification to the client.
+     *
+     * Push + DB + email receipt. Called OUTSIDE DB transaction per BR-309.
+     * The receipt page (CheckoutController) also dispatches this notification
+     * with a session guard; this webhook dispatch ensures notification is sent
+     * even for clients who navigate away before reaching the receipt page.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function dispatchPaymentSuccessNotification(PaymentTransaction $transaction, Order $order): void
+    {
+        try {
+            $client = $order->client;
+            $tenant = $order->tenant;
+
+            if (! $client || ! $tenant) {
+                return;
+            }
+
+            $notificationService = app(PaymentNotificationService::class);
+            $notificationService->notifyPaymentSuccess(
+                order: $order,
+                tenant: $tenant,
+                client: $client,
+                transaction: $transaction,
+            );
+        } catch (\Throwable $e) {
+            Log::warning('F-194: Webhook payment success notification failed', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * F-194 BR-300: Dispatch payment failure notification to the client.
+     *
+     * Push + DB only (no email per BR-300). Called OUTSIDE DB transaction per BR-309.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function dispatchPaymentFailedNotification(Order $order, array $data): void
+    {
+        try {
+            $client = $order->client;
+
+            if (! $client) {
+                return;
+            }
+
+            $failureReason = $data['processor_response'] ?? $data['status'] ?? '';
+
+            $notificationService = app(PaymentNotificationService::class);
+            $notificationService->notifyPaymentFailed(
+                order: $order,
+                client: $client,
+                failureReason: (string) $failureReason,
+            );
+        } catch (\Throwable $e) {
+            Log::warning('F-194: Webhook payment failure notification failed', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
