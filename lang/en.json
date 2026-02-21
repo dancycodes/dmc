@@ -2615,5 +2615,9 @@
     "Be the first to try this meal!": "Be the first to try this meal!",
     ":count review|:count reviews": ":count review|:count reviews",
     "Load more reviews": "Load more reviews",
-    "Anonymous": "Anonymous"
+    "Anonymous": "Anonymous",
+    "reviews": "reviews",
+    "Trending up vs. last 30 days": "Trending up vs. last 30 days",
+    "Trending down vs. last 30 days": "Trending down vs. last 30 days",
+    "Average rating: :rating/5 (:count reviews)": "Average rating: :rating/5 (:count reviews)"
 }

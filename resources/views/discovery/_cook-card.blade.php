@@ -25,10 +25,14 @@
     // When meals table exists, DiscoveryService will load this.
     $mealCount = $tenant->active_meal_count ?? 0;
 
-    // Average rating: forward-compatible for F-176 (Order Rating).
-    // When reviews exist, DiscoveryService will compute this.
-    $averageRating = $tenant->average_rating ?? null;
-    $hasRating = $averageRating !== null && $averageRating > 0;
+    // F-179: Cook Overall Rating Calculation
+    // BR-421: Rating cached in tenant settings JSON.
+    // BR-418: Displayed as X.X/5 with one decimal place.
+    // BR-419: Total count includes all ratings (with or without review text).
+    // BR-423: Cooks with zero ratings show "New" instead of stars.
+    $averageRating = $tenant->getSetting('average_rating', null);
+    $totalRatings = (int) $tenant->getSetting('total_ratings', 0);
+    $hasRating = $averageRating !== null && $averageRating > 0 && $totalRatings > 0;
 
     // Primary delivery town: forward-compatible for F-082 (Add Town).
     // When towns table exists, DiscoveryService will load this.
@@ -168,12 +172,14 @@
             {{-- Separator --}}
             <span class="text-outline dark:text-outline" aria-hidden="true">&middot;</span>
 
-            {{-- Average Rating (BR-078) --}}
+            {{-- Average Rating — F-179: Cook Overall Rating Calculation --}}
+            {{-- BR-418: X.X/5 format. BR-419: Count includes all ratings. BR-423: "New" for zero. --}}
             @if($hasRating)
-                <div class="flex items-center gap-1" title="{{ __('Average rating') }}">
+                <div class="flex items-center gap-1" title="{{ __('Average rating: :rating/5 (:count reviews)', ['rating' => number_format($averageRating, 1), 'count' => $totalRatings]) }}">
                     {{-- Star icon (Lucide, filled) --}}
                     <svg class="w-4 h-4 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
                     <span class="text-on-surface-strong font-medium">{{ number_format($averageRating, 1) }}</span>
+                    <span class="text-on-surface/60 text-xs">({{ $totalRatings }})</span>
                 </div>
             @else
                 <div class="flex items-center gap-1" title="{{ __('No ratings yet') }}">

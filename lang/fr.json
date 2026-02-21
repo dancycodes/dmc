@@ -2614,5 +2614,9 @@
     "Be the first to try this meal!": "Soyez le premier à essayer ce plat !",
     ":count review|:count reviews": ":count avis|:count avis",
     "Load more reviews": "Charger plus d'avis",
-    "Anonymous": "Anonyme"
+    "Anonymous": "Anonyme",
+    "reviews": "avis",
+    "Trending up vs. last 30 days": "En hausse par rapport aux 30 derniers jours",
+    "Trending down vs. last 30 days": "En baisse par rapport aux 30 derniers jours",
+    "Average rating: :rating/5 (:count reviews)": "Note moyenne : :rating/5 (:count avis)"
 }

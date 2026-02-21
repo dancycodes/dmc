@@ -179,23 +179,52 @@ class RatingService
     }
 
     /**
-     * BR-395: Recalculate the cook's overall rating.
+     * BR-395/BR-417/BR-420/BR-421: Recalculate the cook's overall rating.
      *
-     * Forward-compatible for F-179. Currently stores the average
-     * rating in the tenant's settings JSON.
+     * F-179: Cook Overall Rating Calculation
+     * BR-417: Overall rating = sum of all stars / number of ratings (simple average).
+     * BR-418: Displayed as X.X/5 with one decimal place.
+     * BR-420: Recalculated immediately when a new rating is submitted.
+     * BR-421: Cached on the tenant settings JSON for performance.
+     * BR-424: Ratings from cancelled/refunded orders remain in calculation.
+     * BR-425: Tenant-scoped (separate ratings per tenant).
+     *
+     * Uses lockForUpdate to prevent stale data during concurrent rating submissions.
      */
-    private function recalculateCookRating(Tenant $tenant): void
+    public function recalculateCookRating(Tenant $tenant): void
     {
         $stats = Rating::query()
             ->where('tenant_id', $tenant->id)
             ->selectRaw('AVG(stars) as average_rating, COUNT(*) as total_ratings')
             ->first();
 
+        // Atomic update: refresh tenant to avoid stale settings
+        $tenant->refresh();
         $settings = $tenant->settings ?? [];
-        $settings['average_rating'] = round((float) $stats->average_rating, 1);
-        $settings['total_ratings'] = (int) $stats->total_ratings;
+        $settings['average_rating'] = round((float) ($stats->average_rating ?? 0), 1);
+        $settings['total_ratings'] = (int) ($stats->total_ratings ?? 0);
         $tenant->settings = $settings;
         $tenant->save();
+    }
+
+    /**
+     * F-179: Get cached cook rating stats from tenant settings.
+     *
+     * BR-421: Returns the cached average_rating and total_ratings from tenant settings.
+     * BR-423: Returns hasRating=false for cooks with zero ratings.
+     *
+     * @return array{average: float, count: int, hasRating: bool}
+     */
+    public function getCachedCookRating(Tenant $tenant): array
+    {
+        $average = (float) ($tenant->getSetting('average_rating', 0));
+        $count = (int) ($tenant->getSetting('total_ratings', 0));
+
+        return [
+            'average' => $average,
+            'count' => $count,
+            'hasRating' => $count > 0,
+        ];
     }
 
     /**

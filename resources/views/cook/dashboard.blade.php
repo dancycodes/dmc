@@ -29,8 +29,8 @@
     x-interval.30s.visible="refreshStats()"
     class="space-y-6"
 >
-    {{-- Stat Cards Grid: 2x2 on desktop/tablet, stacked on mobile --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    {{-- Stat Cards Grid: 2x2 on tablet, 3-col on desktop for 5 cards, stacked on mobile --}}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {{-- Today's Orders Card --}}
         <div
             x-data="{
@@ -158,6 +158,67 @@
                     <span class="text-xs text-on-surface/60 dark:text-on-surface/60">{{ __('Awaiting confirmation') }}</span>
                 </div>
             </a>
+        </div>
+
+        {{-- F-179: Cook Overall Rating Card --}}
+        {{-- BR-418: X.X/5 format. BR-419: Count includes all ratings. --}}
+        {{-- BR-423: "No ratings yet" for zero. Scenario 5: Trend indicator. --}}
+        <div
+            x-data="{
+                average: @js($ratingStats['average']),
+                count: @js($ratingStats['count']),
+                hasRating: @js($ratingStats['hasRating']),
+                trend: @js($ratingStats['trend']),
+                get formattedAverage() {
+                    return this.hasRating ? Number(this.average).toFixed(1) : '—';
+                },
+                get trendIcon() {
+                    return this.trend;
+                }
+            }"
+            x-component="stat-cook-rating"
+            class="bg-surface dark:bg-surface rounded-xl shadow-card p-5 transition-shadow duration-200 hover:shadow-md"
+        >
+            <div class="block">
+                <div class="flex items-center gap-3">
+                    <span class="w-10 h-10 rounded-full bg-secondary-subtle dark:bg-secondary-subtle flex items-center justify-center shrink-0">
+                        {{-- Lucide: star (md=20) --}}
+                        <svg class="w-5 h-5 text-secondary dark:text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-medium text-on-surface dark:text-on-surface uppercase tracking-wide">{{ __('Your Rating') }}</p>
+                        <div class="flex items-center gap-2">
+                            <p class="text-2xl font-bold text-on-surface-strong dark:text-on-surface-strong" x-text="formattedAverage">
+                                {{ $ratingStats['hasRating'] ? number_format($ratingStats['average'], 1) : '—' }}
+                            </p>
+                            <template x-if="hasRating">
+                                <span class="text-sm text-on-surface/60 dark:text-on-surface/60">/5</span>
+                            </template>
+                            {{-- Trend indicator --}}
+                            <template x-if="hasRating && trendIcon === 'up'">
+                                <span class="inline-flex items-center gap-0.5 text-xs text-success dark:text-success" title="{{ __('Trending up vs. last 30 days') }}">
+                                    <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"></path></svg>
+                                </span>
+                            </template>
+                            <template x-if="hasRating && trendIcon === 'down'">
+                                <span class="inline-flex items-center gap-0.5 text-xs text-danger dark:text-danger" title="{{ __('Trending down vs. last 30 days') }}">
+                                    <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+                                </span>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center mt-3">
+                    <template x-if="hasRating">
+                        <span class="text-xs text-on-surface/60 dark:text-on-surface/60" x-text="count + ' {{ __('reviews') }}'">
+                            {{ $ratingStats['count'] }} {{ __('reviews') }}
+                        </span>
+                    </template>
+                    <template x-if="!hasRating">
+                        <span class="text-xs text-on-surface/60 dark:text-on-surface/60">{{ __('No ratings yet') }}</span>
+                    </template>
+                </div>
+            </div>
         </div>
     </div>
 

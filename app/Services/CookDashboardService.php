@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Meal;
+use App\Models\Rating;
 use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,7 @@ class CookDashboardService
      * Get all dashboard data for a tenant.
      *
      * F-077: Cook Dashboard Home
+     * F-179: Cook Overall Rating Calculation — rating stat card
      * Forward-compatible with orders/notifications tables (not yet created).
      *
      * @return array{
@@ -22,7 +24,8 @@ class CookDashboardService
      *     activeMeals: int,
      *     pendingOrders: int,
      *     recentOrders: array<mixed>,
-     *     recentNotifications: array<mixed>
+     *     recentNotifications: array<mixed>,
+     *     ratingStats: array{average: float, count: int, hasRating: bool, trend: string}
      * }
      */
     public function getDashboardData(Tenant $tenant, \App\Models\User $user): array
@@ -34,6 +37,7 @@ class CookDashboardService
             'pendingOrders' => $this->getPendingOrdersCount($tenant),
             'recentOrders' => $this->getRecentOrders($tenant),
             'recentNotifications' => $this->getRecentNotifications($user),
+            'ratingStats' => $this->getRatingStats($tenant),
         ];
     }
 
@@ -201,6 +205,52 @@ class CookDashboardService
         $statuses = $this->getTodayOrdersByStatus($tenant);
 
         return array_sum($statuses);
+    }
+
+    /**
+     * F-179: Get the cook's overall rating stats for the dashboard.
+     *
+     * BR-417: Simple average of all ratings.
+     * BR-418: X.X/5 with one decimal place.
+     * BR-421: Reads cached values from tenant settings.
+     * BR-423: Returns hasRating=false for zero ratings.
+     * Scenario 5: Stat card with trend indicator (up/down vs. last 30 days).
+     *
+     * @return array{average: float, count: int, hasRating: bool, trend: string}
+     */
+    public function getRatingStats(Tenant $tenant): array
+    {
+        $average = (float) ($tenant->getSetting('average_rating', 0));
+        $count = (int) ($tenant->getSetting('total_ratings', 0));
+        $hasRating = $count > 0;
+
+        // Trend calculation: compare current average to 30-day-ago average
+        $trend = 'stable';
+
+        if ($hasRating && Schema::hasTable('ratings')) {
+            $thirtyDaysAgo = Carbon::now()->subDays(30);
+            $oldStats = Rating::query()
+                ->where('tenant_id', $tenant->id)
+                ->where('created_at', '<', $thirtyDaysAgo)
+                ->selectRaw('AVG(stars) as average_rating, COUNT(*) as total_ratings')
+                ->first();
+
+            $oldAverage = round((float) ($oldStats->average_rating ?? 0), 1);
+            $oldCount = (int) ($oldStats->total_ratings ?? 0);
+
+            if ($oldCount > 0 && $average > $oldAverage) {
+                $trend = 'up';
+            } elseif ($oldCount > 0 && $average < $oldAverage) {
+                $trend = 'down';
+            }
+        }
+
+        return [
+            'average' => $average,
+            'count' => $count,
+            'hasRating' => $hasRating,
+            'trend' => $trend,
+        ];
     }
 
     /**

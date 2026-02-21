@@ -17,6 +17,10 @@ use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 
+/**
+ * F-126: Tenant Landing Page data aggregation service.
+ * F-179: Integrates cook overall rating from cached tenant settings.
+ */
 class TenantLandingService
 {
     /**
@@ -134,34 +138,26 @@ class TenantLandingService
     /**
      * Build rating data for the cook.
      *
+     * F-179: Cook Overall Rating Calculation
      * BR-141: Average star rating with numeric value
      * BR-142: Total review count
      * BR-143: "New Cook" badge for zero reviews
-     *
-     * Forward-compatible: F-176 (Rating System) will provide actual data.
-     * Until then, returns zero reviews / "New Cook" state.
+     * BR-417: Simple average of all stars / number of ratings
+     * BR-418: Displayed as X.X/5 with one decimal place
+     * BR-421: Reads cached values from tenant settings JSON
+     * BR-423: hasReviews=false for zero ratings (shows "New Cook")
      *
      * @return array{average: float, count: int, hasReviews: bool}
      */
     private function buildRatingData(Tenant $tenant): array
     {
-        // Forward-compatible: when F-176 rating system is implemented,
-        // this will query actual rating data from the orders/reviews table.
-        // For now, all cooks show as "New Cook" (zero reviews).
-        $average = 0.0;
-        $count = 0;
-
-        // Future F-176 implementation will replace the above with:
-        // if (\Schema::hasTable('order_ratings')) {
-        //     $stats = $tenant->orderRatings()->selectRaw('AVG(rating) as avg, COUNT(*) as cnt')->first();
-        //     $average = round((float) ($stats->avg ?? 0), 1);
-        //     $count = (int) ($stats->cnt ?? 0);
-        // }
+        $ratingService = app(RatingService::class);
+        $cached = $ratingService->getCachedCookRating($tenant);
 
         return [
-            'average' => $average,
-            'count' => $count,
-            'hasReviews' => $count > 0,
+            'average' => $cached['average'],
+            'count' => $cached['count'],
+            'hasReviews' => $cached['hasRating'],
         ];
     }
 
