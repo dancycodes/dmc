@@ -121,6 +121,24 @@ class Complaint extends Model
     }
 
     /**
+     * Get the order associated with this complaint.
+     */
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    /**
+     * F-171: Check if this complaint is still active (not resolved or dismissed).
+     *
+     * Active complaints pause the withdrawable timer for related orders.
+     */
+    public function isActive(): bool
+    {
+        return ! in_array($this->status, ['resolved', 'dismissed'], true);
+    }
+
+    /**
      * Get the client who submitted the complaint.
      */
     public function client(): BelongsTo

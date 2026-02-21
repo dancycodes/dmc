@@ -20,3 +20,9 @@ Schedule::command('activitylog:clean --force')->weekly()->sundays()->at('03:00')
  * Runs every minute to ensure timely cancellation of expired orders.
  */
 Schedule::command('dancymeals:cancel-expired-orders')->everyMinute();
+
+/*
+ * F-171 BR-336: Scheduled job runs every 5 minutes to transition eligible
+ * unwithdrawable funds to withdrawable after the hold period expires.
+ */
+Schedule::command('dancymeals:process-withdrawable-timers')->everyFiveMinutes();

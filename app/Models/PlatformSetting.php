@@ -46,6 +46,7 @@ class PlatformSetting extends Model
         'support_phone' => ['value' => '', 'type' => 'string', 'group' => 'support'],
         'maintenance_mode' => ['value' => '0', 'type' => 'boolean', 'group' => 'system'],
         'maintenance_reason' => ['value' => '', 'type' => 'string', 'group' => 'system'],
+        'withdrawable_hold_hours' => ['value' => '3', 'type' => 'integer', 'group' => 'orders'],
     ];
 
     /**

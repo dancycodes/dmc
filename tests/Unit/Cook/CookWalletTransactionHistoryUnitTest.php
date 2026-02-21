@@ -300,7 +300,7 @@ test('getTransactionSummaryCounts is tenant scoped', function () {
 test('getTypeFilterOptions returns all filter options', function () {
     $options = CookWalletService::getTypeFilterOptions();
 
-    expect($options)->toHaveCount(5);
+    expect($options)->toHaveCount(6);
 
     $values = array_column($options, 'value');
 
@@ -308,7 +308,8 @@ test('getTypeFilterOptions returns all filter options', function () {
         ->toContain(WalletTransaction::TYPE_COMMISSION)
         ->toContain(WalletTransaction::TYPE_WITHDRAWAL)
         ->toContain(WalletTransaction::TYPE_REFUND_DEDUCTION)
-        ->toContain(WalletTransaction::TYPE_REFUND);
+        ->toContain(WalletTransaction::TYPE_REFUND)
+        ->toContain(WalletTransaction::TYPE_BECAME_WITHDRAWABLE);
 });
 
 test('getTypeFilterOptions returns label and value for each option', function () {

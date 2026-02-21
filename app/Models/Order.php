@@ -261,6 +261,24 @@ class Order extends Model
     }
 
     /**
+     * Get the clearance record for this order.
+     *
+     * F-171: Order clearance tracking for withdrawable timer.
+     */
+    public function clearance(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(OrderClearance::class);
+    }
+
+    /**
+     * Get the complaints filed against this order.
+     */
+    public function complaints(): HasMany
+    {
+        return $this->hasMany(Complaint::class);
+    }
+
+    /**
      * Generate a unique order number.
      *
      * Format: DMC-{YYMMDD}-{4 digit sequence}
