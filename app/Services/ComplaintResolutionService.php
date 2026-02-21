@@ -10,7 +10,8 @@ use Spatie\Activitylog\Models\Activity;
 class ComplaintResolutionService
 {
     public function __construct(
-        private WalletRefundService $walletRefundService
+        private WalletRefundService $walletRefundService,
+        private PaymentBlockService $paymentBlockService
     ) {}
 
     /**
@@ -49,6 +50,9 @@ class ComplaintResolutionService
             };
 
             $complaint->save();
+
+            // F-186 BR-220: Unblock payment on complaint resolution
+            $this->unblockPaymentOnResolution($complaint);
 
             // BR-173: Log resolution in activity log
             $this->logResolution($complaint, $admin);
@@ -184,6 +188,28 @@ class ComplaintResolutionService
             ->first();
 
         return $transaction ? (float) $transaction->amount : null;
+    }
+
+    /**
+     * F-186 BR-220: Unblock payment when complaint is resolved.
+     *
+     * BR-221: Dismiss -> resume timer.
+     * BR-222: Refund -> adjust payment.
+     */
+    private function unblockPaymentOnResolution(Complaint $complaint): void
+    {
+        try {
+            $this->paymentBlockService->unblockPaymentOnResolution(
+                $complaint,
+                $complaint->resolution_type
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('F-186: Payment unblock on resolution failed', [
+                'complaint_id' => $complaint->id,
+                'resolution_type' => $complaint->resolution_type,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

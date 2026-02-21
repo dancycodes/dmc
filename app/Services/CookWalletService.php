@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\CookWallet;
+use App\Models\OrderClearance;
 use App\Models\PendingDeduction;
 use App\Models\Tenant;
 use App\Models\User;
@@ -242,6 +243,10 @@ class CookWalletService
         $pendingDeductions = $this->getPendingDeductionsData($tenant, $cook);
         $totalPendingDeduction = $this->getTotalPendingDeduction($tenant, $cook);
 
+        // F-186: Blocked payments data
+        $blockedPayments = $this->getBlockedPaymentsData($tenant);
+        $totalBlockedAmount = $this->getTotalBlockedAmount($tenant);
+
         return [
             'wallet' => $wallet,
             'recentTransactions' => $recentTransactions,
@@ -251,6 +256,8 @@ class CookWalletService
             'isCook' => $isCook,
             'pendingDeductions' => $pendingDeductions,
             'totalPendingDeduction' => $totalPendingDeduction,
+            'blockedPayments' => $blockedPayments,
+            'totalBlockedAmount' => $totalBlockedAmount,
         ];
     }
 
@@ -287,6 +294,36 @@ class CookWalletService
             ->whereNull('settled_at')
             ->where('remaining_amount', '>', 0)
             ->sum('remaining_amount');
+    }
+
+    /**
+     * F-186: Get blocked/flagged payments for the cook wallet dashboard.
+     *
+     * BR-226: Payment block status visible on wallet view.
+     *
+     * @return Collection<int, OrderClearance>
+     */
+    public function getBlockedPaymentsData(Tenant $tenant): Collection
+    {
+        return OrderClearance::query()
+            ->where('tenant_id', $tenant->id)
+            ->withActiveComplaintBlock()
+            ->with(['order:id,order_number', 'complaint:id,status,category,submitted_at'])
+            ->orderBy('blocked_at', 'desc')
+            ->get();
+    }
+
+    /**
+     * F-186: Get the total blocked amount for the tenant.
+     *
+     * BR-225: Cook cannot withdraw blocked/flagged amounts.
+     */
+    public function getTotalBlockedAmount(Tenant $tenant): float
+    {
+        return (float) OrderClearance::query()
+            ->where('tenant_id', $tenant->id)
+            ->withActiveComplaintBlock()
+            ->sum('amount');
     }
 
     /**

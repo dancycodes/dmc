@@ -151,7 +151,7 @@ class ComplaintSubmissionService
                 ->log('complaint_submitted');
 
             // BR-190: Trigger payment block if cook payment is unwithdrawable (F-186)
-            $this->triggerPaymentBlockIfApplicable($order);
+            $this->triggerPaymentBlockIfApplicable($order, $complaint);
 
             // BR-191: Notify cook and managers
             $this->notifyCookAndManagers($complaint, $order);
@@ -176,17 +176,28 @@ class ComplaintSubmissionService
     /**
      * BR-190: Trigger payment block if the cook's payment is still unwithdrawable.
      *
-     * Uses OrderClearanceService::pauseTimer() from F-171.
+     * F-186: Uses PaymentBlockService for complaint-triggered payment blocks.
+     * BR-218: If unwithdrawable, pause timer immediately.
+     * BR-223: If already withdrawable, flag for review.
      */
-    private function triggerPaymentBlockIfApplicable(Order $order): void
+    private function triggerPaymentBlockIfApplicable(Order $order, ?Complaint $complaint = null): void
     {
+        if (! $complaint) {
+            return;
+        }
+
         try {
-            $clearanceService = app(OrderClearanceService::class);
-            $clearanceService->pauseTimer($order);
+            $paymentBlockService = app(PaymentBlockService::class);
+            $result = $paymentBlockService->blockPaymentForComplaint($order, $complaint);
+
+            \Illuminate\Support\Facades\Log::info('F-186: Payment block result', [
+                'order_id' => $order->id,
+                'complaint_id' => $complaint->id,
+                'action' => $result['action'],
+            ]);
         } catch (\Throwable $e) {
-            // F-186 not yet fully implemented or clearance doesn't exist
             // Log but don't fail the complaint submission
-            \Illuminate\Support\Facades\Log::warning('F-183: Payment block trigger failed', [
+            \Illuminate\Support\Facades\Log::warning('F-186: Payment block trigger failed', [
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),
             ]);

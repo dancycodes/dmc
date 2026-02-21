@@ -401,6 +401,61 @@
             </div>
         </div>
 
+        {{-- F-186: Payment Block Notice --}}
+        {{-- BR-226: Payment block status visible on order detail view --}}
+        @if(isset($blockedClearance) && $blockedClearance)
+            <div class="bg-warning-subtle dark:bg-warning-subtle rounded-xl shadow-card border border-warning/20 dark:border-warning/30 overflow-hidden">
+                <div class="px-5 py-3.5 border-b border-warning/20 dark:border-warning/30 bg-warning/5 dark:bg-warning/10">
+                    <h3 class="text-sm font-semibold text-on-surface-strong flex items-center gap-2">
+                        {{-- Lock icon (Lucide, sm=16) --}}
+                        <svg class="w-4 h-4 text-warning" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        @if($blockedClearance->is_flagged_for_review)
+                            {{ __('Payment Under Review') }}
+                        @else
+                            {{ __('Payment Blocked') }}
+                        @endif
+                    </h3>
+                </div>
+                <div class="p-5">
+                    <div class="flex items-start gap-3">
+                        <span class="w-10 h-10 rounded-full bg-warning/10 dark:bg-warning/20 flex items-center justify-center shrink-0">
+                            {{-- ShieldAlert icon (Lucide, md=20) --}}
+                            <svg class="w-5 h-5 text-warning" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg>
+                        </span>
+                        <div class="flex-1">
+                            <p class="text-sm text-on-surface-strong font-medium mb-1">
+                                {{ __('Payment for this order is on hold due to an active complaint.') }}
+                            </p>
+                            <div class="space-y-1">
+                                <p class="text-xs text-on-surface">
+                                    <span class="font-medium">{{ __('Amount') }}:</span>
+                                    <span class="font-mono">{{ \App\Services\CookWalletService::formatXAF((float) $blockedClearance->amount) }}</span>
+                                </p>
+                                @if($blockedClearance->complaint)
+                                    <p class="text-xs text-on-surface">
+                                        <span class="font-medium">{{ __('Status') }}:</span>
+                                        @if($blockedClearance->is_flagged_for_review)
+                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-secondary-subtle text-secondary">{{ __('Under Review') }}</span>
+                                        @else
+                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-warning-subtle text-warning">{{ __('Blocked') }}</span>
+                                        @endif
+                                    </p>
+                                @endif
+                                @if($blockedClearance->blocked_at)
+                                    <p class="text-xs text-on-surface/60">
+                                        {{ __('Since') }} {{ $blockedClearance->blocked_at->format('M d, Y H:i') }}
+                                    </p>
+                                @endif
+                            </div>
+                            <p class="text-xs text-on-surface/50 mt-2 italic">
+                                {{ __('This will be resolved when the complaint is settled by an admin.') }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         {{-- Client Notes Card --}}
         @if($order->notes)
             <div class="bg-surface dark:bg-surface rounded-xl shadow-card border border-outline dark:border-outline overflow-hidden">
