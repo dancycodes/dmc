@@ -4,6 +4,10 @@
     Email sent to the client when a refund is credited to their wallet.
     Extends the base DancyMeals email layout for consistent branding.
 
+    Dark mode: Email clients do not support Tailwind dark: classes.
+    Inline CSS uses fixed colors. The base layout handles dark: mode via
+    @media (prefers-color-scheme: dark) CSS media query in the parent template.
+
     Variables:
     - $order: Order model instance
     - $refundAmount: Formatted refund amount (e.g., "5,000 XAF")
