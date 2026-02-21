@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\ProcessOrderRefund;
 use App\Models\Order;
 use App\Models\OrderStatusTransition;
 use App\Models\Tenant;
@@ -133,27 +134,30 @@ class OrderCancellationService
     }
 
     /**
-     * BR-243: Trigger refund processing for the cancelled order.
+     * BR-243/BR-256: Dispatch the refund processing job for the cancelled order.
      *
-     * F-163 will implement the actual refund logic. For now we dispatch
-     * a placeholder that F-163 will hook into.
+     * F-163: Dispatches ProcessOrderRefund job which handles:
+     * - Client wallet credit (BR-248, BR-252)
+     * - Cook wallet decrement (BR-250, BR-253)
+     * - Order status → Refunded (BR-254)
+     * - Client notification (BR-255)
+     * - Activity logging (BR-259)
      */
     private function dispatchRefundTrigger(Order $order, User $client): void
     {
-        // F-163: WalletRefundService::creditCancellationRefund() will be called here
-        // For now, log that refund is pending so F-163 can integrate cleanly.
         try {
-            if (class_exists(\App\Services\WalletRefundService::class)) {
-                app(\App\Services\WalletRefundService::class)->creditCancellationRefund($order);
-            } else {
-                Log::info('F-162: Refund trigger dispatched (F-163 will process)', [
-                    'order_id' => $order->id,
-                    'grand_total' => $order->grand_total,
-                ]);
-            }
-        } catch (\Throwable $e) {
-            Log::warning('F-162: Refund dispatch failed — will require manual processing', [
+            ProcessOrderRefund::dispatch($order->id, $client->id);
+
+            Log::info('F-163: ProcessOrderRefund job dispatched', [
                 'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'client_id' => $client->id,
+                'grand_total' => $order->grand_total,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('F-163: Failed to dispatch ProcessOrderRefund job — manual processing required', [
+                'order_id' => $order->id,
+                'client_id' => $client->id,
                 'error' => $e->getMessage(),
             ]);
         }

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\CookWallet;
+use App\Models\Order;
 use App\Models\OrderClearance;
 use App\Models\PendingDeduction;
 use App\Models\Tenant;
@@ -70,13 +71,14 @@ class CookWalletService
             ->where('status', 'completed')
             ->sum('amount');
 
-        // Calculate total debits (withdrawal, refund_deduction, commission)
+        // Calculate total debits (withdrawal, refund_deduction, commission, order_cancelled)
         $totalDebits = (float) WalletTransaction::query()
             ->where('user_id', $userId)
             ->where('tenant_id', $tenantId)
             ->whereIn('type', [
                 WalletTransaction::TYPE_WITHDRAWAL,
                 WalletTransaction::TYPE_REFUND_DEDUCTION,
+                WalletTransaction::TYPE_ORDER_CANCELLED,
             ])
             ->where('status', 'completed')
             ->sum('amount');
@@ -108,6 +110,71 @@ class CookWalletService
         ]);
 
         return $wallet->fresh();
+    }
+
+    /**
+     * Decrement the cook's unwithdrawable balance for a cancelled order.
+     *
+     * F-163 BR-250: Cook's unwithdrawable wallet amount for the cancelled order is decremented.
+     * BR-253: A cook wallet transaction record is created (type: order_cancelled, debit).
+     *
+     * Creates a transaction record and recalculates balances atomically.
+     * Does NOT throw on underflow — logs a warning and continues (edge case: BR from directive).
+     *
+     * @return array{wallet: CookWallet, transaction: WalletTransaction}
+     */
+    public function decrementUnwithdrawableForCancellation(
+        CookWallet $wallet,
+        Order $order,
+        float $amount
+    ): array {
+        $wallet = CookWallet::query()
+            ->where('id', $wallet->id)
+            ->lockForUpdate()
+            ->first();
+
+        $currentUnwithdrawable = (float) $wallet->unwithdrawable_balance;
+
+        // Edge case (directive): if unwithdrawable < amount, log warning but continue
+        if ($currentUnwithdrawable < $amount) {
+            \Illuminate\Support\Facades\Log::warning('F-163: Cook unwithdrawable_balance is less than order total during cancellation refund', [
+                'cook_wallet_id' => $wallet->id,
+                'order_id' => $order->id,
+                'order_total' => $amount,
+                'current_unwithdrawable' => $currentUnwithdrawable,
+            ]);
+        }
+
+        // BR-253: Create cook wallet transaction (type: order_cancelled, debit from unwithdrawable)
+        $transaction = WalletTransaction::create([
+            'user_id' => $wallet->user_id,
+            'tenant_id' => $wallet->tenant_id,
+            'order_id' => $order->id,
+            'payment_transaction_id' => null,
+            'type' => WalletTransaction::TYPE_ORDER_CANCELLED,
+            'amount' => $amount,
+            'currency' => 'XAF',
+            'balance_before' => $currentUnwithdrawable,
+            'balance_after' => max(0, $currentUnwithdrawable - $amount),
+            'is_withdrawable' => false,
+            'withdrawable_at' => null,
+            'status' => 'completed',
+            'description' => __('Order :number cancelled — refund deducted from unwithdrawable', [
+                'number' => $order->order_number,
+            ]),
+            'metadata' => [
+                'source' => 'cancellation_refund',
+                'order_number' => $order->order_number,
+            ],
+        ]);
+
+        // Recalculate all balances to reflect the new debit transaction
+        $wallet = $this->recalculateBalances($wallet);
+
+        return [
+            'wallet' => $wallet,
+            'transaction' => $transaction,
+        ];
     }
 
     /**
