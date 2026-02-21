@@ -205,39 +205,18 @@ class ComplaintSubmissionService
     }
 
     /**
-     * BR-191: Notify cook and managers of the tenant.
+     * BR-289: Notify cook and managers of the tenant.
      *
-     * Sends push + database notifications.
-     * Full notification implementation deferred to F-193.
+     * Sends push + database notifications via central ComplaintNotificationService (F-193).
      */
     private function notifyCookAndManagers(Complaint $complaint, Order $order): void
     {
         try {
-            // Get cook user
-            $cook = $order->cook;
-
-            if ($cook) {
-                // Forward-compatible: F-193 will implement the full notification
-                // For now, create database notification directly
-                $cook->notify(new \App\Notifications\ComplaintSubmittedNotification($complaint, $order));
-            }
-
-            // Notify managers with complaint management permission
-            // Forward-compatible: F-184 will define exact manager resolution
-            // For now, notify users with can-manage-complaints permission
-            try {
-                $managers = User::permission('can-manage-complaints')->get();
-                foreach ($managers as $manager) {
-                    if ($manager->id !== $cook?->id) {
-                        $manager->notify(new \App\Notifications\ComplaintSubmittedNotification($complaint, $order));
-                    }
-                }
-            } catch (\Throwable) {
-                // Permission may not exist yet - silent fail
-            }
+            $notificationService = app(ComplaintNotificationService::class);
+            $notificationService->notifyComplaintSubmitted($complaint, $order);
         } catch (\Throwable $e) {
             // Don't fail complaint submission if notifications fail
-            \Illuminate\Support\Facades\Log::warning('F-183: Notification dispatch failed', [
+            \Illuminate\Support\Facades\Log::warning('F-193: Complaint submitted notification dispatch failed', [
                 'complaint_id' => $complaint->id,
                 'error' => $e->getMessage(),
             ]);

@@ -5,13 +5,15 @@ namespace App\Services;
 use App\Models\Complaint;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Spatie\Activitylog\Models\Activity;
 
 class ComplaintResolutionService
 {
     public function __construct(
         private WalletRefundService $walletRefundService,
-        private PaymentBlockService $paymentBlockService
+        private PaymentBlockService $paymentBlockService,
+        private ComplaintNotificationService $notificationService
     ) {}
 
     /**
@@ -29,7 +31,7 @@ class ComplaintResolutionService
             throw new \LogicException(__('This complaint has already been resolved.'));
         }
 
-        return DB::transaction(function () use ($complaint, $data, $admin) {
+        $resolved = DB::transaction(function () use ($complaint, $data, $admin) {
             $resolutionType = $data['resolution_type'];
 
             $complaint->forceFill([
@@ -59,6 +61,19 @@ class ComplaintResolutionService
 
             return $complaint;
         });
+
+        // F-193 BR-292: Notify client (push + DB + email) outside transaction
+        // BR-297: Queued to not block the triggering action
+        try {
+            $this->notificationService->notifyComplaintResolved($resolved);
+        } catch (\Throwable $e) {
+            Log::warning('F-193: Resolution notification dispatch failed', [
+                'complaint_id' => $resolved->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return $resolved;
     }
 
     /**

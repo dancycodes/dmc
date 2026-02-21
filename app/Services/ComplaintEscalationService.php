@@ -3,10 +3,6 @@
 namespace App\Services;
 
 use App\Models\Complaint;
-use App\Models\User;
-use App\Notifications\ComplaintEscalatedAdminNotification;
-use App\Notifications\ComplaintEscalatedClientNotification;
-use App\Notifications\ComplaintEscalatedCookNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -118,78 +114,20 @@ class ComplaintEscalationService
     }
 
     /**
-     * Send escalation notifications to admin, client, and cook.
+     * Send escalation notifications to admin, client, and cook via central service (F-193).
      *
-     * BR-211: Admin users receive push + DB notification.
-     * BR-212: Client receives push + DB notification.
-     * BR-213: Cook receives push + DB notification.
+     * BR-291: Admin, client, and cook each receive push + DB notification.
      *
      * Edge case: If no admin users exist, notification delivery fails silently
      * but complaint status update is already committed.
      */
     private function sendEscalationNotifications(Complaint $complaint): void
     {
-        // BR-211: Notify all admin users
-        $this->notifyAdmins($complaint);
-
-        // BR-212: Notify the client
-        $this->notifyClient($complaint);
-
-        // BR-213: Notify the cook
-        $this->notifyCook($complaint);
-    }
-
-    /**
-     * BR-211: Notify admin users about the escalated complaint.
-     */
-    private function notifyAdmins(Complaint $complaint): void
-    {
         try {
-            $admins = User::role(['admin', 'super-admin'])->get();
-
-            foreach ($admins as $admin) {
-                $admin->notify(new ComplaintEscalatedAdminNotification($complaint));
-            }
+            $notificationService = app(\App\Services\ComplaintNotificationService::class);
+            $notificationService->notifyComplaintEscalated($complaint);
         } catch (\Throwable $e) {
-            Log::warning('F-185: Admin notification dispatch failed', [
-                'complaint_id' => $complaint->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
-
-    /**
-     * BR-212: Notify the client that their complaint was escalated.
-     */
-    private function notifyClient(Complaint $complaint): void
-    {
-        try {
-            $client = $complaint->client;
-
-            if ($client) {
-                $client->notify(new ComplaintEscalatedClientNotification($complaint));
-            }
-        } catch (\Throwable $e) {
-            Log::warning('F-185: Client notification dispatch failed', [
-                'complaint_id' => $complaint->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
-
-    /**
-     * BR-213: Notify the cook that their complaint was auto-escalated.
-     */
-    private function notifyCook(Complaint $complaint): void
-    {
-        try {
-            $cook = $complaint->cook;
-
-            if ($cook) {
-                $cook->notify(new ComplaintEscalatedCookNotification($complaint));
-            }
-        } catch (\Throwable $e) {
-            Log::warning('F-185: Cook notification dispatch failed', [
+            Log::warning('F-193: Escalation notification dispatch failed', [
                 'complaint_id' => $complaint->id,
                 'error' => $e->getMessage(),
             ]);

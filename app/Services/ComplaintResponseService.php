@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Complaint;
 use App\Models\ComplaintResponse;
 use App\Models\User;
-use App\Notifications\ComplaintResponseNotification;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -190,19 +189,15 @@ class ComplaintResponseService
     }
 
     /**
-     * BR-202: Notify the client about the cook's response.
+     * BR-290: Notify the client about the cook's response via central notification service (F-193).
      */
     private function notifyClient(Complaint $complaint, ComplaintResponse $response): void
     {
         try {
-            $client = $complaint->client;
-
-            if ($client) {
-                $complaint->load('order:id,order_number');
-                $client->notify(new ComplaintResponseNotification($complaint, $response));
-            }
+            $notificationService = app(\App\Services\ComplaintNotificationService::class);
+            $notificationService->notifyComplaintResponse($complaint, $response);
         } catch (\Throwable $e) {
-            Log::warning('F-184: Client notification dispatch failed', [
+            Log::warning('F-193: Complaint response notification dispatch failed', [
                 'complaint_id' => $complaint->id,
                 'response_id' => $response->id,
                 'error' => $e->getMessage(),
