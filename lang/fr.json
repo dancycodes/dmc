@@ -2653,5 +2653,13 @@
     "Cook Response": "Reponse du cuisinier",
     "Resolved on": "Resolu le",
     "View Complaint": "Voir la plainte",
-    "Please describe the issue you experienced. What happened? What did you expect?": "Veuillez decrire le probleme rencontre. Que s'est-il passe ? Qu'attendiez-vous ?"
+    "Please describe the issue you experienced. What happened? What did you expect?": "Veuillez decrire le probleme rencontre. Que s'est-il passe ? Qu'attendiez-vous ?",
+    "New Order :number - :count items, :amount (:method)": "Nouvelle commande :number - :count articles, :amount (:method)",
+    "New Order :number - :amount": "Nouvelle commande :number - :amount",
+    "A new order has been placed by :client.": "Une nouvelle commande a ete passee par :client.",
+    "Total Amount": "Montant total",
+    "Delivery Address": "Adresse de livraison",
+    "Please review this order and confirm it as soon as possible. The customer is waiting for your confirmation.": "Veuillez examiner cette commande et la confirmer des que possible. Le client attend votre confirmation.",
+    "New order :number from :client - :amount": "Nouvelle commande :number de :client - :amount",
+    "Qty": "Qte"
 }

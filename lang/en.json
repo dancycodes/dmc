@@ -2654,5 +2654,13 @@
     "Cook Response": "Cook Response",
     "Resolved on": "Resolved on",
     "View Complaint": "View Complaint",
-    "Please describe the issue you experienced. What happened? What did you expect?": "Please describe the issue you experienced. What happened? What did you expect?"
+    "Please describe the issue you experienced. What happened? What did you expect?": "Please describe the issue you experienced. What happened? What did you expect?",
+    "New Order :number - :count items, :amount (:method)": "New Order :number - :count items, :amount (:method)",
+    "New Order :number - :amount": "New Order :number - :amount",
+    "A new order has been placed by :client.": "A new order has been placed by :client.",
+    "Total Amount": "Total Amount",
+    "Delivery Address": "Delivery Address",
+    "Please review this order and confirm it as soon as possible. The customer is waiting for your confirmation.": "Please review this order and confirm it as soon as possible. The customer is waiting for your confirmation.",
+    "New order :number from :client - :amount": "New order :number from :client - :amount",
+    "Qty": "Qty"
 }
