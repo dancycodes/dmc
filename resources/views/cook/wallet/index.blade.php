@@ -110,6 +110,80 @@
         </div>
     </div>
 
+    {{-- F-186: Blocked Payments Section --}}
+    {{-- BR-226: Payment block status visible on wallet view --}}
+    @if($totalBlockedAmount > 0)
+        <div class="bg-warning-subtle dark:bg-warning-subtle border border-warning/20 dark:border-warning/30 rounded-xl p-5 shadow-card mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <span class="w-10 h-10 rounded-full bg-warning/10 dark:bg-warning/20 flex items-center justify-center">
+                        {{-- Lock icon (Lucide, md=20) --}}
+                        <svg class="w-5 h-5 text-warning" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    </span>
+                    <div>
+                        <h2 class="text-base font-semibold text-on-surface-strong">
+                            {{ __('Blocked Payments') }}
+                        </h2>
+                        <p class="text-xs text-on-surface mt-0.5">
+                            {{ __('Payments held pending complaint resolution') }}
+                        </p>
+                    </div>
+                </div>
+                <p class="text-xl font-bold text-warning font-mono">
+                    {{ \App\Services\CookWalletService::formatXAF($totalBlockedAmount) }}
+                </p>
+            </div>
+
+            {{-- Individual blocked payment entries --}}
+            <div class="space-y-3">
+                @foreach($blockedPayments as $blocked)
+                    <div class="bg-surface dark:bg-surface rounded-lg p-4 border border-outline dark:border-outline">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    @if($blocked->order)
+                                        <span class="text-sm font-medium text-on-surface-strong font-mono">
+                                            {{ $blocked->order->order_number }}
+                                        </span>
+                                    @endif
+                                    @if($blocked->is_flagged_for_review)
+                                        <span class="text-xs px-2 py-0.5 rounded-full bg-secondary-subtle text-secondary">
+                                            {{ __('Under Review') }}
+                                        </span>
+                                    @else
+                                        <span class="text-xs px-2 py-0.5 rounded-full bg-warning-subtle text-warning">
+                                            {{-- Lock icon (Lucide, xs=14) --}}
+                                            <span class="inline-flex items-center gap-1">
+                                                <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                                                {{ __('Blocked') }}
+                                            </span>
+                                        </span>
+                                    @endif
+                                </div>
+                                <p class="text-xs text-on-surface mt-1">
+                                    {{ __('Payment held pending complaint resolution on Order') }}
+                                    @if($blocked->order)
+                                        #{{ $blocked->order->order_number }}
+                                    @endif
+                                </p>
+                                @if($blocked->complaint)
+                                    <p class="text-xs text-on-surface/60 mt-1">
+                                        {{ __('Complaint filed') }}: {{ $blocked->blocked_at?->format('M d, Y') }}
+                                    </p>
+                                @endif
+                            </div>
+                            <div class="text-right shrink-0">
+                                <p class="text-sm font-semibold text-warning font-mono">
+                                    {{ \App\Services\CookWalletService::formatXAF((float) $blocked->amount) }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     {{-- F-174: Pending Deductions Section --}}
     {{-- BR-372: Shows total pending deduction amount --}}
     {{-- BR-375: Transparent settlement history --}}

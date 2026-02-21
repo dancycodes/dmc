@@ -34,6 +34,7 @@ class OrderClearance extends Model
         'order_id',
         'tenant_id',
         'cook_id',
+        'complaint_id',
         'amount',
         'hold_hours',
         'completed_at',
@@ -44,6 +45,9 @@ class OrderClearance extends Model
         'is_cleared',
         'is_paused',
         'is_cancelled',
+        'is_flagged_for_review',
+        'blocked_at',
+        'unblocked_at',
     ];
 
     /**
@@ -62,6 +66,9 @@ class OrderClearance extends Model
             'is_cleared' => 'boolean',
             'is_paused' => 'boolean',
             'is_cancelled' => 'boolean',
+            'is_flagged_for_review' => 'boolean',
+            'blocked_at' => 'datetime',
+            'unblocked_at' => 'datetime',
         ];
     }
 
@@ -87,6 +94,39 @@ class OrderClearance extends Model
     public function cook(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cook_id');
+    }
+
+    /**
+     * F-186: Get the complaint that triggered the payment block.
+     */
+    public function complaint(): BelongsTo
+    {
+        return $this->belongsTo(Complaint::class);
+    }
+
+    /**
+     * F-186 BR-218: Check if this clearance is blocked due to a complaint.
+     */
+    public function isBlocked(): bool
+    {
+        return $this->is_paused && $this->complaint_id !== null && $this->blocked_at !== null;
+    }
+
+    /**
+     * F-186 BR-223: Check if this clearance is flagged for review
+     * (complaint filed after funds became withdrawable).
+     */
+    public function isFlaggedForReview(): bool
+    {
+        return $this->is_flagged_for_review && $this->complaint_id !== null;
+    }
+
+    /**
+     * F-186: Check if this clearance has any active complaint block or flag.
+     */
+    public function hasActiveComplaintBlock(): bool
+    {
+        return $this->isBlocked() || $this->isFlaggedForReview();
     }
 
     /**
@@ -151,6 +191,42 @@ class OrderClearance extends Model
     public function scopeForOrder(Builder $query, int $orderId): Builder
     {
         return $query->where('order_id', $orderId);
+    }
+
+    /**
+     * F-186: Scope for blocked clearances (paused by complaint).
+     */
+    public function scopeBlocked(Builder $query): Builder
+    {
+        return $query->where('is_paused', true)
+            ->whereNotNull('complaint_id')
+            ->whereNotNull('blocked_at');
+    }
+
+    /**
+     * F-186: Scope for flagged clearances (already withdrawable when complaint filed).
+     */
+    public function scopeFlaggedForReview(Builder $query): Builder
+    {
+        return $query->where('is_flagged_for_review', true)
+            ->whereNotNull('complaint_id');
+    }
+
+    /**
+     * F-186: Scope for all clearances with active complaint blocks or flags.
+     */
+    public function scopeWithActiveComplaintBlock(Builder $query): Builder
+    {
+        return $query->where(function (Builder $q) {
+            $q->where(function (Builder $sub) {
+                $sub->where('is_paused', true)
+                    ->whereNotNull('complaint_id')
+                    ->whereNotNull('blocked_at');
+            })->orWhere(function (Builder $sub) {
+                $sub->where('is_flagged_for_review', true)
+                    ->whereNotNull('complaint_id');
+            });
+        })->whereNull('unblocked_at');
     }
 
     /**

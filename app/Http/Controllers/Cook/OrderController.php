@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Services\CookOrderService;
 use App\Services\MassOrderStatusService;
 use App\Services\OrderStatusService;
+use App\Services\PaymentBlockService;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
@@ -71,7 +72,7 @@ class OrderController extends Controller
      * BR-175: Only users with manage-orders permission.
      * BR-167-BR-177: All order sections displayed.
      */
-    public function show(Request $request, int $orderId, CookOrderService $orderService, OrderStatusService $statusService): mixed
+    public function show(Request $request, int $orderId, CookOrderService $orderService, OrderStatusService $statusService, PaymentBlockService $paymentBlockService): mixed
     {
         $user = $request->user();
         $tenant = tenant();
@@ -99,6 +100,9 @@ class OrderController extends Controller
         $requiresConfirmation = $nextStatus ? $statusService->requiresConfirmation($nextStatus) : false;
         $confirmationMessage = $nextStatus ? OrderStatusService::getConfirmationMessage($nextStatus) : '';
 
+        // F-186: Get blocked clearance data for this order
+        $blockedClearance = $paymentBlockService->getBlockedClearanceForOrder($order->id);
+
         $data = [
             'order' => $detail['order'],
             'items' => $detail['items'],
@@ -108,6 +112,7 @@ class OrderController extends Controller
             'requiresConfirmation' => $requiresConfirmation,
             'confirmationMessage' => $confirmationMessage,
             'paymentTransaction' => $detail['paymentTransaction'],
+            'blockedClearance' => $blockedClearance,
         ];
 
         // Handle Gale navigate request for timeline fragment refresh

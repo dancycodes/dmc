@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\CookWallet;
+use App\Models\OrderClearance;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\WalletTransaction;
@@ -51,8 +52,12 @@ class WithdrawalRequestService
         $todayWithdrawn = $this->getTodayWithdrawalTotal($tenant, $cook);
         $remainingDaily = max(0, $maxDailyAmount - $todayWithdrawn);
 
-        // BR-344: Max withdrawable is the lesser of wallet balance and remaining daily limit
-        $maxWithdrawable = min((float) $wallet->withdrawable_balance, $remainingDaily);
+        // F-186 BR-225: Exclude blocked/flagged amounts from available withdrawal balance
+        $blockedAmount = $this->getTotalBlockedAmount($tenant);
+
+        // BR-344: Max withdrawable is the lesser of (wallet balance - blocked) and remaining daily limit
+        $effectiveWithdrawable = max(0, (float) $wallet->withdrawable_balance - $blockedAmount);
+        $maxWithdrawable = min($effectiveWithdrawable, $remainingDaily);
 
         // Pre-fill cook's mobile money number from tenant whatsapp/phone
         $rawPhone = $tenant->whatsapp ?: $tenant->phone ?: ($cook->phone ?: '');
@@ -68,6 +73,7 @@ class WithdrawalRequestService
             'maxWithdrawable' => round($maxWithdrawable, 2),
             'defaultPhone' => $defaultPhone,
             'defaultProvider' => $defaultProvider,
+            'blockedAmount' => round($blockedAmount, 2),
         ];
     }
 
@@ -194,6 +200,21 @@ class WithdrawalRequestService
                 'withdrawal' => $withdrawal,
             ];
         });
+    }
+
+    /**
+     * F-186 BR-225: Get total blocked amount for the tenant.
+     *
+     * Flagged (already-withdrawable) payments are excluded from available balance.
+     */
+    private function getTotalBlockedAmount(Tenant $tenant): float
+    {
+        return (float) OrderClearance::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('is_flagged_for_review', true)
+            ->whereNotNull('complaint_id')
+            ->whereNull('unblocked_at')
+            ->sum('amount');
     }
 
     /**
