@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureCookAccess
@@ -41,9 +42,14 @@ class EnsureCookAccess
             return $next($request);
         }
 
-        // Check if user has manager role — managers can access the dashboard
-        // Their specific section access is controlled by permissions in the sidebar
-        if ($user->hasRole('manager')) {
+        // Check if user is a manager scoped to this specific tenant (F-209)
+        // Uses tenant_managers pivot table for proper per-tenant scoping
+        $isManagerForTenant = DB::table('tenant_managers')
+            ->where('tenant_id', $tenant->id)
+            ->where('user_id', $user->id)
+            ->exists();
+
+        if ($isManagerForTenant) {
             return $next($request);
         }
 

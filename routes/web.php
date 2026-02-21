@@ -20,6 +20,7 @@ use App\Http\Controllers\Cook\ComponentRequirementRuleController;
 use App\Http\Controllers\Cook\CookScheduleController;
 use App\Http\Controllers\Cook\CoverImageController;
 use App\Http\Controllers\Cook\DeliveryFeeController;
+use App\Http\Controllers\Cook\ManagerController;
 use App\Http\Controllers\Cook\MealComponentController;
 use App\Http\Controllers\Cook\MealController;
 use App\Http\Controllers\Cook\MealImageController;
@@ -572,6 +573,14 @@ Route::middleware('tenant.domain')->group(function () {
         // BR-350: Confirmation dialog shows amount and destination before submission
         Route::get('/wallet/withdraw', [CookWalletController::class, 'showWithdraw'])->name('cook.wallet.withdraw');
         Route::post('/wallet/withdraw', [CookWalletController::class, 'submitWithdraw'])->name('cook.wallet.submit-withdraw');
+
+        // F-209: Cook Creates Manager Role
+        // BR-462: Only the cook can manage managers for this tenant
+        // BR-465: Cook can invite unlimited managers
+        // BR-466: Removing a manager revokes only this tenant's assignment
+        Route::get('/managers', [ManagerController::class, 'index'])->name('cook.managers.index');
+        Route::post('/managers/invite', [ManagerController::class, 'invite'])->name('cook.managers.invite');
+        Route::delete('/managers/{manager}', [ManagerController::class, 'remove'])->name('cook.managers.remove');
     });
 
     // F-135: Meal Search Bar (public, on tenant domain)
