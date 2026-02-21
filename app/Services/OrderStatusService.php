@@ -255,12 +255,14 @@ class OrderStatusService
      * Handle order completion side effects.
      *
      * BR-186: Completing triggers commission deduction and withdrawable timer.
-     * Forward-compatible stubs for F-175 and F-171.
+     * F-175: Commission deduction on order completion.
+     * F-171: Withdrawable timer starts inside CommissionDeductionService.
      */
     private function handleOrderCompletion(Order $order): void
     {
-        // F-175: Commission Deduction on Completion — will deduct commission here
-        // F-171: Withdrawable Timer Logic — will start timer here
+        // F-175: Commission deduction + cook wallet credit + F-171 timer start
+        $commissionService = app(CommissionDeductionService::class);
+        $commissionService->processOrderCompletion($order);
     }
 
     /**
