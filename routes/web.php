@@ -540,6 +540,12 @@ Route::middleware('tenant.domain')->group(function () {
         // BR-319: Only cook or users with can-manage-cook-wallet permission (enforced in controller)
         // BR-320: Managers can view but not withdraw
         Route::get('/wallet', [CookWalletController::class, 'index'])->name('cook.wallet.index');
+
+        // F-170: Cook Wallet Transaction History
+        // BR-331: Only users with manage-finances permission (enforced via CookTransactionListRequest)
+        // BR-324: Default sort by date descending
+        // BR-325: Paginated with 20 per page
+        Route::get('/wallet/transactions', [CookWalletController::class, 'transactions'])->name('cook.wallet.transactions');
     });
 
     // F-135: Meal Search Bar (public, on tenant domain)
