@@ -373,20 +373,31 @@ class WebhookService
         $commissionAmount = round($orderAmount * ($commissionRate / 100), 2);
         $cookShare = round($orderAmount - $commissionAmount, 2);
 
+        // F-174 BR-367/BR-368: Apply pending deductions BEFORE crediting cook's wallet
+        $autoDeductionService = app(AutoDeductionService::class);
+        $deductionResult = $autoDeductionService->applyDeductions(
+            $cook->id,
+            $tenant->id,
+            $cookShare,
+            $order->id
+        );
+
+        $effectiveCookShare = $deductionResult['remaining_payment'];
+
         // Get cook's current wallet balance
         $currentBalance = $this->getCookWalletBalance($cook->id);
 
-        // BR-366: Credit cook wallet with cook's share
+        // BR-366: Credit cook wallet with cook's share (after deductions)
         WalletTransaction::create([
             'user_id' => $cook->id,
             'tenant_id' => $tenant->id,
             'order_id' => $order->id,
             'payment_transaction_id' => $transaction->id,
             'type' => WalletTransaction::TYPE_PAYMENT_CREDIT,
-            'amount' => $cookShare,
+            'amount' => $effectiveCookShare,
             'currency' => 'XAF',
             'balance_before' => $currentBalance,
-            'balance_after' => $currentBalance + $cookShare,
+            'balance_after' => $currentBalance + $effectiveCookShare,
             'is_withdrawable' => false,
             'withdrawable_at' => now()->addHours(WalletTransaction::DEFAULT_WITHDRAWABLE_DELAY_HOURS),
             'status' => 'completed',
@@ -397,6 +408,8 @@ class WebhookService
                 'commission_rate' => $commissionRate,
                 'commission_amount' => $commissionAmount,
                 'cook_share' => $cookShare,
+                'deductions_applied' => $deductionResult['deducted'],
+                'effective_cook_share' => $effectiveCookShare,
             ],
         ]);
 
@@ -410,8 +423,8 @@ class WebhookService
                 'type' => WalletTransaction::TYPE_COMMISSION,
                 'amount' => $commissionAmount,
                 'currency' => 'XAF',
-                'balance_before' => $currentBalance + $cookShare,
-                'balance_after' => $currentBalance + $cookShare,
+                'balance_before' => $currentBalance + $effectiveCookShare,
+                'balance_after' => $currentBalance + $effectiveCookShare,
                 'is_withdrawable' => false,
                 'withdrawable_at' => null,
                 'status' => 'completed',

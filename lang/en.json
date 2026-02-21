@@ -2573,5 +2573,18 @@
     "Withdrawal Sent!": "Withdrawal Sent!",
     "The withdrawal amount has been returned to your wallet balance. You can try again or contact support if the issue persists.": "The withdrawal amount has been returned to your wallet balance. You can try again or contact support if the issue persists.",
     "Your funds have been sent to your mobile money account. You should receive them shortly.": "Your funds have been sent to your mobile money account. You should receive them shortly.",
-    "Phone Number": "Phone Number"
+    "Phone Number": "Phone Number",
+    "Pending Deductions": "Pending Deductions",
+    "This amount will be deducted from your future earnings": "This amount will be deducted from your future earnings",
+    "settled": "settled",
+    "Unsettled": "Unsettled",
+    "of": "of",
+    "Auto-deduction for refund on Order :number": "Auto-deduction for refund on Order :number",
+    "Complaint resolution refund for order :number": "Complaint resolution refund for order :number",
+    "Cancellation refund for order :number": "Cancellation refund for order :number",
+    "Refund for order :number": "Refund for order :number",
+    "Refund for cancelled order": "Refund for cancelled order",
+    "Complaint resolution refund": "Complaint resolution refund",
+    "Order cancellation refund": "Order cancellation refund",
+    "Unknown": "Unknown"
 }

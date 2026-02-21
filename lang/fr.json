@@ -2572,5 +2572,18 @@
     "Withdrawal Sent!": "Retrait envoy\u00e9 !",
     "The withdrawal amount has been returned to your wallet balance. You can try again or contact support if the issue persists.": "Le montant du retrait a \u00e9t\u00e9 restitu\u00e9 \u00e0 votre solde. Vous pouvez r\u00e9essayer ou contacter le support si le probl\u00e8me persiste.",
     "Your funds have been sent to your mobile money account. You should receive them shortly.": "Vos fonds ont \u00e9t\u00e9 envoy\u00e9s \u00e0 votre compte mobile money. Vous devriez les recevoir sous peu.",
-    "Phone Number": "Num\u00e9ro de t\u00e9l\u00e9phone"
+    "Phone Number": "Num\u00e9ro de t\u00e9l\u00e9phone",
+    "Pending Deductions": "D\u00e9ductions en attente",
+    "This amount will be deducted from your future earnings": "Ce montant sera d\u00e9duit de vos futurs revenus",
+    "settled": "r\u00e9gl\u00e9",
+    "Unsettled": "Non r\u00e9gl\u00e9",
+    "of": "de",
+    "Auto-deduction for refund on Order :number": "D\u00e9duction automatique pour remboursement sur Commande :number",
+    "Complaint resolution refund for order :number": "Remboursement suite \u00e0 r\u00e9clamation pour commande :number",
+    "Cancellation refund for order :number": "Remboursement pour annulation de commande :number",
+    "Refund for order :number": "Remboursement pour commande :number",
+    "Refund for cancelled order": "Remboursement pour commande annul\u00e9e",
+    "Complaint resolution refund": "Remboursement suite \u00e0 r\u00e9clamation",
+    "Order cancellation refund": "Remboursement pour annulation de commande",
+    "Unknown": "Inconnu"
 }
