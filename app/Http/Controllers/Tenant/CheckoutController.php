@@ -9,10 +9,10 @@ use App\Models\Order;
 use App\Models\PaymentMethod;
 use App\Models\Quarter;
 use App\Models\Tenant;
-use App\Notifications\NewOrderNotification;
 use App\Notifications\PaymentConfirmedNotification;
 use App\Services\CartService;
 use App\Services\CheckoutService;
+use App\Services\OrderNotificationService;
 use App\Services\PaymentReceiptService;
 use App\Services\PaymentRetryService;
 use App\Services\PaymentService;
@@ -1481,14 +1481,12 @@ class CheckoutController extends Controller
         }
 
         try {
-            // BR-401: Push + database notification to cook (N-001)
-            $cook = $order->cook;
-            if ($cook) {
-                $cook->notify(new NewOrderNotification($order, $tenant));
-            }
+            // F-191 BR-269/BR-270: Push + DB + Email to cook AND all managers (N-001)
+            $notificationService = app(OrderNotificationService::class);
+            $notificationService->notifyNewOrder($order, $tenant);
         } catch (\Exception $e) {
-            // Edge case: Push notification fails — log but don't block
-            Log::warning('F-154: Cook order notification failed', [
+            // Edge case: Notification dispatch fails — log but don't block
+            Log::warning('F-191: Cook/manager order notification failed', [
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),
             ]);

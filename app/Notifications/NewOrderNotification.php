@@ -4,14 +4,17 @@ namespace App\Notifications;
 
 use App\Models\Order;
 use App\Models\Tenant;
+use App\Services\OrderNotificationService;
 
 /**
- * F-154: New Order Push Notification (N-001)
+ * F-191: New Order Push + Database Notification (N-001)
  *
- * Sent to the cook after a client's payment is confirmed.
+ * Sent to the cook and managers after a client's payment is confirmed.
  *
- * BR-401: A push notification is sent to the cook about the new order.
- * BR-407: Uses push + database channels.
+ * BR-271: Push notification content: "New Order #[ID] -- [item count] items, [total] XAF ([Delivery/Pickup])"
+ * BR-272: DB notification content: order ID, client name, items summary, total, delivery/pickup
+ * BR-274: Push and DB notifications link to the order detail in the cook dashboard
+ * BR-276: Queued via BasePushNotification (implements ShouldQueue)
  */
 class NewOrderNotification extends BasePushNotification
 {
@@ -31,20 +34,25 @@ class NewOrderNotification extends BasePushNotification
     /**
      * Get the push notification body text.
      *
-     * BR-401: "New order #DM-2024-0045 received! 6,500 XAF."
+     * BR-271: "New Order #[ID] -- [item count] items, [total] XAF ([Delivery/Pickup])"
      */
     public function getBody(object $notifiable): string
     {
-        return __('New order :number received! :amount.', [
+        $itemCount = OrderNotificationService::getItemCount($this->order);
+        $deliveryLabel = OrderNotificationService::getDeliveryMethodLabel($this->order);
+
+        return __('New Order :number - :count items, :amount (:method)', [
             'number' => $this->order->order_number,
+            'count' => $itemCount,
             'amount' => $this->order->formattedGrandTotal(),
+            'method' => $deliveryLabel,
         ]);
     }
 
     /**
      * Get the URL the notification links to.
      *
-     * Links to the cook dashboard order detail (F-156 forward-compatible).
+     * BR-274: Links to the cook dashboard order detail.
      */
     public function getActionUrl(object $notifiable): string
     {
@@ -56,15 +64,24 @@ class NewOrderNotification extends BasePushNotification
     /**
      * Get additional data payload for the notification.
      *
+     * BR-272: DB notification data includes order ID, client name,
+     * items summary, total, delivery/pickup.
+     *
      * @return array<string, mixed>
      */
     public function getData(object $notifiable): array
     {
+        $itemCount = OrderNotificationService::getItemCount($this->order);
+
         return [
             'order_id' => $this->order->id,
             'order_number' => $this->order->order_number,
             'amount' => $this->order->grand_total,
             'tenant_id' => $this->tenant->id,
+            'client_name' => $this->order->client?->name ?? __('Customer'),
+            'item_count' => $itemCount,
+            'items_summary' => $this->order->items_summary,
+            'delivery_method' => $this->order->delivery_method,
             'type' => 'new_order',
         ];
     }
