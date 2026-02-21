@@ -7,13 +7,15 @@ use App\Models\Rating;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Notifications\RatingReceivedNotification;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 /**
  * F-176: Order Rating Service
  * F-177: Order Review Text Submission
+ * F-178: Rating & Review Display on Meal
  *
- * Handles rating submission, validation, and related operations.
+ * Handles rating submission, validation, display, and related operations.
  * BR-388: Rating only for Completed orders.
  * BR-390: One rating per order.
  * BR-391: Rating cannot be edited or deleted.
@@ -232,6 +234,163 @@ class RatingService
         return [
             'average' => round((float) ($stats->average_rating ?? 0), 1),
             'total' => (int) ($stats->total_ratings ?? 0),
+        ];
+    }
+
+    /**
+     * F-178: Number of reviews per page.
+     *
+     * BR-413: Reviews are paginated with 10 per page.
+     */
+    public const REVIEWS_PER_PAGE = 10;
+
+    /**
+     * F-178: Get ratings for a specific meal, paginated.
+     *
+     * BR-408: Average rating calculated from all ratings for orders containing this meal.
+     * BR-412: Reviews sorted by date descending (newest first).
+     * BR-413: Paginated with 10 per page.
+     *
+     * Ratings link to orders via items_snapshot JSONB containing meal_id.
+     * Uses PostgreSQL JSONB containment operator for efficient querying.
+     */
+    public function getMealReviews(int $mealId, int $tenantId, int $page = 1): LengthAwarePaginator
+    {
+        return Rating::query()
+            ->where('ratings.tenant_id', $tenantId)
+            ->whereHas('order', function ($query) use ($mealId) {
+                $query->whereRaw(
+                    'items_snapshot @> ?',
+                    [json_encode([['meal_id' => $mealId]])]
+                );
+            })
+            ->with('user:id,name')
+            ->orderByDesc('ratings.created_at')
+            ->paginate(self::REVIEWS_PER_PAGE, ['*'], 'review_page', $page);
+    }
+
+    /**
+     * F-178: Get the average rating and total count for a specific meal.
+     *
+     * BR-408: Average from all ratings for orders containing this meal.
+     * BR-409: Average displayed as X.X/5 (one decimal place).
+     * BR-410: Review count includes ratings without text.
+     *
+     * @return array{average: float, total: int, distribution: array<int, int>}
+     */
+    public function getMealRatingStats(int $mealId, int $tenantId): array
+    {
+        $orderIds = Order::query()
+            ->where('tenant_id', $tenantId)
+            ->whereRaw(
+                'items_snapshot @> ?',
+                [json_encode([['meal_id' => $mealId]])]
+            )
+            ->pluck('id');
+
+        if ($orderIds->isEmpty()) {
+            return [
+                'average' => 0.0,
+                'total' => 0,
+                'distribution' => [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0],
+            ];
+        }
+
+        $stats = Rating::query()
+            ->whereIn('order_id', $orderIds)
+            ->selectRaw('AVG(stars) as average_rating, COUNT(*) as total_ratings')
+            ->first();
+
+        $distribution = Rating::query()
+            ->whereIn('order_id', $orderIds)
+            ->selectRaw('stars, COUNT(*) as count')
+            ->groupBy('stars')
+            ->pluck('count', 'stars')
+            ->toArray();
+
+        // Ensure all star levels are present
+        $fullDistribution = [];
+        for ($i = Rating::MAX_STARS; $i >= Rating::MIN_STARS; $i--) {
+            $fullDistribution[$i] = (int) ($distribution[$i] ?? 0);
+        }
+
+        return [
+            'average' => round((float) ($stats->average_rating ?? 0), 1),
+            'total' => (int) ($stats->total_ratings ?? 0),
+            'distribution' => $fullDistribution,
+        ];
+    }
+
+    /**
+     * F-178: Format a review for display.
+     *
+     * BR-411: Shows client name, stars, text (if any), date.
+     * BR-415: Client name privacy — first name + last initial.
+     * BR-414: Ratings without text still appear in the list.
+     *
+     * @return array{id: int, stars: int, review: string|null, date: string, clientName: string, relativeDate: string}
+     */
+    public function formatReviewForDisplay(Rating $rating): array
+    {
+        $clientName = $this->formatClientName($rating->user?->name);
+
+        return [
+            'id' => $rating->id,
+            'stars' => $rating->stars,
+            'review' => $rating->review,
+            'date' => $rating->created_at->translatedFormat('M d, Y'),
+            'relativeDate' => $rating->created_at->diffForHumans(),
+            'clientName' => $clientName,
+        ];
+    }
+
+    /**
+     * F-178: Format client name for privacy.
+     *
+     * BR-415: Only first name and last initial displayed (e.g., "Amara N.").
+     * Edge case: Deactivated clients still show their name.
+     */
+    public function formatClientName(?string $fullName): string
+    {
+        if (! $fullName) {
+            return __('Anonymous');
+        }
+
+        $parts = explode(' ', trim($fullName));
+
+        if (count($parts) < 2) {
+            return $parts[0];
+        }
+
+        $firstName = $parts[0];
+        $lastInitial = mb_strtoupper(mb_substr(end($parts), 0, 1));
+
+        return $firstName.' '.$lastInitial.'.';
+    }
+
+    /**
+     * F-178: Build complete review display data for a meal.
+     *
+     * @return array{stats: array, reviews: array, pagination: array}
+     */
+    public function getMealReviewDisplayData(int $mealId, int $tenantId, int $page = 1): array
+    {
+        $stats = $this->getMealRatingStats($mealId, $tenantId);
+        $reviewsPaginator = $this->getMealReviews($mealId, $tenantId, $page);
+
+        $reviews = $reviewsPaginator->getCollection()
+            ->map(fn (Rating $rating) => $this->formatReviewForDisplay($rating))
+            ->toArray();
+
+        return [
+            'stats' => $stats,
+            'reviews' => $reviews,
+            'pagination' => [
+                'currentPage' => $reviewsPaginator->currentPage(),
+                'lastPage' => $reviewsPaginator->lastPage(),
+                'total' => $reviewsPaginator->total(),
+                'hasMore' => $reviewsPaginator->hasMorePages(),
+            ],
         ];
     }
 }
