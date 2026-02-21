@@ -2,10 +2,13 @@
     Cook Managers / Team Page
     -------------------------
     F-209: Cook Creates Manager Role
+    F-210: Manager Permission Configuration
 
     Features:
     - Invite manager by email with validation
-    - Manager list with avatar, name, email, date added, remove button
+    - Manager list with avatar, name, email, date added, configure and remove buttons
+    - Permission configuration panel (inline Gale fragment below the list) per manager
+    - Seven delegatable permission toggles grouped by category
     - Confirmation dialog before removing a manager
     - Empty state with CTA
     - All interactions via Gale (no page reloads)
@@ -24,6 +27,14 @@
     BR-470: Actions logged via Spatie Activitylog
     BR-471: All text uses __() localization
     BR-472: All interactions via Gale
+    BR-473: 7 delegatable permissions grouped by category
+    BR-474: Permissions toggled per manager per tenant
+    BR-475: New managers start with all permissions off
+    BR-476: Changes take effect immediately
+    BR-477: Only the cook can configure permissions
+    BR-480: All changes logged with before/after values
+    BR-481: All text uses __()
+    BR-482: All interactions via Gale
 --}}
 @extends('layouts.cook-dashboard')
 
@@ -35,8 +46,10 @@
     class="max-w-4xl mx-auto"
     x-data="{
         email: '',
+        permission: '',
         confirmRemoveId: null,
         confirmRemoveName: '',
+        activePermissionsId: null,
 
         openConfirmRemove(id, name) {
             this.confirmRemoveId = id;
@@ -50,10 +63,22 @@
             if (this.confirmRemoveId) {
                 $action('/dashboard/managers/' + this.confirmRemoveId, { method: 'DELETE' });
                 this.cancelRemove();
+                this.activePermissionsId = null;
             }
+        },
+        openPermissions(managerId, url) {
+            if (this.activePermissionsId === managerId) {
+                this.closePermissions();
+                return;
+            }
+            this.activePermissionsId = managerId;
+            $action(url);
+        },
+        closePermissions() {
+            this.activePermissionsId = null;
         }
     }"
-    x-sync="['email']"
+    x-sync="['email', 'permission']"
 >
     {{-- Page header --}}
     <div class="mb-6">
@@ -92,7 +117,7 @@
                         :disabled="$fetching()"
                     >
                         <span x-show="!$fetching()">
-                            {{-- User Plus icon (Lucide, md=20) --}}
+                            {{-- User Plus icon (Lucide, sm=16) --}}
                             <svg class="w-4 h-4 inline -mt-0.5 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" x2="19" y1="8" y2="14"></line><line x1="22" x2="16" y1="11" y2="11"></line></svg>
                             {{ __('Invite') }}
                         </span>
@@ -150,13 +175,16 @@
                                 {{ __('Added') }}
                             </th>
                             <th class="px-4 py-3 text-right text-xs font-semibold text-on-surface uppercase tracking-wide">
-                                {{ __('Action') }}
+                                {{ __('Actions') }}
                             </th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-outline dark:divide-outline">
                         @foreach($managers as $manager)
-                        <tr class="hover:bg-surface dark:hover:bg-surface transition-colors duration-150">
+                        <tr
+                            :class="activePermissionsId === {{ $manager->id }} ? 'bg-primary-subtle/50 dark:bg-primary-subtle/30' : 'hover:bg-surface dark:hover:bg-surface'"
+                            class="transition-colors duration-150"
+                        >
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-3">
                                     {{-- Avatar --}}
@@ -188,15 +216,31 @@
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-right">
-                                <button
-                                    @click="openConfirmRemove({{ $manager->id }}, '{{ addslashes($manager->name) }}')"
-                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-danger text-sm font-medium rounded-lg border border-danger/30 hover:bg-danger-subtle transition-colors duration-200"
-                                    aria-label="{{ __('Remove :name as manager', ['name' => $manager->name]) }}"
-                                >
-                                    {{-- User Minus icon (Lucide, sm=16) --}}
-                                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="22" x2="16" y1="11" y2="11"></line></svg>
-                                    {{ __('Remove') }}
-                                </button>
+                                <div class="inline-flex items-center gap-2">
+                                    {{-- Configure permissions button --}}
+                                    <button
+                                        @click="openPermissions({{ $manager->id }}, '{{ route('cook.managers.permissions.show', $manager) }}')"
+                                        :class="activePermissionsId === {{ $manager->id }}
+                                            ? 'bg-primary text-on-primary border-primary hover:bg-primary-hover'
+                                            : 'text-on-surface border-outline hover:bg-surface dark:hover:bg-surface'"
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors duration-200"
+                                        :aria-label="activePermissionsId === {{ $manager->id }} ? '{{ __('Close permissions') }}' : '{{ __('Configure permissions for :name', ['name' => $manager->name]) }}'"
+                                    >
+                                        {{-- Settings icon (Lucide, xs=14) --}}
+                                        <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                        {{ __('Configure') }}
+                                    </button>
+                                    {{-- Remove button --}}
+                                    <button
+                                        @click="openConfirmRemove({{ $manager->id }}, '{{ addslashes($manager->name) }}')"
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-danger text-sm font-medium rounded-lg border border-danger/30 hover:bg-danger-subtle transition-colors duration-200"
+                                        aria-label="{{ __('Remove :name as manager', ['name' => $manager->name]) }}"
+                                    >
+                                        {{-- User Minus icon (Lucide, sm=16) --}}
+                                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="22" x2="16" y1="11" y2="11"></line></svg>
+                                        {{ __('Remove') }}
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         @endforeach
@@ -207,9 +251,12 @@
             {{-- Mobile card layout --}}
             <div class="md:hidden space-y-3">
                 @foreach($managers as $manager)
-                <div class="bg-surface-alt dark:bg-surface-alt rounded-xl border border-outline dark:border-outline p-4 shadow-card">
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="flex items-center gap-3 min-w-0">
+                <div
+                    :class="activePermissionsId === {{ $manager->id }} ? 'border-primary' : 'border-outline dark:border-outline'"
+                    class="bg-surface-alt dark:bg-surface-alt rounded-xl border shadow-card overflow-hidden transition-colors duration-150"
+                >
+                    <div class="p-4">
+                        <div class="flex items-center gap-3 min-w-0 mb-3">
                             {{-- Avatar --}}
                             <div class="w-10 h-10 rounded-full bg-primary-subtle flex items-center justify-center shrink-0 overflow-hidden">
                                 @if($manager->profile_photo_path)
@@ -232,14 +279,30 @@
                                 </p>
                             </div>
                         </div>
-                        <button
-                            @click="openConfirmRemove({{ $manager->id }}, '{{ addslashes($manager->name) }}')"
-                            class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-danger text-sm font-medium rounded-lg border border-danger/30 hover:bg-danger-subtle transition-colors duration-200"
-                        >
-                            {{-- User Minus icon --}}
-                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="22" x2="16" y1="11" y2="11"></line></svg>
-                            {{ __('Remove') }}
-                        </button>
+                        {{-- Mobile action buttons --}}
+                        <div class="flex items-center gap-2">
+                            {{-- Configure permissions button --}}
+                            <button
+                                @click="openPermissions({{ $manager->id }}, '{{ route('cook.managers.permissions.show', $manager) }}')"
+                                :class="activePermissionsId === {{ $manager->id }}
+                                    ? 'bg-primary text-on-primary border-primary'
+                                    : 'text-on-surface border-outline hover:bg-surface dark:hover:bg-surface'"
+                                class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors duration-200"
+                            >
+                                {{-- Settings icon (Lucide, xs=14) --}}
+                                <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                {{ __('Configure') }}
+                            </button>
+                            {{-- Remove button --}}
+                            <button
+                                @click="openConfirmRemove({{ $manager->id }}, '{{ addslashes($manager->name) }}')"
+                                class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-danger text-sm font-medium rounded-lg border border-danger/30 hover:bg-danger-subtle transition-colors duration-200"
+                            >
+                                {{-- User Minus icon --}}
+                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="22" x2="16" y1="11" y2="11"></line></svg>
+                                {{ __('Remove') }}
+                            </button>
+                        </div>
                     </div>
                 </div>
                 @endforeach
@@ -247,6 +310,9 @@
         @endif
     </div>
     @endfragment
+
+    {{-- Permissions panel (single, shared, below the manager list) --}}
+    <div id="permissions-panel" x-show="activePermissionsId !== null" x-cloak class="mt-4"></div>
 
     {{-- Remove Confirmation Modal --}}
     <div

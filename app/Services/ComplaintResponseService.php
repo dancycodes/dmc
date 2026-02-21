@@ -179,9 +179,8 @@ class ComplaintResponseService
             return true;
         }
 
-        // Manager with the relevant permission
-        // Check if user has cook or manager role for this tenant and the permission
-        if ($user->can('can-manage-orders')) {
+        // Manager with the manage-complaints permission (F-210)
+        if ($user->can('can-manage-complaints')) {
             return true;
         }
 

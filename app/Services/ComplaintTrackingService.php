@@ -332,8 +332,8 @@ class ComplaintTrackingService
             return true;
         }
 
-        // Manager with manage-complaints permission
-        if ($user->can('can-manage-orders')) {
+        // Manager with manage-complaints permission (F-210 delegatable permission)
+        if ($user->can('can-manage-complaints')) {
             return true;
         }
 
@@ -363,6 +363,6 @@ class ComplaintTrackingService
      */
     public static function formatXAF(int|float $amount): string
     {
-        return number_format((int) $amount, 0, '.', ',') . ' XAF';
+        return number_format((int) $amount, 0, '.', ',').' XAF';
     }
 }

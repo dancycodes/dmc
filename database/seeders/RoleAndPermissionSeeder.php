@@ -63,6 +63,9 @@ class RoleAndPermissionSeeder extends Seeder
         'can-manage-delivery-areas',
         'can-manage-pickup-locations',
         'can-manage-selling-units',
+        // F-210: Delegatable manager permissions (cook-level, configurable per tenant)
+        'can-manage-complaints',
+        'can-manage-messages',
     ];
 
     /**
