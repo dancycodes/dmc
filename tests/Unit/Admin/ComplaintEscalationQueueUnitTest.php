@@ -35,7 +35,7 @@ test('complaint has valid admin status constants', function () {
 });
 
 test('complaint has valid all status constants', function () {
-    $expected = ['open', 'responded', 'escalated', 'pending_resolution', 'under_review', 'resolved', 'dismissed'];
+    $expected = ['open', 'in_review', 'responded', 'escalated', 'pending_resolution', 'under_review', 'resolved', 'dismissed'];
     expect(Complaint::ALL_STATUSES)->toBe($expected);
 });
 

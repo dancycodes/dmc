@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Complaint extends Model
 {
@@ -65,10 +66,22 @@ class Complaint extends Model
     ];
 
     /**
+     * F-184 BR-200: Cook/manager complaint response statuses.
+     */
+    public const COOK_STATUSES = [
+        'open',
+        'in_review',
+        'escalated',
+        'resolved',
+        'dismissed',
+    ];
+
+    /**
      * All valid statuses including pre-escalation.
      */
     public const ALL_STATUSES = [
         'open',
+        'in_review',
         'responded',
         'escalated',
         'pending_resolution',
@@ -193,6 +206,16 @@ class Complaint extends Model
     }
 
     /**
+     * F-184: Get all responses to this complaint.
+     *
+     * BR-203: A cook can respond multiple times.
+     */
+    public function responses(): HasMany
+    {
+        return $this->hasMany(ComplaintResponse::class);
+    }
+
+    /**
      * F-183: Get localized client-facing category labels.
      *
      * @return array<string, string>
@@ -233,6 +256,7 @@ class Complaint extends Model
     {
         return match ($this->status) {
             'open' => __('Open'),
+            'in_review' => __('In Review'),
             'responded' => __('Responded'),
             'escalated' => __('Escalated'),
             'pending_resolution' => __('Pending Resolution'),
@@ -380,6 +404,36 @@ class Complaint extends Model
                 $q->orWhere('order_id', (int) $matches[1]);
             }
         });
+    }
+
+    /**
+     * F-184: Scope to tenant's complaints.
+     */
+    public function scopeForTenant(Builder $query, int $tenantId): Builder
+    {
+        return $query->where('tenant_id', $tenantId);
+    }
+
+    /**
+     * F-184: Scope to filter by cook-facing status.
+     */
+    public function scopeOfCookStatus(Builder $query, ?string $status): Builder
+    {
+        if (! $status || ! in_array($status, self::COOK_STATUSES, true)) {
+            return $query;
+        }
+
+        return $query->where('status', $status);
+    }
+
+    /**
+     * F-184: Cook priority sort — open first, then by submitted_at ascending.
+     */
+    public function scopeCookPrioritySort(Builder $query): Builder
+    {
+        return $query
+            ->orderByRaw("CASE WHEN status = 'open' THEN 0 WHEN status = 'in_review' THEN 1 WHEN status = 'escalated' THEN 2 ELSE 3 END ASC")
+            ->orderBy('submitted_at', 'asc');
     }
 
     /**
