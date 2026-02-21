@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\OrderStatusTransition;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * F-157: Service layer for single order status updates.
@@ -69,10 +70,9 @@ class OrderStatusService
 
         $isAdminOverride = $options['admin_override'] ?? false;
         $overrideReason = $options['override_reason'] ?? null;
+        $previousStatus = $order->status;
 
-        return DB::transaction(function () use ($order, $targetStatus, $user, $isAdminOverride, $overrideReason) {
-            $previousStatus = $order->status;
-
+        $result = DB::transaction(function () use ($order, $previousStatus, $targetStatus, $user, $isAdminOverride, $overrideReason) {
             // Optimistic locking: re-fetch the order status to prevent race conditions
             $freshOrder = Order::query()->lockForUpdate()->find($order->id);
 
@@ -107,9 +107,6 @@ class OrderStatusService
             // BR-184/F-159 BR-203: Activity log entry (elevated for admin overrides)
             $this->logStatusChange($freshOrder, $previousStatus, $targetStatus, $user, $isAdminOverride, $overrideReason);
 
-            // BR-183: Trigger notification to client (forward-compatible for F-192)
-            $this->dispatchStatusNotification($freshOrder, $previousStatus, $targetStatus);
-
             // BR-186: Completing triggers commission deduction + withdrawable timer
             // Forward-compatible stubs for F-175 and F-171
             if ($targetStatus === Order::STATUS_COMPLETED) {
@@ -123,6 +120,16 @@ class OrderStatusService
                 'new_status' => $targetStatus,
             ];
         });
+
+        // BR-183/F-192: Dispatch notification AFTER transaction commits.
+        // BR-287: Notifications are queued and must not block the status update response.
+        // Dispatching outside the transaction prevents PostgreSQL transaction abort
+        // if notification dispatch fails or encounters a DB error.
+        if (($result['success'] ?? false) && isset($result['order'])) {
+            $this->dispatchStatusNotification($result['order'], $previousStatus, $targetStatus);
+        }
+
+        return $result;
     }
 
     /**
@@ -236,19 +243,29 @@ class OrderStatusService
     /**
      * Dispatch notification to the client about the status change.
      *
-     * BR-183: Each status change triggers a notification to the client (push + DB).
-     * Forward-compatible: F-192 will implement the actual notification class.
+     * BR-278: Push + DB for every status change.
+     * BR-279: Email for key statuses only.
+     * BR-287: Queued via OrderStatusNotificationService.
+     * F-192: Implemented by OrderStatusNotificationService.
      */
     private function dispatchStatusNotification(Order $order, string $previousStatus, string $newStatus): void
     {
-        // F-192: Order Status Update Notifications will implement this
-        // For now, we just load the client relationship if needed
-        if (! $order->relationLoaded('client')) {
-            $order->load('client');
-        }
+        try {
+            $tenant = $order->relationLoaded('tenant') ? $order->tenant : $order->tenant()->first();
 
-        // Stub: notification dispatch will be added by F-192
-        // $order->client->notify(new OrderStatusUpdateNotification($order, $previousStatus, $newStatus));
+            if (! $tenant) {
+                return;
+            }
+
+            $notificationService = app(OrderStatusNotificationService::class);
+            $notificationService->notifyStatusUpdate($order, $tenant, $previousStatus, $newStatus);
+        } catch (\Throwable $e) {
+            Log::warning('F-192: Failed to dispatch status notification', [
+                'order_id' => $order->id,
+                'new_status' => $newStatus,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
