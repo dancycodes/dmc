@@ -39,6 +39,7 @@ class DashboardController extends Controller
             'pendingOrders' => $dashboardData['pendingOrders'],
             'recentOrders' => $dashboardData['recentOrders'],
             'recentNotifications' => $dashboardData['recentNotifications'],
+            'ratingStats' => $dashboardData['ratingStats'],
         ], web: true);
     }
 
@@ -54,6 +55,8 @@ class DashboardController extends Controller
         $user = $request->user();
 
         $dashboardData = $dashboardService->getDashboardData($tenant, $user);
+
+        $ratingStats = $dashboardData['ratingStats'];
 
         return gale()
             ->componentState('stat-today-orders', [
@@ -72,6 +75,12 @@ class DashboardController extends Controller
             ])
             ->componentState('stat-pending-orders', [
                 'value' => $dashboardData['pendingOrders'],
+            ])
+            ->componentState('stat-cook-rating', [
+                'average' => $ratingStats['average'],
+                'count' => $ratingStats['count'],
+                'hasRating' => $ratingStats['hasRating'],
+                'trend' => $ratingStats['trend'],
             ]);
     }
 
