@@ -122,6 +122,7 @@ class OrderController extends Controller
                 'canRate' => $statusData['canRate'],
                 'rated' => $statusData['rated'],
                 'submittedStars' => $statusData['submittedStars'],
+                'submittedReview' => $statusData['submittedReview'],
             ])
             ->fragment('client.orders.show', 'status-timeline-section', [
                 'statusTimeline' => $statusData['statusTimeline'],

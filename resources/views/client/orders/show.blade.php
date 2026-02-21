@@ -34,9 +34,11 @@
         canRate: {{ $canRate ? 'true' : 'false' }},
         rated: {{ ($existingRating !== null) ? 'true' : 'false' }},
         submittedStars: {{ $existingRating?->stars ?? 0 }},
+        submittedReview: '{{ addslashes($existingRating?->review ?? '') }}',
         hoverStars: 0,
         selectedStars: 0,
         stars: 0,
+        review_text: '',
         previousStatus: '{{ $order->status }}',
         showStatusToast: false,
         statusToastMessage: '',
@@ -511,10 +513,11 @@
             </div>
             @endfragment
 
-            {{-- Rating Section (F-176) --}}
+            {{-- Rating Section (F-176, F-177) --}}
             {{-- BR-228: Rating prompt for completed, unrated orders --}}
             {{-- BR-392: Rating prompt appears on the order detail page --}}
-            {{-- Scenario 3: Already rated - show submitted rating --}}
+            {{-- BR-402: Once submitted, review is read-only --}}
+            {{-- Scenario 4 (F-177): Already rated - show submitted rating and review --}}
             <div x-show="rated" x-cloak>
                 <div class="bg-surface dark:bg-surface rounded-xl shadow-card border border-outline dark:border-outline overflow-hidden">
                     <div class="px-5 py-3.5 border-b border-outline dark:border-outline bg-surface-alt dark:bg-surface-alt">
@@ -537,9 +540,12 @@
                             </div>
                             <span class="text-sm font-medium text-on-surface" x-text="submittedStars + '/5 {{ __('stars') }}'"></span>
                         </div>
-                        @if($existingRating?->review)
-                            <p class="mt-3 text-sm text-on-surface/70 italic">{{ $existingRating->review }}</p>
-                        @endif
+                        {{-- F-177: Display submitted review text as read-only (BR-402) --}}
+                        <template x-if="submittedReview && submittedReview.length > 0">
+                            <div class="mt-3 p-3 bg-surface-alt dark:bg-surface-alt rounded-lg">
+                                <p class="text-sm text-on-surface/70 italic leading-relaxed" x-text="submittedReview"></p>
+                            </div>
+                        </template>
                     </div>
                 </div>
             </div>
@@ -584,15 +590,40 @@
                             ></span>
                         </div>
 
+                        {{-- F-177: Optional Review Text Area (BR-399, BR-400) --}}
+                        <div class="mb-4">
+                            <label for="review-text" class="block text-sm font-medium text-on-surface/70 mb-1.5">
+                                {{ __('Write a review') }} <span class="text-on-surface/40">({{ __('optional') }})</span>
+                            </label>
+                            <textarea
+                                id="review-text"
+                                x-model="review_text"
+                                x-name="review_text"
+                                rows="3"
+                                maxlength="500"
+                                class="w-full rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface placeholder-on-surface/40 text-sm px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors resize-none"
+                                placeholder="{{ __('Share your experience (optional)') }}"
+                            ></textarea>
+                            {{-- Character counter (BR-400) --}}
+                            <div class="flex justify-end mt-1">
+                                <span
+                                    class="text-xs transition-colors"
+                                    :class="review_text.length > 500 ? 'text-danger font-semibold' : (review_text.length > 450 ? 'text-warning' : 'text-on-surface/40')"
+                                    x-text="review_text.length + '/500'"
+                                ></span>
+                            </div>
+                            <p x-message="review_text" class="text-sm text-danger mt-1"></p>
+                        </div>
+
                         {{-- Validation error --}}
                         <p x-message="stars" class="text-sm text-danger mb-3"></p>
 
-                        {{-- Submit Button --}}
+                        {{-- Submit Button (BR-401: submits both stars and review together) --}}
                         <button
                             type="button"
                             class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-secondary text-on-secondary hover:bg-secondary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            :disabled="selectedStars === 0 || $fetching()"
-                            x-on:click="stars = selectedStars; $action('{{ url('/my-orders/' . $order->id . '/rate') }}', { include: ['stars'] })"
+                            :disabled="selectedStars === 0 || review_text.length > 500 || $fetching()"
+                            x-on:click="stars = selectedStars; $action('{{ url('/my-orders/' . $order->id . '/rate') }}', { include: ['stars', 'review_text'] })"
                         >
                             <span x-show="!$fetching()">
                                 {{-- Star icon (Lucide, sm=16) --}}
