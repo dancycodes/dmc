@@ -35,6 +35,7 @@ use App\Http\Controllers\Cook\SellingUnitController;
 use App\Http\Controllers\Cook\SetupWizardController;
 use App\Http\Controllers\Cook\TagController;
 use App\Http\Controllers\Cook\TownController;
+use App\Http\Controllers\Cook\WalletController as CookWalletController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DiscoveryController;
 use App\Http\Controllers\LanguagePreferenceController;
@@ -534,6 +535,11 @@ Route::middleware('tenant.domain')->group(function () {
         // F-158: Mass Order Status Update
         // BR-197: Only users with can-manage-orders permission (enforced in controller)
         Route::post('/orders/mass-update-status', [OrderController::class, 'massUpdateStatus'])->name('cook.orders.mass-update-status');
+
+        // F-169: Cook Wallet Dashboard
+        // BR-319: Only cook or users with can-manage-cook-wallet permission (enforced in controller)
+        // BR-320: Managers can view but not withdraw
+        Route::get('/wallet', [CookWalletController::class, 'index'])->name('cook.wallet.index');
     });
 
     // F-135: Meal Search Bar (public, on tenant domain)
