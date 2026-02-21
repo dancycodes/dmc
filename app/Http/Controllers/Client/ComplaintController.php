@@ -89,9 +89,12 @@ class ComplaintController extends Controller
             abort(403, __('You cannot file a complaint on this order.'));
         }
 
-        // Dual Gale/HTTP validation
+        // Validation: Gale sends state via JSON body (no file) or multipart FormData (with file).
+        // When x-files has a file, Gale auto-converts to multipart — state comes as form fields.
+        $photo = $request->file('photo');
+
         if ($request->isGale()) {
-            $validated = $request->validateState([
+            $validationRules = [
                 'category' => [
                     'required',
                     'string',
@@ -103,33 +106,36 @@ class ComplaintController extends Controller
                     'min:'.ComplaintSubmissionService::MIN_DESCRIPTION_LENGTH,
                     'max:'.ComplaintSubmissionService::MAX_DESCRIPTION_LENGTH,
                 ],
-            ], [
+            ];
+
+            $validationMessages = [
                 'category.required' => __('Please select a complaint category.'),
                 'category.in' => __('Please select a valid complaint category.'),
                 'description.required' => __('Please describe the issue you experienced.'),
                 'description.min' => __('Description must be at least :min characters.'),
                 'description.max' => __('Description cannot exceed :max characters.'),
-            ]);
+            ];
 
-            // Handle photo separately (comes via FormData, not Alpine state)
-            $photo = $request->file('photo');
             if ($photo) {
-                $request->validate([
-                    'photo' => [
-                        'image',
-                        'mimes:'.implode(',', ComplaintSubmissionService::ACCEPTED_PHOTO_MIMES),
-                        'max:'.ComplaintSubmissionService::MAX_PHOTO_SIZE_KB,
-                    ],
-                ], [
-                    'photo.image' => __('The uploaded file must be an image.'),
-                    'photo.mimes' => __('Accepted image formats: JPEG, PNG, WebP.'),
-                    'photo.max' => __('Image size must not exceed 5MB.'),
-                ]);
+                // With file upload: Gale sends multipart FormData — use standard validate
+                // State keys come as form fields alongside the file
+                $validationRules['photo'] = [
+                    'image',
+                    'mimes:'.implode(',', ComplaintSubmissionService::ACCEPTED_PHOTO_MIMES),
+                    'max:'.ComplaintSubmissionService::MAX_PHOTO_SIZE_KB,
+                ];
+                $validationMessages['photo.image'] = __('The uploaded file must be an image.');
+                $validationMessages['photo.mimes'] = __('Accepted image formats: JPEG, PNG, WebP.');
+                $validationMessages['photo.max'] = __('Image size must not exceed 5MB.');
+
+                $validated = $request->validate($validationRules, $validationMessages);
+            } else {
+                // Without file: Gale sends JSON body — use validateState for SSE error responses
+                $validated = $request->validateState($validationRules, $validationMessages);
             }
         } else {
             $formRequest = app(StoreComplaintRequest::class);
             $validated = $formRequest->validated();
-            $photo = $request->file('photo');
         }
 
         $complaint = $service->submitComplaint(
