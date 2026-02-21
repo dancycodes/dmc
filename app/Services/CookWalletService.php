@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\CookWallet;
+use App\Models\PendingDeduction;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\WalletTransaction;
@@ -212,7 +213,9 @@ class CookWalletService
      *     earningsSummary: array{total_earned: float, total_withdrawn: float, pending: float},
      *     monthlyEarnings: array<int, array{month: string, label: string, amount: float}>,
      *     totalTransactionCount: int,
-     *     isCook: bool
+     *     isCook: bool,
+     *     pendingDeductions: Collection,
+     *     totalPendingDeduction: float
      * }
      */
     public function getDashboardData(Tenant $tenant, User $user): array
@@ -235,6 +238,10 @@ class CookWalletService
         // BR-320: Managers can view but not withdraw
         $isCook = $user->id === $cook->id;
 
+        // F-174: Pending deductions data
+        $pendingDeductions = $this->getPendingDeductionsData($tenant, $cook);
+        $totalPendingDeduction = $this->getTotalPendingDeduction($tenant, $cook);
+
         return [
             'wallet' => $wallet,
             'recentTransactions' => $recentTransactions,
@@ -242,7 +249,44 @@ class CookWalletService
             'monthlyEarnings' => $monthlyEarnings,
             'totalTransactionCount' => $totalTransactionCount,
             'isCook' => $isCook,
+            'pendingDeductions' => $pendingDeductions,
+            'totalPendingDeduction' => $totalPendingDeduction,
         ];
+    }
+
+    /**
+     * F-174: Get pending deductions for the cook wallet dashboard.
+     *
+     * BR-372: Wallet shows total pending deduction amount.
+     * BR-375: Transparent settlement history.
+     *
+     * @return Collection<int, PendingDeduction>
+     */
+    public function getPendingDeductionsData(Tenant $tenant, User $cook): Collection
+    {
+        return PendingDeduction::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('user_id', $cook->id)
+            ->whereNull('settled_at')
+            ->where('remaining_amount', '>', 0)
+            ->orderBy('created_at', 'asc')
+            ->with(['order:id,order_number'])
+            ->get();
+    }
+
+    /**
+     * F-174: Get total pending deduction amount.
+     *
+     * BR-372: Wallet shows total pending deduction amount.
+     */
+    public function getTotalPendingDeduction(Tenant $tenant, User $cook): float
+    {
+        return (float) PendingDeduction::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('user_id', $cook->id)
+            ->whereNull('settled_at')
+            ->where('remaining_amount', '>', 0)
+            ->sum('remaining_amount');
     }
 
     /**

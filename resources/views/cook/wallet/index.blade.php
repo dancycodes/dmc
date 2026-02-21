@@ -110,6 +110,87 @@
         </div>
     </div>
 
+    {{-- F-174: Pending Deductions Section --}}
+    {{-- BR-372: Shows total pending deduction amount --}}
+    {{-- BR-375: Transparent settlement history --}}
+    @if($totalPendingDeduction > 0)
+        <div class="bg-danger-subtle dark:bg-danger-subtle border border-danger/20 dark:border-danger/30 rounded-xl p-5 shadow-card mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <span class="w-10 h-10 rounded-full bg-danger/10 dark:bg-danger/20 flex items-center justify-center">
+                        {{-- AlertTriangle icon (Lucide, md=20) --}}
+                        <svg class="w-5 h-5 text-danger" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+                    </span>
+                    <div>
+                        <h2 class="text-base font-semibold text-on-surface-strong">
+                            {{ __('Pending Deductions') }}
+                        </h2>
+                        <p class="text-xs text-on-surface mt-0.5">
+                            {{ __('This amount will be deducted from your future earnings') }}
+                        </p>
+                    </div>
+                </div>
+                <p class="text-xl font-bold text-danger font-mono">
+                    {{ \App\Services\CookWalletService::formatXAF($totalPendingDeduction) }}
+                </p>
+            </div>
+
+            {{-- Individual deduction entries --}}
+            <div class="space-y-3">
+                @foreach($pendingDeductions as $deduction)
+                    <div class="bg-surface dark:bg-surface rounded-lg p-4 border border-outline dark:border-outline">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    @if($deduction->order)
+                                        <span class="text-sm font-medium text-on-surface-strong font-mono">
+                                            {{ $deduction->order->order_number }}
+                                        </span>
+                                    @endif
+                                    <span class="text-xs px-2 py-0.5 rounded-full {{ $deduction->settlementProgress() > 0 ? 'bg-warning-subtle text-warning' : 'bg-danger-subtle text-danger' }}">
+                                        @if($deduction->settlementProgress() > 0)
+                                            {{ $deduction->settlementProgress() }}% {{ __('settled') }}
+                                        @else
+                                            {{ __('Unsettled') }}
+                                        @endif
+                                    </span>
+                                </div>
+                                <p class="text-xs text-on-surface mt-1 truncate">
+                                    {{ $deduction->reason }}
+                                </p>
+                                <p class="text-xs text-on-surface/60 mt-1">
+                                    {{ $deduction->created_at->format('M d, Y') }}
+                                </p>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <p class="text-sm font-semibold text-danger font-mono">
+                                    {{ $deduction->formattedRemainingAmount() }}
+                                </p>
+                                @if($deduction->settledAmount() > 0)
+                                    <p class="text-xs text-on-surface/60 mt-0.5">
+                                        {{ __('of') }} {{ $deduction->formattedOriginalAmount() }}
+                                    </p>
+                                @endif
+                            </div>
+                        </div>
+
+                        {{-- Settlement progress bar --}}
+                        @if($deduction->settlementProgress() > 0)
+                            <div class="mt-3">
+                                <div class="w-full h-1.5 bg-surface-alt dark:bg-surface-alt rounded-full overflow-hidden">
+                                    <div
+                                        class="h-full bg-warning dark:bg-warning rounded-full transition-all duration-500"
+                                        style="width: {{ $deduction->settlementProgress() }}%"
+                                    ></div>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     {{-- Earnings Summary Section --}}
     {{-- BR-316: Total earned, total withdrawn, pending --}}
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">

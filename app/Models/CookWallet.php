@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 /**
  * F-169: Cook Wallet Dashboard
@@ -73,6 +74,41 @@ class CookWallet extends Model
     {
         return $this->hasMany(WalletTransaction::class, 'user_id', 'user_id')
             ->where('tenant_id', $this->tenant_id);
+    }
+
+    /**
+     * F-174: Get the pending deductions for this cook wallet.
+     */
+    public function pendingDeductions(): HasMany
+    {
+        return $this->hasMany(PendingDeduction::class);
+    }
+
+    /**
+     * F-174: Get only unsettled pending deductions.
+     *
+     * @return Collection<int, PendingDeduction>
+     */
+    public function unsettledDeductions(): Collection
+    {
+        return $this->pendingDeductions()
+            ->whereNull('settled_at')
+            ->where('remaining_amount', '>', 0)
+            ->orderBy('created_at', 'asc')
+            ->get();
+    }
+
+    /**
+     * F-174: Get the total pending deduction amount.
+     *
+     * BR-372: Wallet shows total pending deduction amount.
+     */
+    public function totalPendingDeduction(): float
+    {
+        return (float) $this->pendingDeductions()
+            ->whereNull('settled_at')
+            ->where('remaining_amount', '>', 0)
+            ->sum('remaining_amount');
     }
 
     /**

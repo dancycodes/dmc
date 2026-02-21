@@ -4,11 +4,14 @@ namespace App\Services;
 
 use App\Mail\RefundCreditedMail;
 use App\Models\ClientWallet;
+use App\Models\CookWallet;
 use App\Models\Order;
+use App\Models\PendingDeduction;
 use App\Models\User;
 use App\Models\WalletTransaction;
 use App\Notifications\RefundCreditedNotification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 /**
@@ -110,6 +113,9 @@ class WalletRefundService
             // BR-295: Send notifications (push + DB + email) after commit
             $this->dispatchNotifications($client, $amount, $order, $transaction);
 
+            // F-174 BR-366: Create pending deduction if cook has already withdrawn
+            $this->createCookDeductionIfNeeded($order, $amount, $source);
+
             return [
                 'wallet' => $wallet->fresh(),
                 'transaction' => $transaction,
@@ -185,6 +191,73 @@ class WalletRefundService
                     ->forRecipient($client)
                     ->forTenant($tenant)
             );
+    }
+
+    /**
+     * F-174: Check if a pending deduction should be created against the cook's wallet
+     * and create it if necessary.
+     *
+     * BR-366: When a refund is issued after the cook has withdrawn the order's
+     * payment, a pending deduction is created against the cook's future earnings.
+     */
+    public function createCookDeductionIfNeeded(
+        Order $order,
+        float $refundAmount,
+        string $source
+    ): void {
+        if ($refundAmount <= 0 || ! $order->tenant_id) {
+            return;
+        }
+
+        $autoDeductionService = app(AutoDeductionService::class);
+
+        // Check if the cook has withdrawn funds from this order
+        if (! $autoDeductionService->hasCookWithdrawnOrderFunds($order)) {
+            return;
+        }
+
+        $tenant = $order->tenant;
+        $cook = $order->cook;
+
+        if (! $tenant || ! $cook) {
+            return;
+        }
+
+        $wallet = CookWallet::getOrCreateForTenant($tenant, $cook);
+
+        $reason = match ($source) {
+            self::SOURCE_COMPLAINT => __('Complaint resolution refund for order :number', [
+                'number' => $order->order_number,
+            ]),
+            self::SOURCE_CANCELLATION => __('Cancellation refund for order :number', [
+                'number' => $order->order_number,
+            ]),
+            default => __('Refund for order :number', [
+                'number' => $order->order_number,
+            ]),
+        };
+
+        $deductionSource = match ($source) {
+            self::SOURCE_COMPLAINT => PendingDeduction::SOURCE_COMPLAINT_REFUND,
+            self::SOURCE_CANCELLATION => PendingDeduction::SOURCE_CANCELLATION_REFUND,
+            default => PendingDeduction::SOURCE_COMPLAINT_REFUND,
+        };
+
+        $autoDeductionService->createDeduction(
+            $wallet,
+            $order,
+            $refundAmount,
+            $reason,
+            $deductionSource,
+            ['refund_source' => $source]
+        );
+
+        Log::info('F-174: Cook auto-deduction created for post-withdrawal refund', [
+            'order_id' => $order->id,
+            'refund_amount' => $refundAmount,
+            'cook_id' => $cook->id,
+            'source' => $source,
+        ]);
     }
 
     /**
