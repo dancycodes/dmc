@@ -60,8 +60,7 @@
                 });
             }
         }"
-        x-sync="['cancellation_window_minutes']"
-        x-on:gale:redirect.window="saved = true; saving = false;"
+        x-sync="['cancellation_window_minutes', 'saved']"
         class="bg-surface dark:bg-surface rounded-2xl border border-outline dark:border-outline shadow-card overflow-hidden"
     >
         {{-- Card Header --}}
@@ -102,7 +101,7 @@
 
             {{-- Gale validation error (x-message pattern) --}}
             <div class="mb-4">
-                <p x-message="cancellation_window_minutes" class="text-sm text-danger hidden" x-cloak></p>
+                <p x-message="cancellation_window_minutes" class="text-sm text-danger"></p>
             </div>
 
             {{-- Number input with stepper controls --}}

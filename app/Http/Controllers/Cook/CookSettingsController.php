@@ -68,11 +68,15 @@ class CookSettingsController extends Controller
             $request->user(),
         );
 
-        return gale()
-            ->redirect(route('cook.settings.index'))
-            ->with('toast', [
-                'type' => 'success',
-                'message' => __('Cancellation window saved successfully.'),
-            ]);
+        if ($request->isGale()) {
+            return gale()
+                ->state('saved', true)
+                ->dispatch('toast', [
+                    'type' => 'success',
+                    'message' => __('Cancellation window saved successfully.'),
+                ]);
+        }
+
+        return gale()->redirect(route('cook.settings.index'));
     }
 }
