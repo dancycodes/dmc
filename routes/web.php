@@ -648,6 +648,12 @@ Route::middleware('tenant.domain')->group(function () {
         // BR-370: Net revenue = grand_total - commission_amount (cook's portion)
         Route::get('/analytics', [\App\Http\Controllers\Cook\RevenueAnalyticsController::class, 'index'])->name('cook.analytics.revenue');
 
+        // F-201: Cook Order Analytics
+        // BR-379: Order data is tenant-scoped
+        // BR-380: All order statuses included in count
+        // BR-387: Charts update via Gale when date range changes
+        Route::get('/analytics/orders', [\App\Http\Controllers\Cook\OrderAnalyticsController::class, 'index'])->name('cook.analytics.orders');
+
         // F-184: Cook/Manager Complaint Response
         // BR-195: Only cook or manager with manage-complaints permission (enforced in controller)
         Route::get('/complaints', [\App\Http\Controllers\Cook\ComplaintController::class, 'index'])->name('cook.complaints.index');

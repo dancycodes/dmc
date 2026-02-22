@@ -46,6 +46,35 @@
     }"
     class="space-y-6"
 >
+    {{-- Tab navigation: Revenue | Orders --}}
+    <div class="flex items-center gap-1 border-b border-outline">
+        <a
+            href="/dashboard/analytics"
+            x-navigate
+            class="px-4 py-2.5 text-sm font-medium text-primary border-b-2 border-primary -mb-px whitespace-nowrap"
+            aria-current="page"
+        >
+            <span class="flex items-center gap-1.5">
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+                {{ __('Revenue') }}
+            </span>
+        </a>
+        <a
+            href="/dashboard/analytics/orders"
+            x-navigate
+            class="px-4 py-2.5 text-sm font-medium text-on-surface hover:text-on-surface-strong border-b-2 border-transparent hover:border-outline-strong transition-colors duration-150 -mb-px whitespace-nowrap"
+        >
+            <span class="flex items-center gap-1.5">
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path>
+                </svg>
+                {{ __('Orders') }}
+            </span>
+        </a>
+    </div>
+
     {{-- Page Header --}}
     <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
