@@ -96,7 +96,7 @@
                                 </p>
                             @endif
 
-                            {{-- CTA button + Rating badge --}}
+                            {{-- CTA button + Rating badge + Favorite --}}
                             <div class="mt-4 sm:mt-6 flex flex-col sm:flex-row items-center sm:items-end gap-4">
                                 {{-- BR-140: CTA button scrolls to #meals --}}
                                 <button
@@ -106,6 +106,46 @@
                                     <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect></svg>
                                     {{ __('View Meals') }}
                                 </button>
+
+                                {{-- F-196: Favorite Cook Button (tenant hero — with cover images) --}}
+                                {{-- BR-323: Guests redirected to login. BR-325: Idempotent toggle. --}}
+                                {{-- BR-327: Heart reflects current state. BR-328: Gale toggle. --}}
+                                <div
+                                    x-data="{
+                                        isFavorited: {{ ($isFavorited ?? false) ? 'true' : 'false' }},
+                                        favoriteError: null
+                                    }"
+                                    x-sync="['isFavorited']"
+                                >
+                                    @if($isAuthenticated ?? false)
+                                        <button
+                                            @click.stop="$action('{{ route('favorite-cooks.toggle', ['tenant' => $tenant->slug]) }}')"
+                                            class="inline-flex items-center gap-2 h-12 px-4 sm:px-5 rounded-lg bg-black/40 backdrop-blur-sm hover:bg-black/60 text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white/50 cursor-pointer border border-white/20"
+                                            :aria-label="isFavorited ? '{{ __('Remove from favorites') }}' : '{{ __('Add to favorites') }}'"
+                                            :title="isFavorited ? '{{ __('Remove from favorites') }}' : '{{ __('Add to favorites') }}'"
+                                            aria-label="{{ ($isFavorited ?? false) ? __('Remove from favorites') : __('Add to favorites') }}"
+                                        >
+                                            {{-- Loading spinner --}}
+                                            <svg x-show="$fetching()" x-cloak class="w-5 h-5 text-white animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                            {{-- Filled heart --}}
+                                            <svg x-show="isFavorited && !$fetching()" class="w-5 h-5 text-red-400 transition-colors duration-200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
+                                            {{-- Outline heart --}}
+                                            <svg x-show="!isFavorited && !$fetching()" class="w-5 h-5 text-white/90 transition-colors duration-200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
+                                            <span x-text="isFavorited ? '{{ __('Favorited') }}' : '{{ __('Add to favorites') }}'" class="text-sm font-medium hidden sm:inline"></span>
+                                        </button>
+                                    @else
+                                        <a
+                                            href="{{ route('login') }}"
+                                            class="inline-flex items-center gap-2 h-12 px-4 sm:px-5 rounded-lg bg-black/40 backdrop-blur-sm hover:bg-black/60 text-white transition-all duration-200 border border-white/20 focus:outline-none focus:ring-2 focus:ring-white/50"
+                                            aria-label="{{ __('Log in to add to favorites') }}"
+                                            title="{{ __('Log in to add to favorites') }}"
+                                            x-navigate-skip
+                                        >
+                                            <svg class="w-5 h-5 text-white/90" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
+                                            <span class="text-sm font-medium hidden sm:inline">{{ __('Add to favorites') }}</span>
+                                        </a>
+                                    @endif
+                                </div>
 
                                 {{-- BR-141/142/143: Rating badge --}}
                                 @if($cookProfile['rating']['hasReviews'])
@@ -179,8 +219,10 @@
                         </p>
                     @endif
 
-                    {{-- CTA button + Rating badge --}}
+                    {{-- CTA button + Rating badge + Favorite --}}
                     <div class="mt-8 flex flex-col items-center gap-4">
+                        {{-- Inline row: CTA + Favorite side by side on desktop --}}
+                        <div class="flex flex-wrap items-center justify-center gap-3">
                         {{-- BR-140: CTA button --}}
                         <button
                             @click="document.getElementById('meals')?.scrollIntoView({ behavior: 'smooth', block: 'start' })"
@@ -189,6 +231,49 @@
                             <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect></svg>
                             {{ __('View Meals') }}
                         </button>
+
+                        {{-- F-196: Favorite Cook Button (tenant hero — no cover image variant) --}}
+                        {{-- BR-323: Guests redirected to login. BR-325: Idempotent toggle. --}}
+                        <div
+                            x-data="{
+                                isFavorited: {{ ($isFavorited ?? false) ? 'true' : 'false' }},
+                                favoriteError: null
+                            }"
+                            x-sync="['isFavorited']"
+                        >
+                            @if($isAuthenticated ?? false)
+                                <button
+                                    @click.stop="$action('{{ route('favorite-cooks.toggle', ['tenant' => $tenant->slug]) }}')"
+                                    class="inline-flex items-center gap-2 h-12 px-4 sm:px-5 rounded-lg border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+                                    :class="isFavorited
+                                        ? 'bg-danger-subtle dark:bg-danger-subtle border-danger/30 dark:border-danger/30 text-danger dark:text-danger'
+                                        : 'bg-surface dark:bg-surface border-outline dark:border-outline text-on-surface hover:bg-surface-alt dark:hover:bg-surface-alt'"
+                                    :aria-label="isFavorited ? '{{ __('Remove from favorites') }}' : '{{ __('Add to favorites') }}'"
+                                    :title="isFavorited ? '{{ __('Remove from favorites') }}' : '{{ __('Add to favorites') }}'"
+                                    aria-label="{{ ($isFavorited ?? false) ? __('Remove from favorites') : __('Add to favorites') }}"
+                                >
+                                    {{-- Loading spinner --}}
+                                    <svg x-show="$fetching()" x-cloak class="w-5 h-5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                    {{-- Filled heart --}}
+                                    <svg x-show="isFavorited && !$fetching()" class="w-5 h-5 text-red-500 transition-all duration-200 scale-110" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
+                                    {{-- Outline heart --}}
+                                    <svg x-show="!isFavorited && !$fetching()" class="w-5 h-5 transition-all duration-200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
+                                    <span x-text="isFavorited ? '{{ __('Favorited') }}' : '{{ __('Save cook') }}'" class="text-sm font-medium"></span>
+                                </button>
+                            @else
+                                <a
+                                    href="{{ route('login') }}"
+                                    class="inline-flex items-center gap-2 h-12 px-4 sm:px-5 rounded-lg bg-surface dark:bg-surface border border-outline dark:border-outline text-on-surface hover:bg-surface-alt dark:hover:bg-surface-alt transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
+                                    aria-label="{{ __('Log in to add to favorites') }}"
+                                    title="{{ __('Log in to add to favorites') }}"
+                                    x-navigate-skip
+                                >
+                                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
+                                    <span class="text-sm font-medium">{{ __('Save cook') }}</span>
+                                </a>
+                            @endif
+                        </div>
+                        </div>
 
                         {{-- BR-141/142/143: Rating badge --}}
                         @if($cookProfile['rating']['hasReviews'])

@@ -1,13 +1,14 @@
 # Current Orchestrator Context
 ## Last Action
-- Completed F-180 (Testimonial Submission Form, 0 retries), merged to main. Started F-181.
+- Completed F-195 (System Announcement Notifications, 0 impl + 1 review retries), merged to main. Started F-196.
 ## Active Features
-- F-181: IMPLEMENT phase (retry 0) — Cook Testimonial Moderation
+- F-196: IMPLEMENT phase (retry 0) — Favorite Cook Toggle
 ## Next Up
-- 12 more eligible features after F-181
+- 10 more eligible features after F-196
 ## Recent Patterns
-- gale_compliance (11), ui_compliance (9), business_logic (6) most common error categories
-- F-148: Alpine data islands for complex JSON (@json in x-data attr breaks Alpine). validateState keys must be camelCase. $action() inline only.
-- F-148: OrderSchedulingService uses Africa/Douala TZ; CookSchedule drives availability
+- gale_compliance (15), ui_compliance (9), business_logic (7) most common error categories
+- Blade data islands: always {!! json_encode(..., JSON_HEX_*) !!} never @json or {{ json_encode }}
+- Tenant translatable columns always name_en/name_fr never name
+- Gale reserved key 'messages' — never use as Alpine state variable
 ## Mode: sequential, max_parallel: 1
-## Progress: 193/219 done (24 Should-have pending, 2 Could-have)
+## Progress: 201/219 done (16 Should-have pending, 2 Could-have)

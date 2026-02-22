@@ -6,6 +6,7 @@ use App\Services\CookDashboardService;
 use App\Services\ManagerDashboardService;
 use App\Services\TenantLandingService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
@@ -161,6 +162,18 @@ class DashboardController extends Controller
         $currentUser = auth()->user();
         $landingData = $landingService->getLandingPageData($tenant, $page, $currentUser);
 
-        return gale()->view('tenant.home', $landingData, web: true);
+        // F-196: Resolve favorite state for the current user on this cook's tenant.
+        // BR-327: Heart icon visually reflects current favorite state on page load.
+        $isFavorited = false;
+        if (Auth::check() && $tenant?->cook_id) {
+            /** @var \App\Models\User $user */
+            $user = Auth::user();
+            $isFavorited = $user->hasFavoritedCook((int) $tenant->cook_id);
+        }
+
+        return gale()->view('tenant.home', array_merge($landingData, [
+            'isFavorited' => $isFavorited,
+            'isAuthenticated' => Auth::check(),
+        ]), web: true);
     }
 }
