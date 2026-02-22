@@ -43,6 +43,7 @@ use App\Http\Controllers\DiscoveryController;
 use App\Http\Controllers\LanguagePreferenceController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\LocationSearchController;
+use App\Http\Controllers\NotificationPreferencesController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfilePhotoController;
@@ -206,6 +207,10 @@ Route::middleware('auth')->group(function () {
     // Language Preference (F-042)
     Route::get('/profile/language', [LanguagePreferenceController::class, 'show'])->name('language.show');
     Route::post('/profile/language', [LanguagePreferenceController::class, 'update'])->name('language.update');
+
+    // Notification Preferences (F-041)
+    Route::get('/profile/notifications', [NotificationPreferencesController::class, 'show'])->name('notifications.preferences.show');
+    Route::post('/profile/notifications', [NotificationPreferencesController::class, 'update'])->name('notifications.preferences.update');
 
     // Client Order List (F-160)
     // BR-219: Accessible from any domain (main or tenant)
