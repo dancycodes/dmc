@@ -151,6 +151,126 @@ class TestimonialService
     }
 
     /**
+     * Get testimonials for a tenant grouped by status counts and paginated list.
+     *
+     * BR-444: Testimonials are tenant-scoped.
+     *
+     * @return array{counts: array{pending: int, approved: int, rejected: int}, testimonials: \Illuminate\Contracts\Pagination\LengthAwarePaginator}
+     */
+    public function getModerationData(Tenant $tenant, string $tab = 'pending', int $perPage = 20): array
+    {
+        $counts = [
+            'pending' => Testimonial::query()->forTenant($tenant->id)->where('status', Testimonial::STATUS_PENDING)->count(),
+            'approved' => Testimonial::query()->forTenant($tenant->id)->where('status', Testimonial::STATUS_APPROVED)->count(),
+            'rejected' => Testimonial::query()->forTenant($tenant->id)->where('status', Testimonial::STATUS_REJECTED)->count(),
+        ];
+
+        $activeTab = in_array($tab, Testimonial::STATUSES) ? $tab : Testimonial::STATUS_PENDING;
+
+        $testimonials = Testimonial::query()
+            ->forTenant($tenant->id)
+            ->where('status', $activeTab)
+            ->with('user')
+            ->latest()
+            ->paginate($perPage);
+
+        return compact('counts', 'testimonials', 'activeTab');
+    }
+
+    /**
+     * Approve a testimonial.
+     *
+     * BR-439: Cook can approve testimonials.
+     * BR-442: Moderation actions are logged via Spatie Activitylog.
+     *
+     * @return array{success: bool, message: string}
+     */
+    public function approve(User $moderator, Testimonial $testimonial): array
+    {
+        if ($testimonial->status === Testimonial::STATUS_APPROVED) {
+            return ['success' => false, 'message' => __('This testimonial is already approved.')];
+        }
+
+        DB::transaction(function () use ($moderator, $testimonial) {
+            $testimonial->update([
+                'status' => Testimonial::STATUS_APPROVED,
+                'approved_at' => now(),
+                'rejected_at' => null,
+            ]);
+
+            activity()
+                ->causedBy($moderator)
+                ->performedOn($testimonial)
+                ->withProperties(['tenant_id' => $testimonial->tenant_id])
+                ->log('testimonial_approved');
+        });
+
+        return ['success' => true, 'message' => __('Testimonial approved and will appear on your landing page.')];
+    }
+
+    /**
+     * Reject a testimonial.
+     *
+     * BR-439: Cook can reject testimonials.
+     * BR-442: Moderation actions are logged via Spatie Activitylog.
+     *
+     * @return array{success: bool, message: string}
+     */
+    public function reject(User $moderator, Testimonial $testimonial): array
+    {
+        if ($testimonial->status === Testimonial::STATUS_REJECTED) {
+            return ['success' => false, 'message' => __('This testimonial is already rejected.')];
+        }
+
+        DB::transaction(function () use ($moderator, $testimonial) {
+            $testimonial->update([
+                'status' => Testimonial::STATUS_REJECTED,
+                'rejected_at' => now(),
+                'approved_at' => null,
+            ]);
+
+            activity()
+                ->causedBy($moderator)
+                ->performedOn($testimonial)
+                ->withProperties(['tenant_id' => $testimonial->tenant_id])
+                ->log('testimonial_rejected');
+        });
+
+        return ['success' => true, 'message' => __('Testimonial has been rejected.')];
+    }
+
+    /**
+     * Un-approve (revoke) a previously approved testimonial.
+     *
+     * BR-441: Un-approving moves testimonial to rejected status.
+     * BR-442: Moderation actions are logged.
+     *
+     * @return array{success: bool, message: string}
+     */
+    public function unapprove(User $moderator, Testimonial $testimonial): array
+    {
+        if ($testimonial->status !== Testimonial::STATUS_APPROVED) {
+            return ['success' => false, 'message' => __('Only approved testimonials can be removed from display.')];
+        }
+
+        DB::transaction(function () use ($moderator, $testimonial) {
+            $testimonial->update([
+                'status' => Testimonial::STATUS_REJECTED,
+                'rejected_at' => now(),
+                'approved_at' => null,
+            ]);
+
+            activity()
+                ->causedBy($moderator)
+                ->performedOn($testimonial)
+                ->withProperties(['tenant_id' => $testimonial->tenant_id])
+                ->log('testimonial_unapproved');
+        });
+
+        return ['success' => true, 'message' => __('Testimonial has been removed from public display.')];
+    }
+
+    /**
      * Notify the cook that a new testimonial has been submitted.
      *
      * BR-434: Cook receives push + DB notification (N-018).
