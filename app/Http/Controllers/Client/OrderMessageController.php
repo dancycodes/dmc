@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Services\MessageNotificationService;
 use App\Services\OrderMessageService;
 use Illuminate\Http\Request;
 
@@ -19,7 +20,7 @@ class OrderMessageController extends Controller
      * BR-244: Thread accessible only by order's client, tenant's cook, and authorized managers.
      * BR-246: All user-facing text uses __() localization.
      */
-    public function show(Request $request, Order $order, OrderMessageService $messageService): mixed
+    public function show(Request $request, Order $order, OrderMessageService $messageService, MessageNotificationService $notifService): mixed
     {
         $user = $request->user();
 
@@ -27,6 +28,12 @@ class OrderMessageController extends Controller
         if ($order->client_id !== $user->id) {
             abort(403, __('You are not authorized to view this message thread.'));
         }
+
+        // F-190 BR-262: Record that user is viewing the thread (suppresses push notifications)
+        $notifService->markUserViewingThread($order, $user);
+
+        // F-190 BR-266: Mark unread message notifications for this order as read
+        $notifService->markThreadNotificationsRead($order, $user);
 
         $threadData = $messageService->getThreadData($order, $user);
 
