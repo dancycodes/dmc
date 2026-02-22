@@ -8,6 +8,7 @@ use App\Http\Requests\Cook\UpdatePromoCodeRequest;
 use App\Models\PromoCode;
 use App\Services\PromoCodeService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * F-215: Cook Promo Code Creation
@@ -190,7 +191,8 @@ class PromoCodeController extends Controller
             abort(404);
         }
 
-        $usageCount = $promoCode->usages()->count();
+        // BR-552: Forward-compatible usage count — promo_code_usages table created in F-218
+        $usageCount = Schema::hasTable('promo_code_usages') ? $promoCode->usages()->count() : 0;
 
         if ($request->isGale()) {
             // Return state to populate the edit modal
