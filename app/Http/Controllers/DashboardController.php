@@ -165,15 +165,26 @@ class DashboardController extends Controller
         // F-196: Resolve favorite state for the current user on this cook's tenant.
         // BR-327: Heart icon visually reflects current favorite state on page load.
         $isFavorited = false;
-        if (Auth::check() && $tenant?->cook_id) {
+        $userFavoriteMealIds = [];
+        if (Auth::check()) {
             /** @var \App\Models\User $user */
             $user = Auth::user();
-            $isFavorited = $user->hasFavoritedCook((int) $tenant->cook_id);
+            if ($tenant?->cook_id) {
+                $isFavorited = $user->hasFavoritedCook((int) $tenant->cook_id);
+            }
+            // F-197: Resolve user's favorited meal IDs for this tenant's meal cards.
+            // BR-337: Heart icon visually reflects current favorite state on page load.
+            $userFavoriteMealIds = $user->favoriteMeals()
+                ->whereHas('tenant', fn ($q) => $q->where('id', $tenant?->id))
+                ->allRelatedIds()
+                ->toArray();
         }
 
         return gale()->view('tenant.home', array_merge($landingData, [
             'isFavorited' => $isFavorited,
             'isAuthenticated' => Auth::check(),
+            'userFavoriteMealIds' => $userFavoriteMealIds,
+            'isMealCardAuthenticated' => Auth::check(),
         ]), web: true);
     }
 }
