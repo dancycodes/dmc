@@ -124,21 +124,13 @@
                 {{-- Cook cards grid: 1 col mobile, 2 tablet, 3 desktop --}}
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                     @foreach($favorites as $item)
-                        {{-- BR-349: Each card has its own x-data scope for animation on removal --}}
+                        {{-- BR-349: Card visibility driven by root x-data removedCookId (no nested scope to avoid Alpine isolation) --}}
                         <div
-                            x-data="{
-                                cookUserId: {{ $item['cook_user_id'] }},
-                                removing: false,
-                                get shouldHide() {
-                                    return $root.removedCookId === this.cookUserId;
-                                }
-                            }"
-                            x-show="!shouldHide"
+                            x-show="removedCookId !== {{ $item['cook_user_id'] }}"
                             x-transition:leave="transition ease-in duration-300"
                             x-transition:leave-start="opacity-100 scale-100"
                             x-transition:leave-end="opacity-0 scale-95"
                             class="relative group"
-                            :class="{ 'pointer-events-none': removing }"
                         >
                             {{-- BR-351: Unavailable overlay --}}
                             @if(!$item['is_available'])
@@ -260,10 +252,10 @@
                                         {{-- BR-348: Remove from favorites --}}
                                         <button
                                             type="button"
-                                            @click="removing = true; $action('{{ route('favorites.cooks.remove', $item['cook_user_id']) }}')"
+                                            @click="$action('{{ route('favorites.cooks.remove', $item['cook_user_id']) }}')"
                                             class="h-8 w-8 rounded-lg flex items-center justify-center text-on-surface hover:bg-danger-subtle hover:text-danger border border-outline transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-danger focus:ring-offset-1 shrink-0"
-                                            :class="{ 'opacity-50 cursor-wait': removing }"
-                                            :disabled="removing"
+                                            :class="{ 'opacity-50 cursor-wait': $fetching() }"
+                                            :disabled="$fetching()"
                                             title="{{ __('Remove from favorites') }}"
                                             aria-label="{{ __('Remove from favorites') }}"
                                         >
@@ -325,19 +317,11 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                     @foreach($favorites as $item)
                         <div
-                            x-data="{
-                                mealId: {{ $item['meal_id'] }},
-                                removing: false,
-                                get shouldHide() {
-                                    return $root.removedMealId === this.mealId;
-                                }
-                            }"
-                            x-show="!shouldHide"
+                            x-show="removedMealId !== {{ $item['meal_id'] }}"
                             x-transition:leave="transition ease-in duration-300"
                             x-transition:leave-start="opacity-100 scale-100"
                             x-transition:leave-end="opacity-0 scale-95"
                             class="relative group"
-                            :class="{ 'pointer-events-none': removing }"
                         >
                             {{-- BR-351: Unavailable badge --}}
                             @if(!$item['is_available'])
@@ -426,10 +410,10 @@
                                         {{-- BR-348: Remove from favorites --}}
                                         <button
                                             type="button"
-                                            @click="removing = true; $action('{{ route('favorites.meals.remove', $item['meal_id']) }}')"
+                                            @click="$action('{{ route('favorites.meals.remove', $item['meal_id']) }}')"
                                             class="h-8 w-8 rounded-lg flex items-center justify-center text-on-surface hover:bg-danger-subtle hover:text-danger border border-outline transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-danger focus:ring-offset-1 shrink-0"
-                                            :class="{ 'opacity-50 cursor-wait': removing }"
-                                            :disabled="removing"
+                                            :class="{ 'opacity-50 cursor-wait': $fetching() }"
+                                            :disabled="$fetching()"
                                             title="{{ __('Remove from favorites') }}"
                                             aria-label="{{ __('Remove from favorites') }}"
                                         >
