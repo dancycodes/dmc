@@ -870,6 +870,15 @@ Route::middleware('tenant.domain')->group(function () {
     Route::get('/checkout/summary', [\App\Http\Controllers\Tenant\CheckoutController::class, 'summary'])
         ->name('tenant.checkout.summary');
 
+    // F-218: Promo Code Application at Checkout
+    // BR-572: Only one promo code per order
+    // BR-573: Case-insensitive validation
+    // BR-579: Client can remove applied code
+    Route::post('/checkout/promo/apply', [\App\Http\Controllers\Tenant\CheckoutController::class, 'applyPromoCode'])
+        ->name('tenant.checkout.promo.apply');
+    Route::post('/checkout/promo/remove', [\App\Http\Controllers\Tenant\CheckoutController::class, 'removePromoCode'])
+        ->name('tenant.checkout.promo.remove');
+
     // F-148: Order Scheduling for Future Date
     // BR-335: Optional scheduling; default is next available slot
     // BR-336: Calendar shows only dates with available schedule entries

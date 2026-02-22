@@ -1,5 +1,6 @@
 {{--
     F-146: Order Total Calculation & Summary
+    F-218: Promo Code Application at Checkout
     BR-316: Itemized list shows meal name, component name, quantity, unit price, line subtotal
     BR-317: Items are grouped by meal
     BR-318: Subtotal is the sum of all food item line subtotals
@@ -11,6 +12,20 @@
     BR-324: An Edit Cart link allows returning to the cart without losing checkout progress
     BR-325: Proceed to Payment button leads to F-149 (Payment Method Selection)
     BR-326: All text must be localized via __()
+    BR-572: Only one promo code can be applied per order
+    BR-573: Promo code input is case-insensitive
+    BR-574: Validation follows all rules in F-219
+    BR-575: Percentage discount applied to food subtotal (before delivery fee)
+    BR-576: Fixed discount subtracted from food subtotal
+    BR-577: Discount cannot exceed food subtotal
+    BR-578: Discount shown as negative line item with code name
+    BR-579: Client can remove an applied code
+    BR-580: Final total after discount must still meet tenant minimum order amount
+    BR-581: Minimum check uses post-discount food subtotal, excluding delivery fee
+    BR-582: Promo usage recorded only when order is placed
+    BR-583: Re-validated at order submission time
+    BR-584: Order summary updates reactively via Gale
+    BR-585: All user-facing text uses __() localization
 --}}
 @extends('layouts.tenant-public')
 
@@ -19,8 +34,27 @@
 @section('content')
 <div class="min-h-screen"
     x-data="{
+        {{-- Promo code state --}}
+        promoInput: '',
+        appliedPromoCode: {{ json_encode($appliedPromoCode, JSON_HEX_APOS | JSON_HEX_QUOT) }},
+        promoError: '',
+        promoDiscountAmount: {{ $orderSummary['promo_discount'] }},
+        promoDiscountLabel: '',
+        grandTotal: {{ $orderSummary['grand_total'] }},
+        belowMinimum: {{ $belowMinimum ? 'true' : 'false' }},
+        amountNeeded: {{ $amountNeeded }},
+        minimumOrderAmount: {{ $minimumOrderAmount }},
+
         formatPrice(amount) {
             return new Intl.NumberFormat('en').format(amount) + ' XAF';
+        },
+
+        get hasAppliedCode() {
+            return this.appliedPromoCode !== '';
+        },
+
+        get canProceed() {
+            return !this.belowMinimum;
         }
     }"
 >
@@ -174,6 +208,76 @@
             </div>
         </div>
 
+        {{-- F-218: Promo Code Section --}}
+        {{-- BR-578: Shown below items, above totals --}}
+        <div class="mt-4 bg-surface-alt dark:bg-surface-alt rounded-xl border border-outline dark:border-outline shadow-card overflow-hidden">
+            <div class="px-5 py-4">
+                <h4 class="text-sm font-semibold text-on-surface-strong mb-3 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H2v7l6.29 6.29c.94.94 2.48.94 3.42 0l3.58-3.58c.94-.94.94-2.48 0-3.42L9 5Z"></path><path d="M6 9.01V9"></path><path d="m15 5 6.3 6.3a2.4 2.4 0 0 1 0 3.4L17 19"></path></svg>
+                    {{ __('Promo Code') }}
+                </h4>
+
+                {{-- Applied code: tag/chip display (BR-578, UI/UX notes) --}}
+                <div x-show="hasAppliedCode" class="flex items-center gap-3">
+                    {{-- Green checkmark + code chip --}}
+                    <div class="flex items-center gap-2 bg-success-subtle text-success px-3 py-2 rounded-lg border border-success/20 flex-1 min-w-0">
+                        <svg class="w-4 h-4 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+                        <span class="text-sm font-semibold truncate" x-text="appliedPromoCode"></span>
+                        <span class="text-xs font-medium text-success/80 shrink-0" x-text="promoDiscountAmount > 0 ? '-' + formatPrice(promoDiscountAmount) : ''"></span>
+                    </div>
+                    {{-- BR-579: Remove button --}}
+                    <button
+                        type="button"
+                        class="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-outline dark:border-outline text-on-surface hover:bg-danger-subtle hover:text-danger hover:border-danger/30 transition-all duration-200 shrink-0"
+                        :disabled="$fetching()"
+                        :class="$fetching() ? 'opacity-50 cursor-not-allowed' : ''"
+                        @click="$action('{{ route('tenant.checkout.promo.remove') }}')"
+                        aria-label="{{ __('Remove promo code') }}"
+                    >
+                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                    </button>
+                </div>
+
+                {{-- Promo input form (hidden when code applied) --}}
+                <div x-show="!hasAppliedCode">
+                    <div class="flex items-start gap-2">
+                        <div class="flex-1 min-w-0">
+                            <input
+                                type="text"
+                                x-model="promoInput"
+                                x-name="promo_code_input"
+                                placeholder="{{ __('Enter promo code') }}"
+                                class="w-full h-10 px-3 rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface text-sm font-mono uppercase placeholder:normal-case placeholder:font-sans focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors duration-200"
+                                :class="promoError ? 'border-danger focus:ring-danger/20 focus:border-danger' : ''"
+                                @keydown.enter.prevent="$action('{{ route('tenant.checkout.promo.apply') }}', { include: ['promo_code_input'] })"
+                                maxlength="20"
+                            >
+                            {{-- BR-578: Inline error message below input --}}
+                            <p
+                                x-show="promoError !== ''"
+                                x-text="promoError"
+                                class="mt-1.5 text-xs text-danger"
+                                role="alert"
+                            ></p>
+                        </div>
+                        {{-- Apply button with loading state --}}
+                        <button
+                            type="button"
+                            class="h-10 px-4 bg-primary hover:bg-primary-hover text-on-primary text-sm font-semibold rounded-lg transition-all duration-200 shrink-0 flex items-center gap-1.5"
+                            :disabled="$fetching() || promoInput.trim() === ''"
+                            :class="($fetching() || promoInput.trim() === '') ? 'opacity-50 cursor-not-allowed' : ''"
+                            @click="$action('{{ route('tenant.checkout.promo.apply') }}', { include: ['promo_code_input'] })"
+                        >
+                            {{-- Loading state on Apply button --}}
+                            <span x-show="$fetching()" class="inline-block w-3.5 h-3.5 border-2 border-on-primary/30 border-t-on-primary rounded-full animate-spin"></span>
+                            <span x-show="!$fetching()">{{ __('Apply') }}</span>
+                            <span x-show="$fetching()">{{ __('Checking...') }}</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {{-- Summary totals box --}}
         <div class="mt-4 bg-surface-alt dark:bg-surface-alt rounded-xl border border-outline dark:border-outline shadow-card overflow-hidden">
             <div class="px-5 py-4 space-y-3">
@@ -206,25 +310,32 @@
                     </div>
                 @endif
 
-                {{-- BR-320: Promo discount (forward-compatible, shown only if applicable) --}}
-                @if ($orderSummary['promo_discount'] > 0)
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm font-medium text-success">
-                            {{ __('Promo') }} "{{ $orderSummary['promo_code'] }}"
-                        </span>
-                        <span class="text-sm font-medium text-success">
-                            -{{ number_format($orderSummary['promo_discount'], 0, '.', ',') }} XAF
-                        </span>
-                    </div>
-                @endif
+                {{-- BR-320/BR-578: Promo discount line item (reactive via Alpine) --}}
+                <div x-show="promoDiscountAmount > 0" class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-success flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H2v7l6.29 6.29c.94.94 2.48.94 3.42 0l3.58-3.58c.94-.94.94-2.48 0-3.42L9 5Z"></path><path d="M6 9.01V9"></path></svg>
+                        {{ __('Promo') }} "<span x-text="appliedPromoCode"></span>"
+                    </span>
+                    <span class="text-sm font-medium text-success" x-text="promoDiscountAmount > 0 ? '-' + formatPrice(promoDiscountAmount) : ''"></span>
+                </div>
 
                 {{-- Separator --}}
                 <div class="border-t border-outline dark:border-outline"></div>
 
-                {{-- BR-321: Grand total (large, bold) --}}
+                {{-- BR-321: Grand total (large, bold) — reactive via Alpine --}}
                 <div class="flex items-center justify-between">
                     <span class="text-base font-bold text-on-surface-strong">{{ __('Total') }}</span>
-                    <span class="text-xl font-bold text-primary">{{ number_format($orderSummary['grand_total'], 0, '.', ',') }} XAF</span>
+                    <span class="text-xl font-bold text-primary" x-text="formatPrice(grandTotal)"></span>
+                </div>
+
+                {{-- BR-580/BR-581: Below minimum warning (disables checkout button) --}}
+                <div
+                    x-show="belowMinimum"
+                    class="flex items-start gap-2 bg-warning-subtle rounded-lg px-3 py-2.5"
+                    role="alert"
+                >
+                    <svg class="w-4 h-4 text-warning shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+                    <p class="text-xs font-medium text-warning" x-text="{{ json_encode(__('Add :needed XAF more to meet the minimum order of :min XAF.')) }}.replace(':needed', new Intl.NumberFormat('en').format(amountNeeded)).replace(':min', new Intl.NumberFormat('en').format(minimumOrderAmount))"></p>
                 </div>
             </div>
         </div>
@@ -302,11 +413,23 @@
                 <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
                 {{ __('Back') }}
             </a>
-            {{-- BR-325: Proceed to Payment --}}
-            <a href="{{ url('/checkout/payment') }}" class="flex-1 h-11 inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg shadow-card transition-all duration-200" x-navigate>
-                {{ __('Proceed to Payment') }}
-                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
-            </a>
+            {{-- BR-325: Proceed to Payment — disabled when below minimum (BR-580) --}}
+            <template x-if="canProceed">
+                <a href="{{ url('/checkout/payment') }}" class="flex-1 h-11 inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg shadow-card transition-all duration-200" x-navigate>
+                    {{ __('Proceed to Payment') }}
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                </a>
+            </template>
+            <template x-if="!canProceed">
+                <button
+                    type="button"
+                    disabled
+                    class="flex-1 h-11 inline-flex items-center justify-center gap-2 bg-outline text-on-surface/50 font-semibold rounded-lg cursor-not-allowed"
+                >
+                    {{ __('Proceed to Payment') }}
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                </button>
+            </template>
         </div>
 
         {{-- Spacer for mobile sticky bar --}}
@@ -318,13 +441,24 @@
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-xs font-medium text-on-surface">{{ __('Total') }}</p>
-                <p class="text-base font-bold text-primary">{{ number_format($orderSummary['grand_total'], 0, '.', ',') }} XAF</p>
+                <p class="text-base font-bold text-primary" x-text="formatPrice(grandTotal)"></p>
             </div>
-            {{-- BR-325: Proceed to Payment --}}
-            <a href="{{ url('/checkout/payment') }}" class="h-11 px-6 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg shadow-card transition-all duration-200 inline-flex items-center gap-2" x-navigate>
-                {{ __('Proceed to Payment') }}
-                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
-            </a>
+            {{-- BR-325/BR-580: Proceed to Payment — disabled when below minimum --}}
+            <template x-if="canProceed">
+                <a href="{{ url('/checkout/payment') }}" class="h-11 px-6 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg shadow-card transition-all duration-200 inline-flex items-center gap-2" x-navigate>
+                    {{ __('Proceed to Payment') }}
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                </a>
+            </template>
+            <template x-if="!canProceed">
+                <button
+                    type="button"
+                    disabled
+                    class="h-11 px-6 bg-outline text-on-surface/50 font-semibold rounded-lg cursor-not-allowed inline-flex items-center gap-2"
+                >
+                    {{ __('Proceed to Payment') }}
+                </button>
+            </template>
         </div>
     </div>
 </div>
