@@ -33,107 +33,108 @@
         <p class="text-sm text-on-surface/60 mt-1">{{ __('Review and moderate client testimonials for your page') }}</p>
     </div>
 
-    {{-- Summary Cards --}}
-    <div class="grid grid-cols-3 gap-3 sm:gap-4 mb-6">
-        {{-- Pending --}}
-        <div class="bg-surface dark:bg-surface rounded-xl shadow-card border border-outline dark:border-outline p-4">
-            <div class="flex items-center gap-3">
-                <span class="w-10 h-10 rounded-full bg-warning-subtle flex items-center justify-center shrink-0">
-                    <svg class="w-5 h-5 text-warning" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg>
-                </span>
-                <div>
-                    <p class="text-xs text-on-surface/50 font-medium">{{ __('Pending') }}</p>
-                    <p class="text-xl font-bold text-warning">{{ $counts['pending'] }}</p>
-                </div>
-            </div>
-        </div>
-
-        {{-- Approved --}}
-        <div class="bg-surface dark:bg-surface rounded-xl shadow-card border border-outline dark:border-outline p-4">
-            <div class="flex items-center gap-3">
-                <span class="w-10 h-10 rounded-full bg-success-subtle flex items-center justify-center shrink-0">
-                    <svg class="w-5 h-5 text-success" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                </span>
-                <div>
-                    <p class="text-xs text-on-surface/50 font-medium">{{ __('Approved') }}</p>
-                    <p class="text-xl font-bold text-success">{{ $counts['approved'] }}</p>
-                </div>
-            </div>
-        </div>
-
-        {{-- Rejected --}}
-        <div class="bg-surface dark:bg-surface rounded-xl shadow-card border border-outline dark:border-outline p-4">
-            <div class="flex items-center gap-3">
-                <span class="w-10 h-10 rounded-full bg-danger-subtle flex items-center justify-center shrink-0">
-                    <svg class="w-5 h-5 text-danger" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
-                </span>
-                <div>
-                    <p class="text-xs text-on-surface/50 font-medium">{{ __('Rejected') }}</p>
-                    <p class="text-xl font-bold text-danger">{{ $counts['rejected'] }}</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Tab Navigation --}}
-    <div class="border-b border-outline dark:border-outline mb-6">
-        <nav class="flex gap-0 -mb-px overflow-x-auto" aria-label="{{ __('Testimonial status tabs') }}">
-            {{-- Pending Tab --}}
-            <a
-                href="{{ url('/dashboard/testimonials?tab=pending') }}"
-                @click.prevent="activeTab = 'pending'; $navigate('/dashboard/testimonials?tab=pending', { key: 'testimonials', merge: true, replace: true })"
-                :class="activeTab === 'pending'
-                    ? 'border-b-2 border-primary text-primary font-semibold'
-                    : 'border-b-2 border-transparent text-on-surface/60 hover:text-on-surface hover:border-outline-strong'"
-                class="flex items-center gap-2 px-4 py-3 text-sm whitespace-nowrap transition-colors duration-150"
-            >
-                {{ __('Pending') }}
-                @if($counts['pending'] > 0)
-                    <span class="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full text-xs font-bold bg-warning text-on-primary">
-                        {{ $counts['pending'] }}
-                    </span>
-                @endif
-            </a>
-
-            {{-- Approved Tab --}}
-            <a
-                href="{{ url('/dashboard/testimonials?tab=approved') }}"
-                @click.prevent="activeTab = 'approved'; $navigate('/dashboard/testimonials?tab=approved', { key: 'testimonials', merge: true, replace: true })"
-                :class="activeTab === 'approved'
-                    ? 'border-b-2 border-primary text-primary font-semibold'
-                    : 'border-b-2 border-transparent text-on-surface/60 hover:text-on-surface hover:border-outline-strong'"
-                class="flex items-center gap-2 px-4 py-3 text-sm whitespace-nowrap transition-colors duration-150"
-            >
-                {{ __('Approved') }}
-                @if($counts['approved'] > 0)
-                    <span class="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full text-xs font-bold bg-success text-on-primary">
-                        {{ $counts['approved'] }}
-                    </span>
-                @endif
-            </a>
-
-            {{-- Rejected Tab --}}
-            <a
-                href="{{ url('/dashboard/testimonials?tab=rejected') }}"
-                @click.prevent="activeTab = 'rejected'; $navigate('/dashboard/testimonials?tab=rejected', { key: 'testimonials', merge: true, replace: true })"
-                :class="activeTab === 'rejected'
-                    ? 'border-b-2 border-primary text-primary font-semibold'
-                    : 'border-b-2 border-transparent text-on-surface/60 hover:text-on-surface hover:border-outline-strong'"
-                class="flex items-center gap-2 px-4 py-3 text-sm whitespace-nowrap transition-colors duration-150"
-            >
-                {{ __('Rejected') }}
-                @if($counts['rejected'] > 0)
-                    <span class="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full text-xs font-bold bg-surface-alt text-on-surface">
-                        {{ $counts['rejected'] }}
-                    </span>
-                @endif
-            </a>
-        </nav>
-    </div>
-
-    {{-- Testimonials Content (fragment target) --}}
+    {{-- Testimonials Content (fragment target — includes cards, tabs, and list) --}}
     @fragment('testimonials-content')
     <div id="testimonials-content">
+
+        {{-- Summary Cards (inside fragment so counts update on actions) --}}
+        <div class="grid grid-cols-3 gap-3 sm:gap-4 mb-6">
+            {{-- Pending --}}
+            <div class="bg-surface dark:bg-surface rounded-xl shadow-card border border-outline dark:border-outline p-4">
+                <div class="flex items-center gap-3">
+                    <span class="w-10 h-10 rounded-full bg-warning-subtle flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 text-warning" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg>
+                    </span>
+                    <div>
+                        <p class="text-xs text-on-surface/50 font-medium">{{ __('Pending') }}</p>
+                        <p class="text-xl font-bold text-warning">{{ $counts['pending'] }}</p>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Approved --}}
+            <div class="bg-surface dark:bg-surface rounded-xl shadow-card border border-outline dark:border-outline p-4">
+                <div class="flex items-center gap-3">
+                    <span class="w-10 h-10 rounded-full bg-success-subtle flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 text-success" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                    </span>
+                    <div>
+                        <p class="text-xs text-on-surface/50 font-medium">{{ __('Approved') }}</p>
+                        <p class="text-xl font-bold text-success">{{ $counts['approved'] }}</p>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Rejected --}}
+            <div class="bg-surface dark:bg-surface rounded-xl shadow-card border border-outline dark:border-outline p-4">
+                <div class="flex items-center gap-3">
+                    <span class="w-10 h-10 rounded-full bg-danger-subtle flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 text-danger" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                    </span>
+                    <div>
+                        <p class="text-xs text-on-surface/50 font-medium">{{ __('Rejected') }}</p>
+                        <p class="text-xl font-bold text-danger">{{ $counts['rejected'] }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Tab Navigation (inside fragment so tab badges update on actions) --}}
+        <div class="border-b border-outline dark:border-outline mb-6">
+            <nav class="flex gap-0 -mb-px overflow-x-auto" aria-label="{{ __('Testimonial status tabs') }}">
+                {{-- Pending Tab --}}
+                <a
+                    href="{{ url('/dashboard/testimonials?tab=pending') }}"
+                    @click.prevent="activeTab = 'pending'; $navigate('/dashboard/testimonials?tab=pending', { key: 'testimonials', merge: true, replace: true })"
+                    :class="activeTab === 'pending'
+                        ? 'border-b-2 border-primary text-primary font-semibold'
+                        : 'border-b-2 border-transparent text-on-surface/60 hover:text-on-surface hover:border-outline-strong'"
+                    class="flex items-center gap-2 px-4 py-3 text-sm whitespace-nowrap transition-colors duration-150"
+                >
+                    {{ __('Pending') }}
+                    @if($counts['pending'] > 0)
+                        <span class="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full text-xs font-bold bg-warning text-on-primary">
+                            {{ $counts['pending'] }}
+                        </span>
+                    @endif
+                </a>
+
+                {{-- Approved Tab --}}
+                <a
+                    href="{{ url('/dashboard/testimonials?tab=approved') }}"
+                    @click.prevent="activeTab = 'approved'; $navigate('/dashboard/testimonials?tab=approved', { key: 'testimonials', merge: true, replace: true })"
+                    :class="activeTab === 'approved'
+                        ? 'border-b-2 border-primary text-primary font-semibold'
+                        : 'border-b-2 border-transparent text-on-surface/60 hover:text-on-surface hover:border-outline-strong'"
+                    class="flex items-center gap-2 px-4 py-3 text-sm whitespace-nowrap transition-colors duration-150"
+                >
+                    {{ __('Approved') }}
+                    @if($counts['approved'] > 0)
+                        <span class="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full text-xs font-bold bg-success text-on-primary">
+                            {{ $counts['approved'] }}
+                        </span>
+                    @endif
+                </a>
+
+                {{-- Rejected Tab --}}
+                <a
+                    href="{{ url('/dashboard/testimonials?tab=rejected') }}"
+                    @click.prevent="activeTab = 'rejected'; $navigate('/dashboard/testimonials?tab=rejected', { key: 'testimonials', merge: true, replace: true })"
+                    :class="activeTab === 'rejected'
+                        ? 'border-b-2 border-primary text-primary font-semibold'
+                        : 'border-b-2 border-transparent text-on-surface/60 hover:text-on-surface hover:border-outline-strong'"
+                    class="flex items-center gap-2 px-4 py-3 text-sm whitespace-nowrap transition-colors duration-150"
+                >
+                    {{ __('Rejected') }}
+                    @if($counts['rejected'] > 0)
+                        <span class="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full text-xs font-bold bg-surface-alt text-on-surface">
+                            {{ $counts['rejected'] }}
+                        </span>
+                    @endif
+                </a>
+            </nav>
+        </div>
+
         @if($testimonials->isEmpty())
             {{-- Empty State --}}
             <div class="flex flex-col items-center justify-center py-16 text-center">
