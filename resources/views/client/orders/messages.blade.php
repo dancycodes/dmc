@@ -62,7 +62,8 @@
                 const container = this.$refs.messageContainer;
                 const previousScrollHeight = container ? container.scrollHeight : 0;
 
-                this.messages = [...this.olderMessages, ...this.messages];
+                const current = Array.isArray(this.messages) ? this.messages : Object.values(this.messages || {});
+                this.messages = [...this.olderMessages, ...current];
                 this.olderMessages = null;
                 this.isLoadingOlder = false;
 
@@ -76,7 +77,8 @@
 
         handleNewMessage() {
             if (this.newMessage) {
-                this.messages = [...this.messages, this.newMessage];
+                const current = Array.isArray(this.messages) ? this.messages : Object.values(this.messages || {});
+                this.messages = [...current, this.newMessage];
                 this.newMessage = null;
                 this.$nextTick(() => this.scrollToBottom());
             }
