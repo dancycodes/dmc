@@ -124,7 +124,7 @@ class AnnouncementController extends Controller
                 return gale()->state('error', __('This announcement cannot be edited.'));
             }
 
-            return redirect('/vault-entry/announcements')
+            return gale()->redirect('/vault-entry/announcements')
                 ->with('toast', ['type' => 'error', 'message' => __('This announcement cannot be edited.')]);
         }
 
@@ -179,7 +179,7 @@ class AnnouncementController extends Controller
                 return gale()->state('cancelError', __('Only scheduled announcements can be cancelled.'));
             }
 
-            return redirect('/vault-entry/announcements')
+            return gale()->redirect('/vault-entry/announcements')
                 ->with('toast', ['type' => 'error', 'message' => __('Only scheduled announcements can be cancelled.')]);
         }
 
