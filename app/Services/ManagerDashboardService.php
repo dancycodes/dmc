@@ -58,7 +58,7 @@ class ManagerDashboardService
         'dashboard/analytics' => 'can-view-cook-analytics',
         'dashboard/complaints' => 'can-manage-complaints',
         'dashboard/messages' => 'can-manage-messages',
-        'dashboard/testimonials' => null,           // forward-compatible
+        'dashboard/testimonials' => 'can-manage-testimonials',
     ];
 
     /**

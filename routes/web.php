@@ -37,6 +37,7 @@ use App\Http\Controllers\Cook\ScheduleTemplateController;
 use App\Http\Controllers\Cook\SellingUnitController;
 use App\Http\Controllers\Cook\SetupWizardController;
 use App\Http\Controllers\Cook\TagController;
+use App\Http\Controllers\Cook\TestimonialModerationController;
 use App\Http\Controllers\Cook\TownController;
 use App\Http\Controllers\Cook\WalletController as CookWalletController;
 use App\Http\Controllers\DashboardController;
@@ -581,6 +582,14 @@ Route::middleware('tenant.domain')->group(function () {
         // F-158: Mass Order Status Update
         // BR-197: Only users with can-manage-orders permission (enforced in controller)
         Route::post('/orders/mass-update-status', [OrderController::class, 'massUpdateStatus'])->name('cook.orders.mass-update-status');
+
+        // F-181: Cook Testimonial Moderation
+        // BR-443: Only users with can-manage-testimonials permission (enforced in controller)
+        // BR-444: Testimonials are tenant-scoped
+        Route::get('/testimonials', [TestimonialModerationController::class, 'index'])->name('cook.testimonials.index');
+        Route::post('/testimonials/{testimonial}/approve', [TestimonialModerationController::class, 'approve'])->name('cook.testimonials.approve');
+        Route::post('/testimonials/{testimonial}/reject', [TestimonialModerationController::class, 'reject'])->name('cook.testimonials.reject');
+        Route::post('/testimonials/{testimonial}/unapprove', [TestimonialModerationController::class, 'unapprove'])->name('cook.testimonials.unapprove');
 
         // F-184: Cook/Manager Complaint Response
         // BR-195: Only cook or manager with manage-complaints permission (enforced in controller)

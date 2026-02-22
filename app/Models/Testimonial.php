@@ -64,6 +64,8 @@ class Testimonial extends Model
         'user_id',
         'text',
         'status',
+        'approved_at',
+        'rejected_at',
     ];
 
     /**
@@ -74,6 +76,8 @@ class Testimonial extends Model
     protected function casts(): array
     {
         return [
+            'approved_at' => 'datetime',
+            'rejected_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
