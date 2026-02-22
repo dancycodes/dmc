@@ -2594,5 +2594,9 @@
     "(empty)": "(empty)",
     "(removed)": "(removed)",
     "null": "null",
-    "System": "System"
+    "System": "System",
+    "Quick Actions": "Quick Actions",
+    "Complete Setup": "Complete Setup",
+    "View Pending Orders": "View Pending Orders",
+    "Update Availability": "Update Availability"
 }
