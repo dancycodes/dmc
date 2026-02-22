@@ -377,14 +377,14 @@
         {{-- BR-526: Cook only; managers cannot access (COOK_RESERVED_PATHS) --}}
         {{-- BR-532: Gale handles all preview and save interactions --}}
         @php
-        $presetColorsJson = json_encode($presetColors);
+        $presetColorsJson = json_encode($presetColors, JSON_HEX_APOS | JSON_HEX_QUOT);
         $presetFontFamilies = [];
         foreach ($availableFonts as $fontKey => $fontData) {
             $fontCfg = config("tenant-themes.fonts.{$fontKey}");
             $presetFontFamilies[$fontKey] = $fontCfg['family'] ?? "'Inter', sans-serif";
         }
-        $fontFamiliesJson = json_encode($presetFontFamilies);
-        $presetNamesJson = json_encode(array_keys($availablePresets));
+        $fontFamiliesJson = json_encode($presetFontFamilies, JSON_HEX_APOS | JSON_HEX_QUOT);
+        $presetNamesJson = json_encode(array_keys($availablePresets), JSON_HEX_APOS | JSON_HEX_QUOT);
         @endphp
 
         <div
