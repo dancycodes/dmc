@@ -91,6 +91,7 @@ class PaymentService
                     'payment_provider' => $checkoutData['payment_provider'],
                     'payment_phone' => $checkoutData['payment_phone'],
                     'items_snapshot' => $this->buildItemsSnapshot($cart),
+                    'scheduled_date' => $checkoutData['scheduled_date'] ?? null,
                 ]);
 
                 return $order;
