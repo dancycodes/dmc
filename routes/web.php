@@ -590,6 +590,7 @@ Route::middleware('tenant.domain')->group(function () {
         Route::post('/testimonials/{testimonial}/approve', [TestimonialModerationController::class, 'approve'])->name('cook.testimonials.approve');
         Route::post('/testimonials/{testimonial}/reject', [TestimonialModerationController::class, 'reject'])->name('cook.testimonials.reject');
         Route::post('/testimonials/{testimonial}/unapprove', [TestimonialModerationController::class, 'unapprove'])->name('cook.testimonials.unapprove');
+        Route::post('/testimonials/{testimonial}/toggle-featured', [TestimonialModerationController::class, 'toggleFeatured'])->name('cook.testimonials.toggle-featured');
 
         // F-184: Cook/Manager Complaint Response
         // BR-195: Only cook or manager with manage-complaints permission (enforced in controller)

@@ -151,6 +151,120 @@ class TestimonialService
     }
 
     /**
+     * Get approved testimonials for display on the tenant landing page.
+     *
+     * BR-446: Only approved testimonials are displayed.
+     * BR-447: Maximum 10 testimonials displayed at a time.
+     * BR-448: If more than 10 are approved, cook selects featured ones.
+     *         If no featured ones are selected, all approved shown (up to 10, newest first).
+     *         If cook has selected featured ones, only featured shown (up to 10).
+     * BR-453: Testimonials are tenant-scoped.
+     *
+     * @return array{testimonials: \Illuminate\Database\Eloquent\Collection<int, \App\Models\Testimonial>, hasTestimonials: bool, totalApproved: int, hasFeaturedSelection: bool}
+     */
+    public function getApprovedTestimonialsForDisplay(Tenant $tenant): array
+    {
+        $totalApproved = Testimonial::query()
+            ->forTenant($tenant->id)
+            ->approved()
+            ->count();
+
+        if ($totalApproved === 0) {
+            return [
+                'testimonials' => collect(),
+                'hasTestimonials' => false,
+                'totalApproved' => 0,
+                'hasFeaturedSelection' => false,
+            ];
+        }
+
+        // BR-448: If more than MAX, prefer featured ones
+        $hasFeaturedSelection = false;
+
+        if ($totalApproved > Testimonial::MAX_DISPLAY_COUNT) {
+            $featuredCount = Testimonial::query()
+                ->forTenant($tenant->id)
+                ->approved()
+                ->featured()
+                ->count();
+
+            if ($featuredCount > 0) {
+                $hasFeaturedSelection = true;
+                $testimonials = Testimonial::query()
+                    ->forTenant($tenant->id)
+                    ->approved()
+                    ->featured()
+                    ->with('user')
+                    ->latest('approved_at')
+                    ->limit(Testimonial::MAX_DISPLAY_COUNT)
+                    ->get();
+
+                return [
+                    'testimonials' => $testimonials,
+                    'hasTestimonials' => $testimonials->isNotEmpty(),
+                    'totalApproved' => $totalApproved,
+                    'hasFeaturedSelection' => $hasFeaturedSelection,
+                ];
+            }
+        }
+
+        // No featured selection or <= 10 approved: show all approved (newest first, max 10)
+        $testimonials = Testimonial::query()
+            ->forTenant($tenant->id)
+            ->approved()
+            ->with('user')
+            ->latest('approved_at')
+            ->limit(Testimonial::MAX_DISPLAY_COUNT)
+            ->get();
+
+        return [
+            'testimonials' => $testimonials,
+            'hasTestimonials' => $testimonials->isNotEmpty(),
+            'totalApproved' => $totalApproved,
+            'hasFeaturedSelection' => $hasFeaturedSelection,
+        ];
+    }
+
+    /**
+     * Toggle the featured status of an approved testimonial.
+     *
+     * BR-448: Cook can select featured testimonials from their approved list.
+     * Only approved testimonials can be featured.
+     *
+     * @return array{success: bool, message: string, is_featured: bool}
+     */
+    public function toggleFeatured(User $moderator, Testimonial $testimonial): array
+    {
+        if ($testimonial->status !== Testimonial::STATUS_APPROVED) {
+            return [
+                'success' => false,
+                'message' => __('Only approved testimonials can be featured.'),
+                'is_featured' => false,
+            ];
+        }
+
+        $newFeaturedState = ! $testimonial->is_featured;
+
+        $testimonial->update(['is_featured' => $newFeaturedState]);
+
+        activity()
+            ->causedBy($moderator)
+            ->performedOn($testimonial)
+            ->withProperties(['tenant_id' => $testimonial->tenant_id, 'is_featured' => $newFeaturedState])
+            ->log($newFeaturedState ? 'testimonial_featured' : 'testimonial_unfeatured');
+
+        $message = $newFeaturedState
+            ? __('Testimonial marked as featured.')
+            : __('Testimonial removed from featured selection.');
+
+        return [
+            'success' => true,
+            'message' => $message,
+            'is_featured' => $newFeaturedState,
+        ];
+    }
+
+    /**
      * Get testimonials for a tenant grouped by status counts and paginated list.
      *
      * BR-444: Testimonials are tenant-scoped.
@@ -174,7 +288,10 @@ class TestimonialService
             ->latest()
             ->paginate($perPage);
 
-        return compact('counts', 'testimonials', 'activeTab');
+        // F-182: Total approved count — needed to decide whether to show the feature toggle
+        $totalApproved = $counts['approved'];
+
+        return compact('counts', 'testimonials', 'activeTab', 'totalApproved');
     }
 
     /**

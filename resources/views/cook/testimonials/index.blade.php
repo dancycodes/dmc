@@ -269,6 +269,19 @@
                                 </button>
 
                             @elseif($testimonial->status === \App\Models\Testimonial::STATUS_APPROVED)
+                                {{-- F-182: Feature toggle (shown when > 10 approved so cook can curate) --}}
+                                @if($totalApproved > \App\Models\Testimonial::MAX_DISPLAY_COUNT)
+                                    <button
+                                        @click="$action('/dashboard/testimonials/{{ $testimonial->id }}/toggle-featured', { include: ['activeTab'] })"
+                                        :disabled="$fetching()"
+                                        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 {{ $testimonial->is_featured ? 'border-secondary bg-secondary-subtle text-secondary hover:bg-secondary hover:text-on-secondary' : 'border-outline dark:border-outline text-on-surface/60 bg-surface-alt hover:bg-surface hover:border-outline-strong' }}"
+                                    >
+                                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="{{ $testimonial->is_featured ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                                        <span x-show="!$fetching()">{{ $testimonial->is_featured ? __('Unfeature') : __('Feature') }}</span>
+                                        <span x-show="$fetching()" x-cloak>{{ __('Saving...') }}</span>
+                                    </button>
+                                @endif
+
                                 {{-- Approved: Show Un-approve (remove from display) + Reject --}}
                                 <button
                                     @click="$action('/dashboard/testimonials/{{ $testimonial->id }}/unapprove', { include: ['activeTab'] })"

@@ -327,24 +327,30 @@
     </section>
 
     {{-- ============================================ --}}
-    {{-- TESTIMONIALS SECTION — F-180: Submission     --}}
-    {{-- F-131: Approved display (populates hasData)  --}}
-    {{-- BR-431: Accessible on the cook's page        --}}
-    {{-- BR-436: All text localized via __()          --}}
+    {{-- TESTIMONIALS SECTION                         --}}
+    {{-- F-182: Approved testimonials display         --}}
+    {{-- F-180: Submission CTA embedded at bottom     --}}
+    {{-- BR-446: Only approved testimonials shown     --}}
+    {{-- BR-447: Maximum 10 displayed                 --}}
+    {{-- BR-450: Carousel on mobile, grid on desktop  --}}
+    {{-- BR-454: All text localized via __()          --}}
     {{-- ============================================ --}}
     <section id="testimonials" class="scroll-mt-16 py-12 sm:py-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-8 sm:mb-12">
                 <h2 class="text-2xl sm:text-3xl font-display font-bold text-on-surface-strong dark:text-on-surface-strong">
-                    {{ __('Testimonials') }}
+                    {{ __('What Our Customers Say') }}
                 </h2>
-                <p class="mt-2 text-on-surface dark:text-on-surface max-w-2xl mx-auto">
-                    {{ __('What our customers are saying about us.') }}
-                </p>
+                @if($testimonialsDisplay['hasTestimonials'])
+                    <p class="mt-2 text-on-surface dark:text-on-surface max-w-2xl mx-auto">
+                        {{ __('Real experiences from people who love our food.') }}
+                    </p>
+                @endif
             </div>
 
-            {{-- F-180: Testimonial submission form section --}}
-            @include('tenant._testimonial-submission', [
+            {{-- F-182: Testimonials display with F-180 CTA embedded --}}
+            @include('tenant._testimonials-display', [
+                'testimonialsDisplay' => $testimonialsDisplay,
                 'testimonialContext' => $testimonialContext,
                 'tenant' => $tenant,
             ])

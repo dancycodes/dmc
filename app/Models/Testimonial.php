@@ -55,6 +55,13 @@ class Testimonial extends Model
     public const MAX_TEXT_LENGTH = 1000;
 
     /**
+     * Maximum number of featured testimonials displayed on the landing page.
+     *
+     * BR-447: Maximum 10 testimonials displayed at a time.
+     */
+    public const MAX_DISPLAY_COUNT = 10;
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
@@ -64,6 +71,7 @@ class Testimonial extends Model
         'user_id',
         'text',
         'status',
+        'is_featured',
         'approved_at',
         'rejected_at',
     ];
@@ -76,6 +84,7 @@ class Testimonial extends Model
     protected function casts(): array
     {
         return [
+            'is_featured' => 'boolean',
             'approved_at' => 'datetime',
             'rejected_at' => 'datetime',
             'created_at' => 'datetime',
@@ -132,6 +141,16 @@ class Testimonial extends Model
     }
 
     /**
+     * Scope: filter featured testimonials.
+     *
+     * BR-448: Cook can mark approved testimonials as featured for display.
+     */
+    public function scopeFeatured(Builder $query): Builder
+    {
+        return $query->where('is_featured', true);
+    }
+
+    /**
      * Check whether this testimonial is approved.
      */
     public function isApproved(): bool
@@ -145,6 +164,48 @@ class Testimonial extends Model
     public function isPending(): bool
     {
         return $this->status === self::STATUS_PENDING;
+    }
+
+    /**
+     * Check whether this testimonial is featured for landing page display.
+     *
+     * BR-448: Featured testimonials are shown when there are more than 10 approved.
+     */
+    public function isFeatured(): bool
+    {
+        return (bool) $this->is_featured;
+    }
+
+    /**
+     * Get the client's display name: first name + last initial.
+     *
+     * BR-449: Each testimonial shows client name (first name + last initial).
+     * Edge case: If user is deactivated, shows "Former User".
+     */
+    public function getClientDisplayName(): string
+    {
+        $user = $this->user;
+
+        if (! $user) {
+            return __('Former User');
+        }
+
+        $name = trim($user->name ?? '');
+
+        if (empty($name)) {
+            return __('Former User');
+        }
+
+        $parts = explode(' ', $name);
+
+        if (count($parts) === 1) {
+            return $parts[0];
+        }
+
+        $firstName = $parts[0];
+        $lastInitial = mb_strtoupper(mb_substr(end($parts), 0, 1));
+
+        return $firstName.' '.$lastInitial.'.';
     }
 
     /**

@@ -131,6 +131,47 @@ class TestimonialModerationController extends Controller
     }
 
     /**
+     * Toggle the featured status of an approved testimonial.
+     *
+     * BR-448: Cook selects featured testimonials when more than 10 are approved.
+     * Only approved testimonials can be featured.
+     */
+    public function toggleFeatured(Request $request, Testimonial $testimonial): mixed
+    {
+        $user = auth()->user();
+        $tenant = tenant();
+
+        // BR-443: Permission check
+        if (! $user->can('can-manage-testimonials')) {
+            abort(403);
+        }
+
+        // BR-444: Tenant scope check
+        if ($testimonial->tenant_id !== $tenant->id) {
+            abort(403);
+        }
+
+        $result = $this->testimonialService->toggleFeatured($user, $testimonial);
+
+        if (! $result['success']) {
+            return gale()->dispatch('toast', [
+                'type' => 'error',
+                'message' => $result['message'],
+            ]);
+        }
+
+        $tab = $request->state('tab', Testimonial::STATUS_APPROVED);
+        $data = $this->testimonialService->getModerationData($tenant, $tab);
+
+        return gale()
+            ->fragment('cook.testimonials.index', 'testimonials-content', $data)
+            ->dispatch('toast', [
+                'type' => 'success',
+                'message' => $result['message'],
+            ]);
+    }
+
+    /**
      * Un-approve (revoke) a previously approved testimonial.
      *
      * BR-441: Un-approving moves the testimonial to rejected status.
