@@ -3,45 +3,39 @@
     ---------------------
     F-215: Cook Promo Code Creation
     F-216: Cook Promo Code Edit
+    F-217: Cook Promo Code Deactivation
 
-    Allows cooks to create and edit promotional discount codes for their tenant site.
+    Allows cooks to create, edit, and toggle promo code status.
 
     Features:
-    - Promo code list: code, type, value, status, uses/max, dates
+    - Promo code list: code, type, value, status badge, toggle switch, uses/max, dates
+    - Status filter tabs: All, Active, Inactive, Expired
+    - Sort controls: by created date, usage count, end date
+    - Toggle switch inline for active/inactive (disabled for expired)
+    - Checkbox column for bulk selection
+    - Bulk action bar: "Deactivate Selected (X)" appears when items are selected
     - "Create Promo Code" button opens create modal form
-    - "Edit" button on each row opens edit modal pre-populated with current values
-    - Create form modal: code (auto-uppercase), discount type, value, min order,
-      max uses, max per client, start date, end date (optional)
-    - Edit form modal: editable fields only (code and type are read-only)
-    - Usage count warning badge on edit modal for used codes
-    - Exhaustion warning when max_uses set below current usage
-    - "No end date" checkbox hides the end date field
-    - After create/update: list updates via Gale fragment, modal closes, toast shown
-    - Inline validation errors
-    - Mobile-first responsive layout
+    - "Edit" button on each row opens edit modal pre-populated
+    - Status badges: green=Active, grey=Inactive, red=Expired
+    - Expired codes shown with dimmed row, disabled toggle
+    - Usage count display: "47/100" or "47/unlimited"
+    - After toggle/bulk: list updates via Gale fragment, toast shown
+    - Mobile-first responsive layout (table on desktop, card list on mobile)
     - Light/dark mode support
     - All text localized with __()
 
-    BR-533: Code alphanumeric, 3-20 chars, stored uppercase.
-    BR-534: Code unique within tenant.
-    BR-535: Discount types: percentage or fixed.
-    BR-536: Percentage 1-100%.
-    BR-537: Fixed 1-100,000 XAF.
-    BR-538: Minimum order 0-100,000 XAF.
-    BR-539: Max uses 0 = unlimited.
-    BR-540: Max per client 0 = unlimited.
-    BR-541: Start date required, today or future.
-    BR-542: End date optional, after start date.
-    BR-544: Created as active.
-    BR-545: Cook-reserved action.
-    BR-548: Gale handles all interactions.
-    BR-549: Code string read-only after creation.
-    BR-550: Editable: discount_value, min order, max uses, max per client, starts_at, ends_at.
-    BR-551: Discount type read-only after creation.
-    BR-552: Usage count warning shown on edit form.
-    BR-555: Setting max_uses below current usage allowed (code becomes exhausted).
-    BR-556: Only cook can edit promo codes.
-    BR-557: All edits logged via Spatie Activitylog.
+    BR-560: Status: active, inactive (manual), expired (computed from end date).
+    BR-561: Deactivated code cannot be applied at checkout.
+    BR-562: Deactivated code can be reactivated.
+    BR-563: Expired code cannot be reactivated via toggle; end date must be extended.
+    BR-564: List shows code, discount type/value, status, usage count, start date, end date.
+    BR-565: Bulk deactivation: cook selects multiple codes and deactivates them in one action.
+    BR-566: Bulk reactivation not supported.
+    BR-567: Expired status is computed: current date > end date.
+    BR-568: Only the cook can toggle promo code status.
+    BR-569: All status changes logged via Spatie Activitylog.
+    BR-570: All user-facing text uses __() localization.
+    BR-571: Gale handles all toggle and bulk actions without page reloads.
 --}}
 @extends('layouts.cook-dashboard')
 
@@ -76,6 +70,10 @@
         editNoEndDate: true,
         editUsageCount: 0,
         editTimesUsed: 0,
+
+        // F-217: Bulk deactivation state
+        selectedIds: [],
+        selectAll: false,
 
         openModal() {
             this.showCreateModal = true;
@@ -130,6 +128,42 @@
         },
         getDiscountMax() {
             return this.discount_type === 'percentage' ? 100 : 100000;
+        },
+        // F-217: Toggle an individual promo code status
+        toggleStatus(promoCodeId, page, status, sortBy, sortDir) {
+            $action('/dashboard/promo-codes/' + promoCodeId + '/toggle-status', {
+                include: [],
+                params: { page: page, status: status, sort_by: sortBy, sort_dir: sortDir }
+            });
+        },
+        // F-217: Bulk deactivate selected codes
+        bulkDeactivate(page, status, sortBy, sortDir) {
+            if (this.selectedIds.length === 0) { return; }
+            $action('/dashboard/promo-codes/bulk-deactivate', {
+                include: ['selectedIds'],
+                params: { page: page, status: status, sort_by: sortBy, sort_dir: sortDir }
+            });
+        },
+        // F-217: Toggle all checkboxes
+        toggleSelectAll(allIds) {
+            if (this.selectAll) {
+                this.selectedIds = [...allIds];
+            } else {
+                this.selectedIds = [];
+            }
+        },
+        // F-217: Check if a specific id is selected
+        isSelected(id) {
+            return this.selectedIds.includes(id);
+        },
+        // F-217: Toggle selection of a single id
+        toggleSelection(id) {
+            const idx = this.selectedIds.indexOf(id);
+            if (idx === -1) {
+                this.selectedIds.push(id);
+            } else {
+                this.selectedIds.splice(idx, 1);
+            }
         }
     }"
     x-sync
@@ -142,7 +176,7 @@
                 {{ __('Promo Codes') }}
             </h1>
             <p class="mt-1 text-sm text-on-surface">
-                {{ __('Create discount codes for your customers.') }}
+                {{ __('Create and manage discount codes for your customers.') }}
             </p>
         </div>
         <button
@@ -159,6 +193,59 @@
     {{-- Promo Code List (Gale fragment target) --}}
     @fragment('promo-list')
     <div id="promo-list">
+
+        {{-- Filter & Sort Bar --}}
+        <div class="mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
+            {{-- Status Filter Tabs --}}
+            <div class="flex items-center gap-1 bg-surface-alt border border-outline rounded-lg p-1 overflow-x-auto shrink-0">
+                @foreach ([
+                    'all' => __('All'),
+                    'active' => __('Active'),
+                    'inactive' => __('Inactive'),
+                    'expired' => __('Expired'),
+                ] as $filterValue => $filterLabel)
+                <a
+                    href="{{ route('cook.promo-codes.index', array_merge(request()->query(), ['status' => $filterValue, 'page' => 1])) }}"
+                    x-navigate.key.promo-list
+                    class="px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors {{ $statusFilter === $filterValue ? 'bg-primary text-on-primary' : 'text-on-surface hover:bg-surface' }}"
+                >
+                    {{ $filterLabel }}
+                </a>
+                @endforeach
+            </div>
+
+            {{-- Sort Controls --}}
+            <div class="flex items-center gap-2 ml-auto shrink-0">
+                <span class="text-xs text-on-surface opacity-70 hidden sm:inline">{{ __('Sort by') }}:</span>
+                <div class="flex items-center gap-1">
+                    @foreach ([
+                        'created_at' => __('Date'),
+                        'times_used' => __('Usage'),
+                        'ends_at' => __('Expiry'),
+                    ] as $sortField => $sortLabel)
+                    <a
+                        href="{{ route('cook.promo-codes.index', array_merge(request()->query(), [
+                            'sort_by' => $sortField,
+                            'sort_dir' => ($sortBy === $sortField && $sortDir === 'desc') ? 'asc' : 'desc',
+                            'page' => 1,
+                        ])) }}"
+                        x-navigate.key.promo-list
+                        class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-colors {{ $sortBy === $sortField ? 'border-primary bg-primary-subtle text-primary' : 'border-outline text-on-surface hover:bg-surface-alt' }}"
+                    >
+                        {{ $sortLabel }}
+                        @if ($sortBy === $sortField)
+                            @if ($sortDir === 'asc')
+                                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
+                            @else
+                                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                            @endif
+                        @endif
+                    </a>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+
         @if ($promoCodes->isEmpty())
             {{-- Empty State --}}
             <div class="bg-surface-alt border border-outline rounded-xl p-10 text-center">
@@ -168,24 +255,85 @@
                         <path d="M6 9.01V9"></path>
                     </svg>
                 </div>
-                <h3 class="text-base font-semibold text-on-surface-strong mb-1">{{ __('No promo codes yet') }}</h3>
-                <p class="text-sm text-on-surface mb-5">{{ __('Create your first promo code to offer discounts to your customers.') }}</p>
-                <button
-                    @click="openModal()"
-                    class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-on-primary text-sm font-semibold rounded-lg hover:bg-primary-hover transition-colors"
-                >
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M5 12h14"></path><path d="M12 5v14"></path>
-                    </svg>
-                    {{ __('Create Promo Code') }}
-                </button>
+                @if ($statusFilter !== 'all')
+                    <h3 class="text-base font-semibold text-on-surface-strong mb-1">{{ __('No promo codes found') }}</h3>
+                    <p class="text-sm text-on-surface mb-5">{{ __('No promo codes match the selected filter.') }}</p>
+                    <a
+                        href="{{ route('cook.promo-codes.index') }}"
+                        x-navigate.key.promo-list
+                        class="inline-flex items-center gap-2 px-4 py-2 bg-surface text-on-surface text-sm font-medium rounded-lg border border-outline hover:bg-surface-alt transition-colors"
+                    >
+                        {{ __('Show all') }}
+                    </a>
+                @else
+                    <h3 class="text-base font-semibold text-on-surface-strong mb-1">{{ __('No promo codes yet') }}</h3>
+                    <p class="text-sm text-on-surface mb-5">{{ __('Create your first promo code to offer discounts to your customers.') }}</p>
+                    <button
+                        @click="openModal()"
+                        class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-on-primary text-sm font-semibold rounded-lg hover:bg-primary-hover transition-colors"
+                    >
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M5 12h14"></path><path d="M12 5v14"></path>
+                        </svg>
+                        {{ __('Create Promo Code') }}
+                    </button>
+                @endif
             </div>
         @else
+            {{-- Collect IDs for selectAll (non-expired, selectable codes) --}}
+            @php
+                $today = now()->toDateString();
+                $selectableIds = $promoCodes->filter(function ($pc) use ($today) {
+                    return !($pc->ends_at !== null && $pc->ends_at->toDateString() < $today);
+                })->pluck('id')->values()->toArray();
+                $encodedStatusFilter = json_encode($statusFilter);
+                $encodedSortBy = json_encode($sortBy);
+                $encodedSortDir = json_encode($sortDir);
+                $currentPage = $promoCodes->currentPage();
+            @endphp
+
+            {{-- Bulk Action Bar (appears when items are selected) --}}
+            <div
+                x-show="selectedIds.length > 0"
+                x-cloak
+                class="mb-3 flex items-center justify-between gap-3 px-4 py-2.5 bg-primary-subtle border border-primary/30 rounded-xl"
+                x-transition:enter="transition ease-out duration-150"
+                x-transition:enter-start="opacity-0 -translate-y-1"
+                x-transition:enter-end="opacity-100 translate-y-0"
+            >
+                <span class="text-sm font-medium text-primary">
+                    <span x-text="selectedIds.length"></span>
+                    {{ __('selected') }}
+                </span>
+                <button
+                    @click="bulkDeactivate({{ $currentPage }}, {{ $encodedStatusFilter }}, {{ $encodedSortBy }}, {{ $encodedSortDir }})"
+                    class="inline-flex items-center gap-2 px-3.5 py-1.5 bg-danger text-on-danger text-xs font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-60"
+                    :disabled="$fetching()"
+                >
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M18 6 6 18"></path><path d="m6 6 12 12"></path>
+                    </svg>
+                    <span x-show="!$fetching()">{{ __('Deactivate Selected') }} (<span x-text="selectedIds.length"></span>)</span>
+                    <span x-show="$fetching()">{{ __('Deactivating...') }}</span>
+                </button>
+            </div>
+
             {{-- Desktop Table --}}
             <div class="hidden md:block bg-surface-alt border border-outline rounded-xl overflow-hidden shadow-card">
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b border-outline bg-surface">
+                            {{-- Select all checkbox --}}
+                            <th class="w-10 px-3 py-3 text-left">
+                                <input
+                                    type="checkbox"
+                                    x-model="selectAll"
+                                    @change="toggleSelectAll({{ json_encode($selectableIds) }})"
+                                    class="w-3.5 h-3.5 rounded border-outline accent-primary cursor-pointer"
+                                    :title="@js(__('Select all'))"
+                                    :disabled="{{ count($selectableIds) === 0 ? 'true' : 'false' }}"
+                                >
+                            </th>
                             <th class="px-4 py-3 text-left font-semibold text-on-surface-strong">{{ __('Code') }}</th>
                             <th class="px-4 py-3 text-left font-semibold text-on-surface-strong">{{ __('Discount') }}</th>
                             <th class="px-4 py-3 text-left font-semibold text-on-surface-strong hidden lg:table-cell">{{ __('Min. Order') }}</th>
@@ -197,9 +345,24 @@
                     </thead>
                     <tbody class="divide-y divide-outline">
                         @foreach ($promoCodes as $promoCode)
-                        <tr class="hover:bg-surface transition-colors">
+                        @php
+                            $isExpired = $promoCode->ends_at !== null && $promoCode->ends_at->toDateString() < $today;
+                        @endphp
+                        <tr class="hover:bg-surface transition-colors {{ $isExpired ? 'opacity-60' : '' }}">
+                            {{-- Checkbox --}}
+                            <td class="w-10 px-3 py-3">
+                                @if (!$isExpired)
+                                <input
+                                    type="checkbox"
+                                    :checked="isSelected({{ $promoCode->id }})"
+                                    @change="toggleSelection({{ $promoCode->id }})"
+                                    class="w-3.5 h-3.5 rounded border-outline accent-primary cursor-pointer"
+                                    :aria-label="@js(__('Select :code', ['code' => $promoCode->code]))"
+                                >
+                                @endif
+                            </td>
                             <td class="px-4 py-3">
-                                <span class="font-mono font-semibold text-on-surface-strong tracking-wide">{{ $promoCode->code }}</span>
+                                <span class="font-mono font-semibold text-on-surface-strong tracking-wide {{ $isExpired ? 'line-through' : '' }}">{{ $promoCode->code }}</span>
                             </td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-1.5">
@@ -222,13 +385,19 @@
                             <td class="px-4 py-3 hidden lg:table-cell text-xs text-on-surface">
                                 <div>{{ __('From') }}: {{ $promoCode->starts_at->format('M j, Y') }}</div>
                                 @if ($promoCode->ends_at)
-                                    <div>{{ __('To') }}: {{ $promoCode->ends_at->format('M j, Y') }}</div>
+                                    <div class="{{ $isExpired ? 'text-danger font-medium' : '' }}">{{ __('To') }}: {{ $promoCode->ends_at->format('M j, Y') }}</div>
                                 @else
                                     <div class="opacity-50">{{ __('No expiry') }}</div>
                                 @endif
                             </td>
                             <td class="px-4 py-3">
-                                @if ($promoCode->status === 'active')
+                                @if ($isExpired)
+                                    {{-- BR-567: Expired = computed status --}}
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-danger-subtle text-danger">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-danger"></span>
+                                        {{ __('Expired') }}
+                                    </span>
+                                @elseif ($promoCode->status === 'active')
                                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-success-subtle text-success">
                                         <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
                                         {{ __('Active') }}
@@ -241,18 +410,33 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3">
-                                {{-- F-216: Edit button --}}
-                                <button
-                                    @click="openEditModal({{ $promoCode->id }})"
-                                    class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-primary bg-primary-subtle hover:bg-primary/20 rounded-lg transition-colors"
-                                    :aria-label="'{{ __('Edit') }}'"
-                                >
-                                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
-                                        <path d="m15 5 4 4"></path>
-                                    </svg>
-                                    {{ __('Edit') }}
-                                </button>
+                                <div class="flex items-center gap-2">
+                                    {{-- F-217: Toggle switch --}}
+                                    <button
+                                        @click="{{ !$isExpired ? "toggleStatus({$promoCode->id}, {$currentPage}, {$encodedStatusFilter}, {$encodedSortBy}, {$encodedSortDir})" : '' }}"
+                                        class="relative inline-flex items-center w-9 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 {{ $isExpired ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer' }} {{ (!$isExpired && $promoCode->status === 'active') ? 'bg-success' : ($isExpired ? 'bg-on-surface/20' : 'bg-on-surface/20') }}"
+                                        :disabled="{{ $isExpired ? 'true' : 'false' }}"
+                                        :aria-label="@js($isExpired ? __('Toggle disabled — code is expired') : ($promoCode->status === 'active' ? __('Deactivate :code', ['code' => $promoCode->code]) : __('Activate :code', ['code' => $promoCode->code])))"
+                                        role="switch"
+                                        aria-checked="{{ !$isExpired && $promoCode->status === 'active' ? 'true' : 'false' }}"
+                                        title="{{ $isExpired ? __('Expired codes cannot be toggled') : ($promoCode->status === 'active' ? __('Deactivate') : __('Activate')) }}"
+                                    >
+                                        <span class="absolute left-0.5 w-4 h-4 bg-white dark:bg-surface rounded-full shadow-sm transition-transform {{ (!$isExpired && $promoCode->status === 'active') ? 'translate-x-4' : 'translate-x-0' }}"></span>
+                                    </button>
+
+                                    {{-- F-216: Edit button --}}
+                                    <button
+                                        @click="openEditModal({{ $promoCode->id }})"
+                                        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-primary bg-primary-subtle hover:bg-primary/20 rounded-lg transition-colors"
+                                        :aria-label="'{{ __('Edit') }}'"
+                                    >
+                                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+                                            <path d="m15 5 4 4"></path>
+                                        </svg>
+                                        {{ __('Edit') }}
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         @endforeach
@@ -263,11 +447,35 @@
             {{-- Mobile Cards --}}
             <div class="md:hidden space-y-3">
                 @foreach ($promoCodes as $promoCode)
-                <div class="bg-surface-alt border border-outline rounded-xl p-4 shadow-card">
-                    <div class="flex items-start justify-between gap-3 mb-3">
-                        <span class="font-mono font-bold text-base text-on-surface-strong tracking-wide">{{ $promoCode->code }}</span>
+                @php
+                    $isExpired = $promoCode->ends_at !== null && $promoCode->ends_at->toDateString() < $today;
+                @endphp
+                <div class="bg-surface-alt border border-outline rounded-xl p-4 shadow-card {{ $isExpired ? 'opacity-70' : '' }}">
+                    {{-- Card header: checkbox, code, status, toggle, edit --}}
+                    <div class="flex items-start gap-2 mb-3">
+                        {{-- Checkbox --}}
+                        @if (!$isExpired)
+                        <div class="pt-0.5">
+                            <input
+                                type="checkbox"
+                                :checked="isSelected({{ $promoCode->id }})"
+                                @change="toggleSelection({{ $promoCode->id }})"
+                                class="w-3.5 h-3.5 rounded border-outline accent-primary cursor-pointer"
+                                :aria-label="@js(__('Select :code', ['code' => $promoCode->code]))"
+                            >
+                        </div>
+                        @endif
+                        <div class="flex-1 min-w-0">
+                            <span class="font-mono font-bold text-base text-on-surface-strong tracking-wide {{ $isExpired ? 'line-through' : '' }}">{{ $promoCode->code }}</span>
+                        </div>
                         <div class="flex items-center gap-2 shrink-0">
-                            @if ($promoCode->status === 'active')
+                            {{-- Status badge --}}
+                            @if ($isExpired)
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-danger-subtle text-danger">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-danger"></span>
+                                    {{ __('Expired') }}
+                                </span>
+                            @elseif ($promoCode->status === 'active')
                                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-success-subtle text-success">
                                     <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
                                     {{ __('Active') }}
@@ -278,6 +486,19 @@
                                     {{ __('Inactive') }}
                                 </span>
                             @endif
+
+                            {{-- F-217: Toggle switch (mobile) --}}
+                            <button
+                                @click="{{ !$isExpired ? "toggleStatus({$promoCode->id}, {$currentPage}, {$encodedStatusFilter}, {$encodedSortBy}, {$encodedSortDir})" : '' }}"
+                                class="relative inline-flex items-center w-9 h-5 rounded-full transition-colors focus:outline-none {{ $isExpired ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer' }} {{ (!$isExpired && $promoCode->status === 'active') ? 'bg-success' : 'bg-on-surface/20' }}"
+                                :disabled="{{ $isExpired ? 'true' : 'false' }}"
+                                role="switch"
+                                aria-checked="{{ !$isExpired && $promoCode->status === 'active' ? 'true' : 'false' }}"
+                                :aria-label="@js($isExpired ? __('Toggle disabled — code is expired') : ($promoCode->status === 'active' ? __('Deactivate :code', ['code' => $promoCode->code]) : __('Activate :code', ['code' => $promoCode->code])))"
+                            >
+                                <span class="absolute left-0.5 w-4 h-4 bg-white dark:bg-surface rounded-full shadow-sm transition-transform {{ (!$isExpired && $promoCode->status === 'active') ? 'translate-x-4' : 'translate-x-0' }}"></span>
+                            </button>
+
                             {{-- F-216: Edit button --}}
                             <button
                                 @click="openEditModal({{ $promoCode->id }})"
@@ -319,7 +540,7 @@
                         @if ($promoCode->ends_at)
                         <div>
                             <span class="text-xs text-on-surface opacity-70 uppercase tracking-wide">{{ __('Expires') }}</span>
-                            <p class="text-on-surface">{{ $promoCode->ends_at->format('M j, Y') }}</p>
+                            <p class="{{ $isExpired ? 'text-danger font-medium' : 'text-on-surface' }}">{{ $promoCode->ends_at->format('M j, Y') }}</p>
                         </div>
                         @endif
                     </div>

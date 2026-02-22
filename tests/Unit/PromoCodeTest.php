@@ -153,3 +153,49 @@ describe('PromoCode edit immutability (F-216)', function () {
         ]);
     });
 });
+
+// ─── PromoCode Deactivation Logic (F-217) ────────────────────────────────────
+
+describe('PromoCode computeIsExpired() method (F-217 BR-567)', function () {
+    it('returns false when ends_at is null (no expiry)', function () {
+        expect(PromoCode::computeIsExpired(null))->toBeFalse();
+    });
+
+    it('returns false when ends_at is today', function () {
+        expect(PromoCode::computeIsExpired(now()->toDateString()))->toBeFalse();
+    });
+
+    it('returns false when ends_at is in the future', function () {
+        expect(PromoCode::computeIsExpired(now()->addDays(5)->toDateString()))->toBeFalse();
+    });
+
+    it('returns true when ends_at is in the past', function () {
+        expect(PromoCode::computeIsExpired(now()->subDays(1)->toDateString()))->toBeTrue();
+    });
+});
+
+describe('PromoCode status constants (F-217 BR-560)', function () {
+    it('has active status constant', function () {
+        expect(PromoCode::STATUS_ACTIVE)->toBe('active');
+    });
+
+    it('has inactive status constant', function () {
+        expect(PromoCode::STATUS_INACTIVE)->toBe('inactive');
+    });
+
+    it('STATUSES array contains both active and inactive', function () {
+        expect(PromoCode::STATUSES)->toContain('active');
+        expect(PromoCode::STATUSES)->toContain('inactive');
+        expect(PromoCode::STATUSES)->not->toContain('expired');
+    });
+});
+
+describe('PromoCodeService deactivation constants (F-217)', function () {
+    it('has STATUS_FILTERS constant with expected values', function () {
+        expect(PromoCodeService::STATUS_FILTERS)->toBe(['all', 'active', 'inactive', 'expired']);
+    });
+
+    it('has SORT_FIELDS constant with expected values', function () {
+        expect(PromoCodeService::SORT_FIELDS)->toBe(['created_at', 'times_used', 'ends_at']);
+    });
+});

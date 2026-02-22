@@ -9,6 +9,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * F-215: Cook Promo Code Creation
+ * F-217: Cook Promo Code Deactivation
  *
  * Handles all promo code business logic for the cook dashboard.
  *
@@ -16,6 +17,13 @@ use Illuminate\Pagination\LengthAwarePaginator;
  * BR-534: Code unique within tenant.
  * BR-544: New codes created as active.
  * BR-546: All creation logged via Spatie Activitylog.
+ * BR-560: Status: active, inactive (manual), expired (computed).
+ * BR-561: Deactivated code cannot be applied at checkout.
+ * BR-562: Deactivated code can be reactivated.
+ * BR-563: Expired code cannot be reactivated via toggle.
+ * BR-565: Bulk deactivation supported.
+ * BR-567: Expired = current date > end date.
+ * BR-569: All status changes logged via Spatie Activitylog.
  */
 class PromoCodeService
 {
@@ -25,17 +33,68 @@ class PromoCodeService
     public const PER_PAGE = 15;
 
     /**
-     * Get paginated promo codes for a tenant, newest first.
+     * Valid sort fields for the promo code list.
+     *
+     * @var array<string>
+     */
+    public const SORT_FIELDS = ['created_at', 'times_used', 'ends_at'];
+
+    /**
+     * Valid status filter values (including computed "expired").
+     *
+     * @var array<string>
+     */
+    public const STATUS_FILTERS = ['all', 'active', 'inactive', 'expired'];
+
+    /**
+     * Get paginated promo codes for a tenant with optional filtering and sorting.
+     *
+     * BR-564: List shows code, discount type/value, status, usage count, dates.
+     * BR-567: Expired status is computed: current date > end date.
      *
      * @return LengthAwarePaginator<PromoCode>
      */
-    public function getPromoCodesForTenant(Tenant $tenant, int $page = 1): LengthAwarePaginator
-    {
-        return PromoCode::query()
+    public function getPromoCodesForTenant(
+        Tenant $tenant,
+        int $page = 1,
+        string $statusFilter = 'all',
+        string $sortBy = 'created_at',
+        string $sortDir = 'desc',
+    ): LengthAwarePaginator {
+        $today = now()->toDateString();
+
+        $query = PromoCode::query()
             ->forTenant($tenant->id)
-            ->with('creator:id,name')
-            ->orderByDesc('created_at')
-            ->paginate(self::PER_PAGE, ['*'], 'page', $page);
+            ->with('creator:id,name');
+
+        // Apply status filter
+        // BR-567: "expired" is computed (ends_at < today), not a DB column value
+        if ($statusFilter === 'active') {
+            $query->where('status', PromoCode::STATUS_ACTIVE)
+                ->where(function ($q) use ($today) {
+                    $q->whereNull('ends_at')->orWhere('ends_at', '>=', $today);
+                });
+        } elseif ($statusFilter === 'inactive') {
+            $query->where('status', PromoCode::STATUS_INACTIVE)
+                ->where(function ($q) use ($today) {
+                    $q->whereNull('ends_at')->orWhere('ends_at', '>=', $today);
+                });
+        } elseif ($statusFilter === 'expired') {
+            $query->whereNotNull('ends_at')->where('ends_at', '<', $today);
+        }
+
+        // Apply sorting
+        $validSortField = in_array($sortBy, self::SORT_FIELDS, true) ? $sortBy : 'created_at';
+        $validSortDir = $sortDir === 'asc' ? 'asc' : 'desc';
+
+        if ($validSortField === 'ends_at') {
+            // NULLs last when sorting by end date
+            $query->orderByRaw("ends_at {$validSortDir} NULLS LAST");
+        } else {
+            $query->orderBy($validSortField, $validSortDir);
+        }
+
+        return $query->paginate(self::PER_PAGE, ['*'], 'page', $page);
     }
 
     /**
@@ -92,6 +151,110 @@ class PromoCodeService
         }
 
         return $query->exists();
+    }
+
+    /**
+     * Toggle a promo code between active and inactive.
+     *
+     * BR-560: Valid status values are active and inactive.
+     * BR-562: Inactive codes can be reactivated.
+     * BR-563: Expired codes cannot be reactivated via toggle.
+     * BR-569: All status changes logged via Spatie Activitylog.
+     *
+     * @return array{success: bool, message: string, status: string|null, is_expired: bool}
+     */
+    public function toggleStatus(PromoCode $promoCode): array
+    {
+        $today = now()->toDateString();
+        $isExpired = $promoCode->ends_at !== null
+            && $promoCode->ends_at->toDateString() < $today;
+
+        // BR-563: Cannot reactivate expired codes via toggle
+        if ($isExpired && $promoCode->status === PromoCode::STATUS_INACTIVE) {
+            return [
+                'success' => false,
+                'message' => __('Expired codes cannot be reactivated. Extend the end date first.'),
+                'status' => null,
+                'is_expired' => true,
+            ];
+        }
+
+        if ($isExpired && $promoCode->status === PromoCode::STATUS_ACTIVE) {
+            return [
+                'success' => false,
+                'message' => __('This code has expired. Extend the end date to reactivate it.'),
+                'status' => null,
+                'is_expired' => true,
+            ];
+        }
+
+        $newStatus = $promoCode->status === PromoCode::STATUS_ACTIVE
+            ? PromoCode::STATUS_INACTIVE
+            : PromoCode::STATUS_ACTIVE;
+
+        $promoCode->status = $newStatus;
+        $promoCode->save();
+
+        $message = $newStatus === PromoCode::STATUS_INACTIVE
+            ? __(':code deactivated.', ['code' => $promoCode->code])
+            : __(':code activated.', ['code' => $promoCode->code]);
+
+        return [
+            'success' => true,
+            'message' => $message,
+            'status' => $newStatus,
+            'is_expired' => false,
+        ];
+    }
+
+    /**
+     * Bulk deactivate multiple promo codes by their IDs.
+     *
+     * BR-565: Bulk deactivation: cook selects multiple codes and deactivates them in one action.
+     * BR-566: Bulk reactivation is not supported (individual toggle only for reactivation).
+     * BR-567: No-op for already-inactive and expired codes.
+     * BR-569: All status changes logged via Spatie Activitylog.
+     *
+     * @param  array<int>  $ids
+     * @return array{success: bool, count: int, message: string}
+     */
+    public function bulkDeactivate(Tenant $tenant, array $ids): array
+    {
+        if (empty($ids)) {
+            return ['success' => false, 'count' => 0, 'message' => __('No promo codes selected.')];
+        }
+
+        // Fetch only codes that belong to this tenant AND are currently active
+        // BR-567: Only active (non-expired) codes are toggled; already-inactive and expired are no-ops
+        $today = now()->toDateString();
+
+        $codes = PromoCode::query()
+            ->forTenant($tenant->id)
+            ->whereIn('id', $ids)
+            ->where('status', PromoCode::STATUS_ACTIVE)
+            ->get();
+
+        $count = 0;
+
+        foreach ($codes as $promoCode) {
+            $promoCode->status = PromoCode::STATUS_INACTIVE;
+            $promoCode->save();
+            $count++;
+        }
+
+        if ($count === 0) {
+            return ['success' => true, 'count' => 0, 'message' => __('No active promo codes were found to deactivate.')];
+        }
+
+        return [
+            'success' => true,
+            'count' => $count,
+            'message' => trans_choice(
+                ':count promo code deactivated.|:count promo codes deactivated.',
+                $count,
+                ['count' => $count]
+            ),
+        ];
     }
 
     /**

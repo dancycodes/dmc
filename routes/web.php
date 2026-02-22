@@ -748,8 +748,12 @@ Route::middleware('tenant.domain')->group(function () {
         // F-217: Cook Promo Code Deactivation
         // BR-545: Only cook can create/manage promo codes (cook_reserved in ManagerDashboardService)
         // BR-548: Gale handles form and list interactions without page reloads
+        // BR-568: Only cook can toggle promo code status (cook_reserved)
+        // BR-571: Gale handles all toggle and bulk actions without page reloads
         Route::get('/promo-codes', [\App\Http\Controllers\Cook\PromoCodeController::class, 'index'])->name('cook.promo-codes.index');
         Route::post('/promo-codes', [\App\Http\Controllers\Cook\PromoCodeController::class, 'store'])->name('cook.promo-codes.store');
+        Route::post('/promo-codes/bulk-deactivate', [\App\Http\Controllers\Cook\PromoCodeController::class, 'bulkDeactivate'])->name('cook.promo-codes.bulk-deactivate');
+        Route::post('/promo-codes/{promoCode}/toggle-status', [\App\Http\Controllers\Cook\PromoCodeController::class, 'toggleStatus'])->name('cook.promo-codes.toggle-status');
         Route::post('/promo-codes/{promoCode}/edit', [\App\Http\Controllers\Cook\PromoCodeController::class, 'edit'])->name('cook.promo-codes.edit');
         Route::put('/promo-codes/{promoCode}', [\App\Http\Controllers\Cook\PromoCodeController::class, 'update'])->name('cook.promo-codes.update');
     });
