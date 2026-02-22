@@ -384,6 +384,11 @@ Route::middleware('main.domain')->group(function () {
         // Platform Analytics Dashboard (F-057)
         Route::get('/analytics', [\App\Http\Controllers\Admin\PlatformAnalyticsController::class, 'index'])->name('admin.analytics.index');
 
+        // Financial Reports & Export (F-058)
+        Route::get('/finance/reports', [\App\Http\Controllers\Admin\FinancialReportsController::class, 'index'])->name('admin.finance.reports');
+        Route::get('/finance/reports/export-csv', [\App\Http\Controllers\Admin\FinancialReportsController::class, 'exportCsv'])->name('admin.finance.reports.export-csv');
+        Route::get('/finance/reports/export-pdf', [\App\Http\Controllers\Admin\FinancialReportsController::class, 'exportPdf'])->name('admin.finance.reports.export-pdf');
+
         // Platform settings (F-063)
         Route::get('/settings', [PlatformSettingController::class, 'index'])->name('admin.settings.index');
         Route::post('/settings', [PlatformSettingController::class, 'update'])->name('admin.settings.update');
