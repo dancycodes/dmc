@@ -121,7 +121,7 @@ class CookCustomerRetentionService
             ->whereIn('status', self::COMPLETED_STATUSES)
             ->whereNotNull('client_id')
             ->groupBy('client_id')
-            ->having('order_count', '>=', 2)
+            ->havingRaw('COUNT(*) >= 2')
             ->get()
             ->count();
 
