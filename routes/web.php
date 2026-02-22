@@ -742,6 +742,14 @@ Route::middleware('tenant.domain')->group(function () {
         Route::post('/settings/minimum-order-amount', [\App\Http\Controllers\Cook\CookSettingsController::class, 'updateMinimumOrderAmount'])->name('cook.settings.update-minimum-order-amount');
         Route::post('/settings/appearance', [\App\Http\Controllers\Cook\CookSettingsController::class, 'updateAppearance'])->name('cook.settings.update-appearance');
         Route::post('/settings/appearance/reset', [\App\Http\Controllers\Cook\CookSettingsController::class, 'resetAppearance'])->name('cook.settings.reset-appearance');
+
+        // F-215: Cook Promo Code Creation
+        // F-216: Cook Promo Code Edit
+        // F-217: Cook Promo Code Deactivation
+        // BR-545: Only cook can create/manage promo codes (cook_reserved in ManagerDashboardService)
+        // BR-548: Gale handles form and list interactions without page reloads
+        Route::get('/promo-codes', [\App\Http\Controllers\Cook\PromoCodeController::class, 'index'])->name('cook.promo-codes.index');
+        Route::post('/promo-codes', [\App\Http\Controllers\Cook\PromoCodeController::class, 'store'])->name('cook.promo-codes.store');
     });
 
     // F-135: Meal Search Bar (public, on tenant domain)
