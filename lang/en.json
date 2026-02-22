@@ -2674,5 +2674,18 @@
     "Send message": "Send message",
     "Enter to send \u00b7 Shift+Enter for new line": "Enter to send \u00b7 Shift+Enter for new line",
     "New Message": "New Message",
-    ":name: :preview": ":name: :preview"
+    ":name: :preview": ":name: :preview",
+    "My Favorites": "My Favorites",
+    "Your saved cooks and meals in one place.": "Your saved cooks and meals in one place.",
+    "Favorite Cooks": "Favorite Cooks",
+    "Favorite Meals": "Favorite Meals",
+    "No favorite cooks yet": "No favorite cooks yet",
+    "No favorite cooks yet. Discover cooks and add them to your favorites!": "No favorite cooks yet. Discover cooks and add them to your favorites!",
+    "No favorite meals yet": "No favorite meals yet",
+    "No favorite meals yet. Browse cooks and save the meals you love!": "No favorite meals yet. Browse cooks and save the meals you love!",
+    "Your saved cooks and meals": "Your saved cooks and meals",
+    "Cook not found in favorites.": "Cook not found in favorites.",
+    "Meal not found in favorites.": "Meal not found in favorites.",
+    "View Meal": "View Meal",
+    "XAF": "XAF"
 }

@@ -281,6 +281,15 @@ Route::middleware('auth')->group(function () {
     // BR-335: Toggle is idempotent (add when not favorited, remove when favorited)
     // BR-338: Toggle happens via Gale without page reload
     Route::post('/favorite-meals/{meal}', [\App\Http\Controllers\FavoriteMealController::class, 'toggle'])->name('favorite-meals.toggle');
+
+    // Favorites List View (F-198)
+    // BR-344: Authentication required
+    // BR-345: Default tab is Favorite Cooks
+    // BR-353: Tab switching via Gale navigate fragment
+    // BR-354: 12 per page pagination
+    Route::get('/my-favorites', [\App\Http\Controllers\FavoritesController::class, 'index'])->name('favorites.index');
+    Route::post('/my-favorites/cooks/{cookUserId}/remove', [\App\Http\Controllers\FavoritesController::class, 'removeCook'])->name('favorites.cooks.remove');
+    Route::post('/my-favorites/meals/{mealId}/remove', [\App\Http\Controllers\FavoritesController::class, 'removeMeal'])->name('favorites.meals.remove');
 });
 
 /*
