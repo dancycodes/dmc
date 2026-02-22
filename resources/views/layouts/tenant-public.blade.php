@@ -127,9 +127,17 @@
                                     @click="userMenuOpen = !userMenuOpen"
                                     class="flex items-center gap-2 text-sm font-medium text-on-surface hover:text-on-surface-strong transition-colors duration-200"
                                 >
-                                    <div class="w-8 h-8 rounded-full bg-primary-subtle flex items-center justify-center text-primary font-semibold text-sm">
-                                        {{ mb_strtoupper(mb_substr(auth()->user()->name, 0, 1)) }}
-                                    </div>
+                                    @if(auth()->user()->profile_photo_path)
+                                        <img
+                                            src="{{ asset('storage/' . auth()->user()->profile_photo_path) }}"
+                                            alt="{{ auth()->user()->name }}"
+                                            class="w-8 h-8 rounded-full object-cover border border-outline shrink-0"
+                                        >
+                                    @else
+                                        <div class="w-8 h-8 rounded-full bg-primary-subtle flex items-center justify-center text-primary font-semibold text-sm shrink-0">
+                                            {{ mb_strtoupper(mb_substr(auth()->user()->name, 0, 1)) }}
+                                        </div>
+                                    @endif
                                     <span class="max-w-[120px] truncate">{{ auth()->user()->name }}</span>
                                     <svg class="w-4 h-4 transition-transform" :class="userMenuOpen ? 'rotate-180' : ''" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
                                 </button>
