@@ -69,6 +69,8 @@
             this.starts_at = '{{ now()->toDateString() }}';
             this.ends_at = '';
             this.no_end_date = true;
+            // Clear Gale validation messages
+            this.messages = {};
         },
         getDiscountUnit() {
             return this.discount_type === 'percentage' ? '%' : 'XAF';
