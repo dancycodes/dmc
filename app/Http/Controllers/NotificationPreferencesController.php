@@ -77,7 +77,7 @@ class NotificationPreferencesController extends Controller
             ])
             ->log(__('Notification preferences were updated'));
 
-        return gale()->redirect('/profile/notifications')->back()
+        return gale()->redirect('/profile/notifications')
             ->with('toast', [
                 'type' => 'success',
                 'message' => __('Notification preferences updated.'),

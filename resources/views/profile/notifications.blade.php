@@ -346,7 +346,7 @@
                         <path d="M7 3v4a1 1 0 0 0 1 1h7"></path>
                     </svg>
                 </template>
-                <span x-text="$fetching() ? '{{ __('Saving...') }}' : '{{ __('Save Preferences') }}'"></span>
+                <span x-text="$fetching() ? @js(__('Saving...')) : @js(__('Save Preferences'))"></span>
             </button>
         </div>
     </div>
