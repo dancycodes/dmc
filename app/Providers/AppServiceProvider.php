@@ -86,5 +86,10 @@ class AppServiceProvider extends ServiceProvider
 
             return Limit::perMinutes(15, 3)->by($email ?: $request->ip());
         });
+
+        // F-189 BR-257: Messaging rate limit — max 10 messages per minute per user
+        RateLimiter::for('messaging', function (Request $request) {
+            return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
+        });
     }
 }

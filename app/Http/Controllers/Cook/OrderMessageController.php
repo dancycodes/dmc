@@ -85,4 +85,54 @@ class OrderMessageController extends Controller
             ->state('oldestMessageId', $result['oldestMessageId'])
             ->state('olderMessages', $formattedMessages->toArray());
     }
+
+    /**
+     * Send a message in the order thread (cook/manager sends to client).
+     *
+     * F-189 BR-249: Max 500 characters.
+     * F-189 BR-251: Messages appear instantly for the sender via Gale.
+     * F-189 BR-253: Available while order is active or within 7 days of completion.
+     * F-189 BR-254: Disabled for Cancelled/Refunded orders.
+     * F-189 BR-255: Whitespace-only messages cannot be sent.
+     * F-189 BR-257: Rate-limited via 'messaging' limiter (10/min per user).
+     */
+    public function send(Request $request, Order $order, OrderMessageService $messageService): mixed
+    {
+        $user = $request->user();
+        $tenant = tenant();
+
+        if (! $user->can('can-manage-orders')) {
+            abort(403, __('You do not have permission to send order messages.'));
+        }
+
+        if ($tenant && $order->tenant_id !== $tenant->id) {
+            abort(403, __('You are not authorized to send messages for this order.'));
+        }
+
+        // BR-253, BR-254: Check availability window
+        if (! $messageService->canSendMessage($order)) {
+            return gale()->messages([
+                'body' => __('Messaging is no longer available for this order.'),
+            ]);
+        }
+
+        $validated = $request->validateState([
+            'body' => ['required', 'string', 'max:500'],
+        ]);
+
+        // BR-255: Reject whitespace-only messages
+        $body = trim($validated['body']);
+
+        if ($body === '') {
+            return gale()->messages([
+                'body' => __('Please type a message before sending.'),
+            ]);
+        }
+
+        $result = $messageService->sendMessage($order, $user, $body);
+
+        return gale()
+            ->state('newMessage', $result['formatted'])
+            ->state('body', '');
+    }
 }

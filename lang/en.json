@@ -2665,5 +2665,12 @@
     "You do not have permission to view order messages.": "You do not have permission to view order messages.",
     "Message Client": "Message Client",
     "Unknown Client": "Unknown Client",
-    "Back to Order": "Back to Order"
+    "Back to Order": "Back to Order",
+    "Please type a message before sending.": "Please type a message before sending.",
+    "Your message cannot exceed 500 characters.": "Your message cannot exceed 500 characters.",
+    "Messaging is no longer available for this order.": "Messaging is no longer available for this order.",
+    "You are not authorized to send messages for this order.": "You are not authorized to send messages for this order.",
+    "You do not have permission to send order messages.": "You do not have permission to send order messages.",
+    "Send message": "Send message",
+    "Enter to send \u00b7 Shift+Enter for new line": "Enter to send \u00b7 Shift+Enter for new line"
 }
