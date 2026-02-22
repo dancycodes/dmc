@@ -1,13 +1,13 @@
 # Current Orchestrator Context
 ## Last Action
-- Completed F-212 (0 retries), merged to main. Started F-162.
+- Started F-064 (Activity Log Viewer) on feature/F-064 branch
 ## Active Features
-- F-162: IMPLEMENT phase (retry 0) — Order Cancellation
+- F-064: IMPLEMENT phase (retry 0) — Activity Log Viewer
 ## Next Up
-- 22 more eligible features after F-162
+- 19 more eligible features after F-064
 ## Recent Patterns
-- gale_compliance (9), ui_compliance (7), business_logic (6) are most common error categories
-- F-212: Cook settings in tenant.settings JSON; orders snapshot cancellation_window_minutes
+- gale_compliance (10), ui_compliance (9), business_logic (6) are most common error categories
+- F-162: OrderCancellationService with DB::transaction + lockForUpdate pattern
 - executor.db git workflow: commit on feature branch with "git add -f .executor/executor.db" BEFORE switching to main
 ## Mode: sequential, max_parallel: 1
-## Progress: 177/219 done (5 Must-have pending, 35 Should-have, 2 Could-have)
+## Progress: 186/219 done (31 Should-have pending, 2 Could-have)
