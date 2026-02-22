@@ -429,6 +429,9 @@ Route::middleware('main.domain')->group(function () {
         // Admin Platform Revenue Analytics (F-205)
         Route::get('/analytics/revenue', [\App\Http\Controllers\Admin\AdminRevenueAnalyticsController::class, 'index'])->name('admin.analytics.revenue');
 
+        // Admin Cook Performance Metrics (F-206)
+        Route::get('/analytics/performance', [\App\Http\Controllers\Admin\CookPerformanceController::class, 'index'])->name('admin.analytics.performance');
+
         // Financial Reports & Export (F-058)
         Route::get('/finance/reports', [\App\Http\Controllers\Admin\FinancialReportsController::class, 'index'])->name('admin.finance.reports');
         Route::get('/finance/reports/export-csv', [\App\Http\Controllers\Admin\FinancialReportsController::class, 'exportCsv'])->name('admin.finance.reports.export-csv');
