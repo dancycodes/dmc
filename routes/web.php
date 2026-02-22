@@ -597,11 +597,14 @@ Route::middleware('tenant.domain')->group(function () {
 
         // F-212: Cancellation Window Configuration
         // F-213: Minimum Order Amount Configuration
-        // BR-503/BR-515: Only cook can access (cook_reserved in nav + COOK_RESERVED_PATHS in ManagerDashboardService)
-        // BR-506: Gale handles form interaction without page reloads
+        // F-214: Cook Theme Selection
+        // BR-503/BR-515/BR-526: Only cook can access (cook_reserved in nav + COOK_RESERVED_PATHS in ManagerDashboardService)
+        // BR-506/BR-532: Gale handles form interaction without page reloads
         Route::get('/settings', [\App\Http\Controllers\Cook\CookSettingsController::class, 'index'])->name('cook.settings.index');
         Route::post('/settings/cancellation-window', [\App\Http\Controllers\Cook\CookSettingsController::class, 'updateCancellationWindow'])->name('cook.settings.update-cancellation-window');
         Route::post('/settings/minimum-order-amount', [\App\Http\Controllers\Cook\CookSettingsController::class, 'updateMinimumOrderAmount'])->name('cook.settings.update-minimum-order-amount');
+        Route::post('/settings/appearance', [\App\Http\Controllers\Cook\CookSettingsController::class, 'updateAppearance'])->name('cook.settings.update-appearance');
+        Route::post('/settings/appearance/reset', [\App\Http\Controllers\Cook\CookSettingsController::class, 'resetAppearance'])->name('cook.settings.reset-appearance');
     });
 
     // F-135: Meal Search Bar (public, on tenant domain)

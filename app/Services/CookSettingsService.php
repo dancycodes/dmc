@@ -8,6 +8,7 @@ use App\Models\User;
 /**
  * F-212: Cancellation Window Configuration
  * F-213: Minimum Order Amount Configuration
+ * F-214: Cook Theme Selection
  *
  * Handles reading and updating cook settings stored in the tenant's settings JSON column.
  */
@@ -164,5 +165,90 @@ class CookSettingsService
             'old_value' => $oldValue,
             'new_value' => $amount,
         ];
+    }
+
+    // -------------------------------------------------------------------------
+    // F-214: Cook Theme Selection
+    // -------------------------------------------------------------------------
+
+    /**
+     * Get the current appearance settings for a tenant.
+     *
+     * BR-525: Theme settings stored in tenant.settings JSON: theme, font, border_radius.
+     * BR-527: Defaults are Modern + Inter + medium.
+     *
+     * @return array{theme: string, font: string, border_radius: string}
+     */
+    public function getAppearance(Tenant $tenant): array
+    {
+        $themeService = app(TenantThemeService::class);
+
+        return [
+            'theme' => $themeService->resolvePreset($tenant),
+            'font' => $themeService->resolveFont($tenant),
+            'border_radius' => $themeService->resolveRadius($tenant),
+        ];
+    }
+
+    /**
+     * Update the appearance settings for a tenant.
+     *
+     * BR-524: Changes apply to the tenant domain immediately upon saving.
+     * BR-526: Only the cook can change theme settings (enforced at controller level).
+     * BR-530: All changes are logged via Spatie Activitylog with old and new values.
+     *
+     * @return array{old: array{theme: string, font: string, border_radius: string}, new: array{theme: string, font: string, border_radius: string}}
+     */
+    public function updateAppearance(Tenant $tenant, string $theme, string $font, string $borderRadius, User $cook): array
+    {
+        $oldValues = $this->getAppearance($tenant);
+
+        $tenant->setSetting(TenantThemeService::SETTING_PRESET, $theme);
+        $tenant->setSetting(TenantThemeService::SETTING_FONT, $font);
+        $tenant->setSetting(TenantThemeService::SETTING_RADIUS, $borderRadius);
+        $tenant->save();
+
+        $newValues = [
+            'theme' => $theme,
+            'font' => $font,
+            'border_radius' => $borderRadius,
+        ];
+
+        // BR-530: Only log if something actually changed
+        if ($oldValues !== $newValues) {
+            activity('tenants')
+                ->performedOn($tenant)
+                ->causedBy($cook)
+                ->withProperties([
+                    'old' => $oldValues,
+                    'attributes' => $newValues,
+                ])
+                ->log('appearance_updated');
+        }
+
+        return [
+            'old' => $oldValues,
+            'new' => $newValues,
+        ];
+    }
+
+    /**
+     * Reset the appearance to DancyMeals defaults.
+     *
+     * BR-527: Reset to Default = Modern + Inter + medium.
+     *
+     * @return array{old: array{theme: string, font: string, border_radius: string}, new: array{theme: string, font: string, border_radius: string}}
+     */
+    public function resetAppearance(Tenant $tenant, User $cook): array
+    {
+        $themeService = app(TenantThemeService::class);
+
+        return $this->updateAppearance(
+            $tenant,
+            $themeService->defaultPreset(),
+            $themeService->defaultFont(),
+            $themeService->defaultRadius(),
+            $cook,
+        );
     }
 }
