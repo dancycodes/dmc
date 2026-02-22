@@ -286,6 +286,10 @@
                 $selectableIds = $promoCodes->filter(function ($pc) use ($today) {
                     return !($pc->ends_at !== null && $pc->ends_at->toDateString() < $today);
                 })->pluck('id')->values()->toArray();
+                $encodedStatusFilter = json_encode($statusFilter);
+                $encodedSortBy = json_encode($sortBy);
+                $encodedSortDir = json_encode($sortDir);
+                $currentPage = $promoCodes->currentPage();
             @endphp
 
             {{-- Bulk Action Bar (appears when items are selected) --}}
@@ -302,7 +306,7 @@
                     {{ __('selected') }}
                 </span>
                 <button
-                    @click="bulkDeactivate({{ $promoCodes->currentPage() }}, @js($statusFilter), @js($sortBy), @js($sortDir))"
+                    @click="bulkDeactivate({{ $currentPage }}, {{ $encodedStatusFilter }}, {{ $encodedSortBy }}, {{ $encodedSortDir }})"
                     class="inline-flex items-center gap-2 px-3.5 py-1.5 bg-danger text-on-danger text-xs font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-60"
                     :disabled="$fetching()"
                 >
@@ -409,7 +413,7 @@
                                 <div class="flex items-center gap-2">
                                     {{-- F-217: Toggle switch --}}
                                     <button
-                                        @click="{{ !$isExpired ? "toggleStatus({$promoCode->id}, {$promoCodes->currentPage()}, @js(\$statusFilter), @js(\$sortBy), @js(\$sortDir))" : '' }}"
+                                        @click="{{ !$isExpired ? "toggleStatus({$promoCode->id}, {$currentPage}, {$encodedStatusFilter}, {$encodedSortBy}, {$encodedSortDir})" : '' }}"
                                         class="relative inline-flex items-center w-9 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 {{ $isExpired ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer' }} {{ (!$isExpired && $promoCode->status === 'active') ? 'bg-success' : ($isExpired ? 'bg-on-surface/20' : 'bg-on-surface/20') }}"
                                         :disabled="{{ $isExpired ? 'true' : 'false' }}"
                                         :aria-label="@js($isExpired ? __('Toggle disabled — code is expired') : ($promoCode->status === 'active' ? __('Deactivate :code', ['code' => $promoCode->code]) : __('Activate :code', ['code' => $promoCode->code])))"
@@ -485,7 +489,7 @@
 
                             {{-- F-217: Toggle switch (mobile) --}}
                             <button
-                                @click="{{ !$isExpired ? "toggleStatus({$promoCode->id}, {$promoCodes->currentPage()}, @js(\$statusFilter), @js(\$sortBy), @js(\$sortDir))" : '' }}"
+                                @click="{{ !$isExpired ? "toggleStatus({$promoCode->id}, {$currentPage}, {$encodedStatusFilter}, {$encodedSortBy}, {$encodedSortDir})" : '' }}"
                                 class="relative inline-flex items-center w-9 h-5 rounded-full transition-colors focus:outline-none {{ $isExpired ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer' }} {{ (!$isExpired && $promoCode->status === 'active') ? 'bg-success' : 'bg-on-surface/20' }}"
                                 :disabled="{{ $isExpired ? 'true' : 'false' }}"
                                 role="switch"
