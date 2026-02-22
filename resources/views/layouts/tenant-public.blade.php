@@ -170,6 +170,11 @@
                                         <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"></path><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><path d="M12 17.5v-11"></path></svg>
                                         {{ __('Transactions') }}
                                     </a>
+                                    <a href="{{ url('/my-stats') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-on-surface hover:bg-surface-alt transition-colors duration-200">
+                                        {{-- BarChart3 icon (Lucide sm=16) --}}
+                                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg>
+                                        {{ __('My Stats') }}
+                                    </a>
                                     <a href="{{ url('/profile') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-on-surface hover:bg-surface-alt transition-colors duration-200">
                                         <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                                         {{ __('Profile') }}
