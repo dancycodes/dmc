@@ -12,11 +12,17 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * F-215: Cook Promo Code Creation
+ * F-216: Cook Promo Code Edit
+ * F-217: Cook Promo Code Deactivation
  *
  * Handles cook promo code management in the tenant dashboard.
  *
  * BR-545: Only the cook can create promo codes (enforced via cook_reserved + EnsureCookAccess).
  * BR-548: Gale handles form and list interactions without page reloads.
+ * BR-560: Status: active, inactive (manual), expired (computed from end date).
+ * BR-565: Bulk deactivation of multiple codes in one action.
+ * BR-568: Only the cook can toggle promo code status.
+ * BR-571: Gale handles all toggle and bulk actions without page reloads.
  */
 class PromoCodeController extends Controller
 {
@@ -28,15 +34,41 @@ class PromoCodeController extends Controller
      * Display the promo code list with creation form.
      *
      * BR-543: Only shows promo codes for the current tenant.
+     * BR-564: List shows code, discount type/value, status, usage count, dates.
+     * BR-567: Expired status is computed: current date > end date.
      */
     public function index(Request $request): mixed
     {
         $tenant = tenant();
         $page = (int) $request->get('page', 1);
+        $statusFilter = $request->get('status', 'all');
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortDir = $request->get('sort_dir', 'desc');
 
-        $promoCodes = $this->promoCodeService->getPromoCodesForTenant($tenant, $page);
+        // Validate filter/sort params
+        if (! in_array($statusFilter, PromoCodeService::STATUS_FILTERS, true)) {
+            $statusFilter = 'all';
+        }
 
-        return gale()->view('cook.promo-codes.index', compact('promoCodes'), web: true);
+        if (! in_array($sortBy, PromoCodeService::SORT_FIELDS, true)) {
+            $sortBy = 'created_at';
+        }
+
+        $promoCodes = $this->promoCodeService->getPromoCodesForTenant(
+            $tenant,
+            $page,
+            $statusFilter,
+            $sortBy,
+            $sortDir,
+        );
+
+        $data = compact('promoCodes', 'statusFilter', 'sortBy', 'sortDir');
+
+        if ($request->isGaleNavigate('promo-list')) {
+            return gale()->fragment('cook.promo-codes.index', 'promo-list', $data);
+        }
+
+        return gale()->view('cook.promo-codes.index', $data, web: true);
     }
 
     /**
@@ -172,6 +204,125 @@ class PromoCodeController extends Controller
 
         return gale()->redirect(route('cook.promo-codes.index'))
             ->with('toast', ['type' => 'success', 'message' => __('Promo code :code created.', ['code' => $promoCode->code])]);
+    }
+
+    /**
+     * Toggle a single promo code between active and inactive.
+     *
+     * BR-560: Status: active or inactive (not expired, which is computed).
+     * BR-562: A deactivated code can be reactivated.
+     * BR-563: An expired code cannot be reactivated via toggle.
+     * BR-568: Only the cook can toggle promo code status.
+     * BR-569: All status changes logged via Spatie Activitylog.
+     * BR-571: Gale handles all toggle actions without page reloads.
+     */
+    public function toggleStatus(Request $request, PromoCode $promoCode): mixed
+    {
+        $tenant = tenant();
+
+        if ($promoCode->tenant_id !== $tenant->id) {
+            abort(404);
+        }
+
+        $result = $this->promoCodeService->toggleStatus($promoCode);
+
+        if (! $result['success']) {
+            if ($request->isGale()) {
+                return gale()->dispatch('toast', [
+                    'type' => 'error',
+                    'message' => $result['message'],
+                ]);
+            }
+
+            return back()->with('toast', ['type' => 'error', 'message' => $result['message']]);
+        }
+
+        if ($request->isGale()) {
+            $promoCodes = $this->promoCodeService->getPromoCodesForTenant(
+                $tenant,
+                (int) $request->get('page', 1),
+                $request->get('status', 'all'),
+                $request->get('sort_by', 'created_at'),
+                $request->get('sort_dir', 'desc'),
+            );
+
+            $statusFilter = $request->get('status', 'all');
+            $sortBy = $request->get('sort_by', 'created_at');
+            $sortDir = $request->get('sort_dir', 'desc');
+
+            return gale()
+                ->fragment('cook.promo-codes.index', 'promo-list', compact('promoCodes', 'statusFilter', 'sortBy', 'sortDir'))
+                ->dispatch('toast', [
+                    'type' => 'success',
+                    'message' => $result['message'],
+                ]);
+        }
+
+        return gale()->redirect(route('cook.promo-codes.index'))
+            ->with('toast', ['type' => 'success', 'message' => $result['message']]);
+    }
+
+    /**
+     * Bulk deactivate multiple promo codes.
+     *
+     * BR-565: Cook selects multiple codes and deactivates them in one action.
+     * BR-566: Bulk reactivation is not supported.
+     * BR-567: No-op for already-inactive and expired codes.
+     * BR-569: All status changes logged via Spatie Activitylog.
+     * BR-571: Gale handles all bulk actions without page reloads.
+     */
+    public function bulkDeactivate(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if ($request->isGale()) {
+            $validated = $request->validateState([
+                'selectedIds' => ['required', 'array', 'min:1'],
+                'selectedIds.*' => ['integer', 'min:1'],
+            ], [
+                'selectedIds.required' => __('Please select at least one promo code.'),
+                'selectedIds.min' => __('Please select at least one promo code.'),
+            ]);
+            $ids = $validated['selectedIds'];
+        } else {
+            $ids = $request->input('selectedIds', []);
+        }
+
+        $result = $this->promoCodeService->bulkDeactivate($tenant, array_map('intval', $ids));
+
+        if (! $result['success']) {
+            if ($request->isGale()) {
+                return gale()->dispatch('toast', ['type' => 'warning', 'message' => $result['message']]);
+            }
+
+            return back()->with('toast', ['type' => 'warning', 'message' => $result['message']]);
+        }
+
+        if ($request->isGale()) {
+            $promoCodes = $this->promoCodeService->getPromoCodesForTenant(
+                $tenant,
+                (int) $request->get('page', 1),
+                $request->get('status', 'all'),
+                $request->get('sort_by', 'created_at'),
+                $request->get('sort_dir', 'desc'),
+            );
+
+            $statusFilter = $request->get('status', 'all');
+            $sortBy = $request->get('sort_by', 'created_at');
+            $sortDir = $request->get('sort_dir', 'desc');
+
+            return gale()
+                ->fragment('cook.promo-codes.index', 'promo-list', compact('promoCodes', 'statusFilter', 'sortBy', 'sortDir'))
+                ->state('selectedIds', [])
+                ->state('selectAll', false)
+                ->dispatch('toast', [
+                    'type' => 'success',
+                    'message' => $result['message'],
+                ]);
+        }
+
+        return gale()->redirect(route('cook.promo-codes.index'))
+            ->with('toast', ['type' => 'success', 'message' => $result['message']]);
     }
 
     /**

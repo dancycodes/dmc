@@ -238,4 +238,32 @@ class PromoCode extends Model
 
         return true;
     }
+
+    /**
+     * Whether a given ends_at date string has expired.
+     *
+     * BR-567: Expired status is computed: current date > end date.
+     *
+     * Static to avoid requiring an Eloquent DB context in unit tests.
+     */
+    public static function computeIsExpired(?string $endsAt): bool
+    {
+        if ($endsAt === null) {
+            return false;
+        }
+
+        return $endsAt < now()->toDateString();
+    }
+
+    /**
+     * Whether this promo code has expired (computed from end date).
+     *
+     * BR-567: Expired status is computed: current date > end date.
+     */
+    public function isExpired(): bool
+    {
+        return self::computeIsExpired(
+            $this->ends_at !== null ? $this->ends_at->toDateString() : null
+        );
+    }
 }
