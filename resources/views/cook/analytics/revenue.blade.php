@@ -55,8 +55,8 @@
     }"
     class="space-y-6"
 >
-    {{-- Tab navigation: Revenue | Orders --}}
-    <div class="flex items-center gap-1 border-b border-outline">
+    {{-- Tab navigation: Revenue | Orders | Customers --}}
+    <div class="flex items-center gap-1 border-b border-outline overflow-x-auto">
         <a
             href="/dashboard/analytics"
             x-navigate
@@ -80,6 +80,18 @@
                     <path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path>
                 </svg>
                 {{ __('Orders') }}
+            </span>
+        </a>
+        <a
+            href="/dashboard/analytics/customers"
+            x-navigate
+            class="px-4 py-2.5 text-sm font-medium text-on-surface hover:text-on-surface-strong border-b-2 border-transparent hover:border-outline-strong transition-colors duration-150 -mb-px whitespace-nowrap"
+        >
+            <span class="flex items-center gap-1.5">
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                {{ __('Customers') }}
             </span>
         </a>
     </div>
