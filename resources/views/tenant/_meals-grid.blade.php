@@ -20,6 +20,11 @@
         $currentSearch = $searchQuery ?? '';
         $filterCount = $activeFilterCount ?? 0;
         $hasActiveFilters = $filterCount > 0;
+
+        // F-197: Resolve user favorite meal IDs once for all cards in this grid.
+        // BR-337: Determines initial heart state on page load for each meal card.
+        $gridUserFavoriteMealIds = $userFavoriteMealIds ?? [];
+        $gridIsMealCardAuthenticated = $isMealCardAuthenticated ?? false;
     @endphp
     @if($meals->total() > 0)
         {{-- BR-152: Responsive grid --}}
@@ -28,7 +33,11 @@
                 @php
                     $card = $landingService->buildMealCardData($meal);
                 @endphp
-                @include('tenant._meal-card', ['card' => $card])
+                @include('tenant._meal-card', [
+                    'card' => $card,
+                    'userFavoriteMealIds' => $gridUserFavoriteMealIds,
+                    'isMealCardAuthenticated' => $gridIsMealCardAuthenticated,
+                ])
             @endforeach
         </div>
 

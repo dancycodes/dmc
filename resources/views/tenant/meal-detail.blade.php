@@ -98,10 +98,91 @@
 
             {{-- Right Column: Meal info + Components --}}
             <div>
-                {{-- Meal Name --}}
-                <h1 class="text-2xl sm:text-3xl font-display font-bold text-on-surface-strong leading-tight">
-                    {{ $mealData['name'] }}
-                </h1>
+                {{-- Meal Name + Favorite Toggle (F-197) --}}
+                {{-- BR-337: Heart icon reflects current state. BR-338: Toggle via Gale. --}}
+                <div class="flex items-start gap-3">
+                    <h1 class="flex-1 text-2xl sm:text-3xl font-display font-bold text-on-surface-strong leading-tight">
+                        {{ $mealData['name'] }}
+                    </h1>
+                    {{-- F-197: Favorite heart button in meal detail action bar --}}
+                    <div
+                        x-data="{
+                            isMealFavorited: {{ $isMealFavorited ? 'true' : 'false' }},
+                            favoriteError: null
+                        }"
+                        x-sync="['isMealFavorited']"
+                        class="shrink-0 mt-1"
+                    >
+                        @auth
+                            <button
+                                @click="$action('{{ route('favorite-meals.toggle', ['meal' => $meal->id]) }}')"
+                                class="w-11 h-11 rounded-full flex items-center justify-center bg-surface-alt dark:bg-surface-alt border border-outline dark:border-outline hover:border-primary hover:bg-primary-subtle transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 cursor-pointer"
+                                :aria-label="isMealFavorited ? '{{ __('Remove from favorites') }}' : '{{ __('Add to favorites') }}'"
+                                :title="isMealFavorited ? '{{ __('Remove from favorites') }}' : '{{ __('Add to favorites') }}'"
+                                aria-label="{{ $isMealFavorited ? __('Remove from favorites') : __('Add to favorites') }}"
+                            >
+                                {{-- Loading spinner --}}
+                                <svg
+                                    x-show="$fetching()"
+                                    x-cloak
+                                    class="w-5 h-5 text-on-surface animate-spin"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    aria-hidden="true"
+                                >
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                </svg>
+
+                                {{-- Filled heart (favorited) --}}
+                                <svg
+                                    x-show="isMealFavorited && !$fetching()"
+                                    class="w-5 h-5 text-red-500 dark:text-red-400 transition-all duration-200 scale-100 hover:scale-110"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="currentColor"
+                                    stroke="currentColor"
+                                    stroke-width="1"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    aria-hidden="true"
+                                >
+                                    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+                                </svg>
+
+                                {{-- Outline heart (not favorited) --}}
+                                <svg
+                                    x-show="!isMealFavorited && !$fetching()"
+                                    class="w-5 h-5 text-on-surface/50 dark:text-on-surface/50 transition-all duration-200 hover:text-red-400 hover:scale-110"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    aria-hidden="true"
+                                >
+                                    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+                                </svg>
+                            </button>
+                        @else
+                            {{-- Guest: redirect to login --}}
+                            <a
+                                href="{{ route('login') }}"
+                                class="w-11 h-11 rounded-full flex items-center justify-center bg-surface-alt dark:bg-surface-alt border border-outline dark:border-outline hover:border-primary hover:bg-primary-subtle transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                                aria-label="{{ __('Log in to add to favorites') }}"
+                                title="{{ __('Log in to add to favorites') }}"
+                                x-navigate-skip
+                            >
+                                <svg class="w-5 h-5 text-on-surface/50 dark:text-on-surface/50 hover:text-red-400 transition-colors duration-200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+                                </svg>
+                            </a>
+                        @endauth
+                    </div>
+                </div>
 
                 {{-- Tags --}}
                 @if(!empty($mealData['tags']))

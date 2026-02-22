@@ -8,6 +8,7 @@ use App\Services\CartService;
 use App\Services\RatingService;
 use App\Services\TenantLandingService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class MealDetailController extends Controller
 {
@@ -51,6 +52,15 @@ class MealDetailController extends Controller
         // F-178: Get rating & review display data
         $reviewData = $this->ratingService->getMealReviewDisplayData($meal->id, $tenant->id);
 
+        // F-197: Determine initial favorite state for this meal for the authenticated user.
+        // BR-337: Heart icon visually reflects current favorite state on page load.
+        $isMealFavorited = false;
+        if (Auth::check()) {
+            /** @var \App\Models\User $user */
+            $user = Auth::user();
+            $isMealFavorited = $user->favoriteMeals()->where('meal_id', $meal->id)->exists();
+        }
+
         return gale()->view('tenant.meal-detail', [
             'tenant' => $tenant,
             'meal' => $meal,
@@ -61,6 +71,7 @@ class MealDetailController extends Controller
             'cart' => $cart,
             'cartComponentsForMeal' => $cartComponentsForMeal,
             'reviewData' => $reviewData,
+            'isMealFavorited' => $isMealFavorited,
         ], web: true);
     }
 

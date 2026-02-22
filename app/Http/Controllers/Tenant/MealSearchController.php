@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\MealSearchRequest;
 use App\Services\TenantLandingService;
+use Illuminate\Support\Facades\Auth;
 
 class MealSearchController extends Controller
 {
@@ -18,6 +19,7 @@ class MealSearchController extends Controller
      * F-135: Meal Search Bar
      * F-136: Meal Filters
      * F-137: Meal Sort Options
+     * F-197: Favorite Meal Toggle — passes userFavoriteMealIds to fragment
      * BR-214: Search across meal names, descriptions, component names, tag names
      * BR-215: Case-insensitive search
      * BR-217: Results filter the existing meals grid via Gale fragment (no page reload)
@@ -70,6 +72,18 @@ class MealSearchController extends Controller
         $sections = ['schedule' => ['hasData' => $tenant->cookSchedules()->exists()]];
         $activeFilterCount = $request->activeFilterCount();
 
+        // F-197: Resolve favorite meal IDs so heart states persist across search/filter.
+        $userFavoriteMealIds = [];
+        $isMealCardAuthenticated = Auth::check();
+        if ($isMealCardAuthenticated) {
+            /** @var \App\Models\User $user */
+            $user = Auth::user();
+            $userFavoriteMealIds = $user->favoriteMeals()
+                ->whereHas('tenant', fn ($q) => $q->where('id', $tenant->id))
+                ->allRelatedIds()
+                ->toArray();
+        }
+
         // BR-217/BR-231/BR-239: For Gale navigate requests, return only the meals grid fragment
         if ($request->isGaleNavigate('meal-search')) {
             return gale()->fragment('tenant._meals-grid', 'meals-grid-fragment', [
@@ -78,6 +92,8 @@ class MealSearchController extends Controller
                 'searchQuery' => $query,
                 'activeFilterCount' => $activeFilterCount,
                 'currentSort' => $sort,
+                'userFavoriteMealIds' => $userFavoriteMealIds,
+                'isMealCardAuthenticated' => $isMealCardAuthenticated,
             ]);
         }
 

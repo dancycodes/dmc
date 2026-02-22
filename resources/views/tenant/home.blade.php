@@ -337,13 +337,13 @@
                     {{-- Meals grid with F-137: Sort dropdown --}}
                     <div class="flex-1 min-w-0">
                         @include('tenant._meal-sort', ['currentSort' => 'popular', 'meals' => $meals])
-                        @include('tenant._meals-grid', ['meals' => $meals, 'sections' => $sections, 'searchQuery' => '', 'activeFilterCount' => 0, 'currentSort' => 'popular'])
+                        @include('tenant._meals-grid', ['meals' => $meals, 'sections' => $sections, 'searchQuery' => '', 'activeFilterCount' => 0, 'currentSort' => 'popular', 'userFavoriteMealIds' => $userFavoriteMealIds ?? [], 'isMealCardAuthenticated' => $isMealCardAuthenticated ?? false])
                     </div>
                 </div>
             @else
                 {{-- No filters available — full-width grid with sort --}}
                 @include('tenant._meal-sort', ['currentSort' => 'popular', 'meals' => $meals])
-                @include('tenant._meals-grid', ['meals' => $meals, 'sections' => $sections, 'searchQuery' => '', 'activeFilterCount' => 0, 'currentSort' => 'popular'])
+                @include('tenant._meals-grid', ['meals' => $meals, 'sections' => $sections, 'searchQuery' => '', 'activeFilterCount' => 0, 'currentSort' => 'popular', 'userFavoriteMealIds' => $userFavoriteMealIds ?? [], 'isMealCardAuthenticated' => $isMealCardAuthenticated ?? false])
             @endif
         </div>
     </section>

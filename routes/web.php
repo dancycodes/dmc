@@ -274,6 +274,13 @@ Route::middleware('auth')->group(function () {
     // BR-325: Toggle is idempotent (add when not favorited, remove when favorited)
     // BR-328: Toggle happens via Gale without page reload
     Route::post('/favorite-cooks/{tenant}', [\App\Http\Controllers\FavoriteCookController::class, 'toggle'])->name('favorite-cooks.toggle');
+
+    // Favorite Meal Toggle (F-197)
+    // BR-333: Requires authentication; guests are prompted to log in
+    // BR-334: A user can favorite any active meal from any active tenant
+    // BR-335: Toggle is idempotent (add when not favorited, remove when favorited)
+    // BR-338: Toggle happens via Gale without page reload
+    Route::post('/favorite-meals/{meal}', [\App\Http\Controllers\FavoriteMealController::class, 'toggle'])->name('favorite-meals.toggle');
 });
 
 /*

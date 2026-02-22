@@ -154,6 +154,25 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Get the meals favorited by this user.
+     *
+     * F-197: Favorite Meal Toggle.
+     * BR-336: Favorite state stored as a user-meal relationship (pivot table).
+     * BR-340: A user can favorite unlimited meals.
+     *
+     * @return BelongsToMany<Meal, $this>
+     */
+    public function favoriteMeals(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Meal::class,
+            'favorite_meals',
+            'user_id',
+            'meal_id'
+        )->withPivot('created_at');
+    }
+
+    /**
      * Check if the user account is active.
      */
     public function isActive(): bool
