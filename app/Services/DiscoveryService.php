@@ -52,16 +52,8 @@ class DiscoveryService
         $this->applyTagsFilter($query, $tags);
         $this->applyRatingFilter($query, $minRating);
 
-        // Apply sorting
-        $sortColumn = match ($sort) {
-            'name' => 'name_'.app()->getLocale(),
-            'newest' => 'created_at',
-            default => 'created_at',
-        };
-
-        $sortDirection = $direction === 'asc' ? 'asc' : 'desc';
-
-        $query->orderBy($sortColumn, $sortDirection);
+        // Apply sorting — BR-100 through BR-104
+        $this->applySort($query, $sort);
 
         return $query->paginate($perPage)->withQueryString();
     }
@@ -288,5 +280,73 @@ class DiscoveryService
                 ->groupBy('orders.tenant_id')
                 ->havingRaw('AVG(ratings.score) >= ?', [$minRating]);
         });
+    }
+
+    /**
+     * Apply sort ordering to the query.
+     *
+     * BR-100: Available sort options: popularity (default), rating, newest, name (A-Z).
+     * BR-101: Default sort is popularity (total completed order count, descending).
+     * BR-102: Rating sort uses average stars descending; cooks with no ratings appear last.
+     * BR-103: Newest sort uses tenant created_at descending.
+     * BR-104: Name sort uses cook name in current locale (accent-aware via LOWER()).
+     */
+    private function applySort(\Illuminate\Database\Eloquent\Builder $query, ?string $sort): void
+    {
+        $locale = app()->getLocale();
+
+        switch ($sort) {
+            case 'rating':
+                // BR-102: Average rating descending; cooks with no ratings placed last (NULLS LAST)
+                if (Schema::hasTable('ratings')) {
+                    $query->leftJoinSub(
+                        DB::table('ratings')
+                            ->select('tenant_id', DB::raw('AVG(stars) as avg_rating'))
+                            ->groupBy('tenant_id'),
+                        'rating_agg',
+                        'rating_agg.tenant_id',
+                        '=',
+                        'tenants.id'
+                    )->addSelect('tenants.*')
+                        ->orderByRaw('rating_agg.avg_rating DESC NULLS LAST')
+                        ->orderByRaw('COALESCE((SELECT COUNT(*) FROM orders WHERE orders.tenant_id = tenants.id AND orders.status = ?), 0) DESC', ['completed']);
+                } else {
+                    // No ratings table yet — fall back to newest
+                    $query->orderBy('tenants.created_at', 'desc');
+                }
+                break;
+
+            case 'newest':
+                // BR-103: Tenant creation date descending
+                $query->orderBy('tenants.created_at', 'desc');
+                break;
+
+            case 'name':
+                // BR-104: Alphabetical by cook name in current locale, case-insensitive
+                $query->orderByRaw('LOWER(tenants.name_'.$locale.') ASC');
+                break;
+
+            default:
+                // BR-101: Default = popularity (completed order count, descending)
+                // Secondary sort: newest first when order counts are tied (edge case: all 0 orders)
+                if (Schema::hasTable('orders')) {
+                    $query->leftJoinSub(
+                        DB::table('orders')
+                            ->select('tenant_id', DB::raw('COUNT(*) as order_count'))
+                            ->where('status', 'completed')
+                            ->groupBy('tenant_id'),
+                        'order_agg',
+                        'order_agg.tenant_id',
+                        '=',
+                        'tenants.id'
+                    )->addSelect('tenants.*')
+                        ->orderByRaw('COALESCE(order_agg.order_count, 0) DESC')
+                        ->orderBy('tenants.created_at', 'desc');
+                } else {
+                    // No orders table yet — fall back to newest
+                    $query->orderBy('tenants.created_at', 'desc');
+                }
+                break;
+        }
     }
 }

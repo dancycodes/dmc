@@ -29,7 +29,7 @@ class DiscoveryRequest extends FormRequest
     {
         return [
             'search' => ['nullable', 'string', 'max:255'],
-            'sort' => ['nullable', 'string', Rule::in(['name', 'newest'])],
+            'sort' => ['nullable', 'string', Rule::in(['popularity', 'rating', 'newest', 'name'])],
             'direction' => ['nullable', 'string', Rule::in(['asc', 'desc'])],
             'page' => ['nullable', 'integer', 'min:1'],
             // F-069: Discovery filters

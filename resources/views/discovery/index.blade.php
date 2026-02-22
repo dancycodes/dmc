@@ -27,7 +27,7 @@
 <div x-data="{
     search: '{{ $search }}',
     sort: '{{ $sort }}',
-    direction: '{{ $direction }}',
+    direction: 'desc',
     filterOpen: false,
     showScrollTop: false,
     searching: false,
@@ -43,8 +43,7 @@
     buildUrl() {
         let params = new URLSearchParams();
         if (this.search) params.set('search', this.search);
-        if (this.sort !== 'newest') params.set('sort', this.sort);
-        if (this.direction !== 'desc') params.set('direction', this.direction);
+        if (this.sort && this.sort !== 'popularity') params.set('sort', this.sort);
         if (this.selectedTown) params.set('town', this.selectedTown);
         if (this.selectedAvailability && this.selectedAvailability !== 'all') params.set('availability', this.selectedAvailability);
         if (this.selectedTags.length > 0) {
@@ -100,6 +99,16 @@
         count += this.selectedTags.length;
         if (this.selectedMinRating) count++;
         this.activeFilterCount = count;
+    },
+    sortLabel() {
+        // BR-107: Return human-readable label for currently selected sort option
+        const labels = {
+            'popularity': @js(__('Most Popular')),
+            'rating': @js(__('Highest Rated')),
+            'newest': @js(__('Newest')),
+            'name': @js(__('A-Z')),
+        };
+        return labels[this.sort] || @js(__('Most Popular'));
     }
 }" x-init="
     window.addEventListener('scroll', () => {
@@ -222,50 +231,76 @@
                 @endfragment
 
                 <div class="flex items-center gap-2">
-                    {{-- Sort Dropdown --}}
+                    {{-- Sort Dropdown — BR-100: 4 options, BR-107: selected option visually indicated --}}
                     <div x-data="{ sortOpen: false }" class="relative">
                         <button
                             @click="sortOpen = !sortOpen"
                             class="inline-flex items-center gap-2 h-9 px-3 rounded-lg text-sm font-medium border border-outline dark:border-outline text-on-surface hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors duration-200"
                             :aria-expanded="sortOpen"
+                            :aria-label="@js(__('Sort')) + ': ' + sortLabel()"
                         >
-                            {{-- ArrowUpDown icon (Lucide) --}}
-                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 16-4 4-4-4"></path><path d="M17 20V4"></path><path d="m3 8 4-4 4 4"></path><path d="M7 4v16"></path></svg>
-                            <span class="hidden sm:inline">{{ __('Sort') }}</span>
+                            {{-- ArrowUpDown icon (Lucide sm=16) --}}
+                            <svg class="w-4 h-4 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 16-4 4-4-4"></path><path d="M17 20V4"></path><path d="m3 8 4-4 4 4"></path><path d="M7 4v16"></path></svg>
+                            {{-- BR-107: Show currently selected sort label --}}
+                            <span class="hidden sm:inline" x-text="@js(__('Sort')) + ': ' + sortLabel()"></span>
+                            <span class="sm:hidden">{{ __('Sort') }}</span>
+                            {{-- Chevron icon --}}
+                            <svg class="w-3 h-3 shrink-0 hidden sm:block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
                         </button>
                         <div
                             x-show="sortOpen"
                             x-cloak
                             @click.away="sortOpen = false"
+                            @keydown.escape.window="sortOpen = false"
                             x-transition:enter="transition ease-out duration-100"
                             x-transition:enter-start="opacity-0 scale-95"
                             x-transition:enter-end="opacity-100 scale-100"
                             x-transition:leave="transition ease-in duration-75"
                             x-transition:leave-start="opacity-100 scale-100"
                             x-transition:leave-end="opacity-0 scale-95"
-                            class="absolute right-0 mt-2 w-48 bg-surface dark:bg-surface border border-outline dark:border-outline rounded-lg shadow-dropdown z-20"
+                            class="absolute right-0 mt-2 w-52 bg-surface dark:bg-surface border border-outline dark:border-outline rounded-lg shadow-dropdown z-20"
+                            role="menu"
                         >
                             <div class="py-1">
+                                {{-- BR-100: Most Popular (default) --}}
                                 <button
-                                    @click="sort = 'newest'; direction = 'desc'; sortOpen = false; applyFilters()"
-                                    class="w-full text-left px-4 py-2 text-sm hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors"
+                                    @click="sort = 'popularity'; sortOpen = false; applyFilters()"
+                                    class="w-full text-left px-4 py-2.5 text-sm hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors flex items-center justify-between gap-2"
+                                    :class="sort === 'popularity' || sort === '' ? 'text-primary font-medium' : 'text-on-surface'"
+                                    role="menuitem"
+                                >
+                                    <span>{{ __('Most Popular') }}</span>
+                                    <svg x-show="sort === 'popularity' || sort === ''" class="w-4 h-4 text-primary shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+                                </button>
+                                {{-- BR-100: Highest Rated --}}
+                                <button
+                                    @click="sort = 'rating'; sortOpen = false; applyFilters()"
+                                    class="w-full text-left px-4 py-2.5 text-sm hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors flex items-center justify-between gap-2"
+                                    :class="sort === 'rating' ? 'text-primary font-medium' : 'text-on-surface'"
+                                    role="menuitem"
+                                >
+                                    <span>{{ __('Highest Rated') }}</span>
+                                    <svg x-show="sort === 'rating'" class="w-4 h-4 text-primary shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+                                </button>
+                                {{-- BR-100: Newest --}}
+                                <button
+                                    @click="sort = 'newest'; sortOpen = false; applyFilters()"
+                                    class="w-full text-left px-4 py-2.5 text-sm hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors flex items-center justify-between gap-2"
                                     :class="sort === 'newest' ? 'text-primary font-medium' : 'text-on-surface'"
+                                    role="menuitem"
                                 >
-                                    {{ __('Newest first') }}
+                                    <span>{{ __('Newest') }}</span>
+                                    <svg x-show="sort === 'newest'" class="w-4 h-4 text-primary shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
                                 </button>
+                                {{-- BR-100: Alphabetical A-Z --}}
                                 <button
-                                    @click="sort = 'name'; direction = 'asc'; sortOpen = false; applyFilters()"
-                                    class="w-full text-left px-4 py-2 text-sm hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors"
-                                    :class="sort === 'name' && direction === 'asc' ? 'text-primary font-medium' : 'text-on-surface'"
+                                    @click="sort = 'name'; sortOpen = false; applyFilters()"
+                                    class="w-full text-left px-4 py-2.5 text-sm hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors flex items-center justify-between gap-2"
+                                    :class="sort === 'name' ? 'text-primary font-medium' : 'text-on-surface'"
+                                    role="menuitem"
                                 >
-                                    {{ __('Name A-Z') }}
-                                </button>
-                                <button
-                                    @click="sort = 'name'; direction = 'desc'; sortOpen = false; applyFilters()"
-                                    class="w-full text-left px-4 py-2 text-sm hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors"
-                                    :class="sort === 'name' && direction === 'desc' ? 'text-primary font-medium' : 'text-on-surface'"
-                                >
-                                    {{ __('Name Z-A') }}
+                                    <span>{{ __('A-Z') }}</span>
+                                    <svg x-show="sort === 'name'" class="w-4 h-4 text-primary shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
                                 </button>
                             </div>
                         </div>

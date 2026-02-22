@@ -55,7 +55,7 @@ class DiscoveryController extends Controller
             'cooks' => $cooks,
             'totalCooks' => $totalCooks,
             'search' => $search ?? '',
-            'sort' => $sort ?? 'newest',
+            'sort' => $sort ?? 'popularity',
             'direction' => $direction ?? 'desc',
             'filterTowns' => $filterTowns,
             'filterTags' => $filterTags,
