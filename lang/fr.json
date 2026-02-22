@@ -2647,5 +2647,23 @@
     "Your testimonial must not exceed :max characters.": "Votre témoignage ne doit pas dépasser :max caractères.",
     "New Testimonial Received!": "Nouveau Témoignage Reçu !",
     "A client shared: \":excerpt\"": "Un client a partagé : \":excerpt\"",
-    "testimonial_submitted": "testimonial_submitted"
+    "testimonial_submitted": "testimonial_submitted",
+
+    "Order Messages": "Messages de commande",
+    "Messages": "Messages",
+    "Conversation with": "Conversation avec",
+    "No messages yet.": "Aucun message pour l'instant.",
+    "Start a conversation about this order.": "Commencez une conversation sur cette commande.",
+    "Load older messages": "Charger les anciens messages",
+    "Read-only": "Lecture seule",
+    "Type a message...": "Tapez un message...",
+    "Message sending will be available soon.": "L'envoi de messages sera bientôt disponible.",
+    "This order was cancelled. The message thread is read-only.": "Cette commande a été annulée. Le fil de messages est en lecture seule.",
+    "This order is completed. The message thread is read-only after 7 days.": "Cette commande est terminée. Le fil de messages est en lecture seule après 7 jours.",
+    "Deleted User": "Utilisateur supprimé",
+    "You are not authorized to view this message thread.": "Vous n'êtes pas autorisé à voir ce fil de messages.",
+    "You do not have permission to view order messages.": "Vous n'avez pas la permission de voir les messages de commande.",
+    "Message Client": "Message au client",
+    "Unknown Client": "Client inconnu",
+    "Back to Order": "Retour à la commande"
 }

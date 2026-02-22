@@ -309,6 +309,16 @@ class Order extends Model
     }
 
     /**
+     * Get the message thread for this order.
+     *
+     * F-188: Order has exactly one message thread (BR-239).
+     */
+    public function messages(): HasMany
+    {
+        return $this->hasMany(OrderMessage::class);
+    }
+
+    /**
      * Generate a unique order number.
      *
      * Format: DMC-{YYMMDD}-{4 digit sequence}

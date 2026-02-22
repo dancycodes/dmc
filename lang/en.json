@@ -2647,5 +2647,23 @@
     "Your testimonial must not exceed :max characters.": "Your testimonial must not exceed :max characters.",
     "New Testimonial Received!": "New Testimonial Received!",
     "A client shared: \":excerpt\"": "A client shared: \":excerpt\"",
-    "testimonial_submitted": "testimonial_submitted"
+    "testimonial_submitted": "testimonial_submitted",
+
+    "Order Messages": "Order Messages",
+    "Messages": "Messages",
+    "Conversation with": "Conversation with",
+    "No messages yet.": "No messages yet.",
+    "Start a conversation about this order.": "Start a conversation about this order.",
+    "Load older messages": "Load older messages",
+    "Read-only": "Read-only",
+    "Type a message...": "Type a message...",
+    "Message sending will be available soon.": "Message sending will be available soon.",
+    "This order was cancelled. The message thread is read-only.": "This order was cancelled. The message thread is read-only.",
+    "This order is completed. The message thread is read-only after 7 days.": "This order is completed. The message thread is read-only after 7 days.",
+    "Deleted User": "Deleted User",
+    "You are not authorized to view this message thread.": "You are not authorized to view this message thread.",
+    "You do not have permission to view order messages.": "You do not have permission to view order messages.",
+    "Message Client": "Message Client",
+    "Unknown Client": "Unknown Client",
+    "Back to Order": "Back to Order"
 }
