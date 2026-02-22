@@ -44,7 +44,7 @@
             if (this.status) {
                 url += '&status=' + this.status;
             }
-            if (this.regionId) {
+            if (parseInt(this.regionId) > 0) {
                 url += '&region=' + this.regionId;
             }
             if (this.period === 'custom' && this.customStart && this.customEnd) {
@@ -174,7 +174,7 @@
                 <button
                     type="button"
                     @click="clearFilters()"
-                    x-show="search || status || regionId"
+                    x-show="search || status || parseInt(regionId) > 0"
                     x-cloak
                     class="px-3 py-2 text-sm text-on-surface/70 border border-outline rounded-lg hover:bg-surface hover:text-on-surface-strong transition-colors whitespace-nowrap"
                 >
