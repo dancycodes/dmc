@@ -7,6 +7,7 @@ use App\Http\Requests\Client\ClientOrderListRequest;
 use App\Models\Order;
 use App\Services\ClientOrderService;
 use App\Services\OrderCancellationService;
+use App\Services\ReorderService;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
@@ -129,6 +130,81 @@ class OrderController extends Controller
         return gale()
             ->redirect(url('/my-orders/'.$order->id))
             ->with('success', $result['message']);
+    }
+
+    /**
+     * Initiate a reorder from a past completed order.
+     *
+     * F-199: Reorder from Past Order
+     * BR-356: Only Completed, Delivered, or Picked Up orders qualify.
+     * BR-357: Copies same items and quantities into a new cart for the same tenant.
+     * BR-358: Uses current prices, not the original order prices.
+     * BR-359: Notes price changes visually.
+     * BR-360: Unavailable components are excluded with a warning.
+     * BR-361: Deleted meals are excluded with an explanation.
+     * BR-362: If all items unavailable, reorder fails with an error.
+     * BR-363: Inactive tenant → error.
+     * BR-364: Redirect to tenant domain with pre-filled cart.
+     * BR-365: Cart conflict → confirmation prompt.
+     */
+    public function reorder(Request $request, Order $order, ReorderService $reorderService): mixed
+    {
+        // BR-356: Verify order belongs to this client
+        if ($order->client_id !== $request->user()->id) {
+            abort(403, __('You are not authorized to reorder this order.'));
+        }
+
+        // BR-356: Only eligible statuses
+        if (! $reorderService->isEligibleForReorder($order)) {
+            return gale()
+                ->dispatch('toast', ['type' => 'error', 'message' => __('Reorder is only available for completed orders.')])
+                ->messages(['reorder' => __('Reorder is only available for completed orders.')]);
+        }
+
+        // BR-365: Detect existing cart conflict
+        $existingCartTenantId = $reorderService->getActiveCartTenantId();
+        $forceReplace = (bool) $request->state('force_replace', false);
+
+        // If force_replace, clear all existing carts so conflict is resolved
+        if ($forceReplace && $existingCartTenantId !== null && $existingCartTenantId !== $order->tenant_id) {
+            $reorderService->clearAllCarts();
+            $existingCartTenantId = null;
+        }
+
+        $result = $reorderService->prepareReorder($order, $existingCartTenantId);
+
+        // Hard error: tenant inactive or all items unavailable
+        if (! $result['success'] && $result['error'] !== null) {
+            return gale()
+                ->dispatch('toast', ['type' => 'error', 'message' => $result['error']])
+                ->messages(['reorder' => $result['error']]);
+        }
+
+        // Cart conflict: ask user to confirm replacement
+        if ($result['cart_conflict']) {
+            return gale()->state([
+                'reorder_conflict' => true,
+                'reorder_conflict_tenant_name' => $result['conflict_tenant_name'],
+            ]);
+        }
+
+        // Write cart to session
+        $reorderService->writeCartToSession($result['_tenant_id'], $result['_cart_items']);
+
+        // Build response state: warnings, price changes, and redirect URL
+        $warnings = $result['warnings'];
+        $priceChanges = $result['price_changes'];
+
+        // Store warnings + price changes in session for display on cart page
+        if (! empty($warnings) || ! empty($priceChanges)) {
+            session()->flash('reorder_warnings', $warnings);
+            session()->flash('reorder_price_changes', $priceChanges);
+        }
+
+        // BR-364: Redirect to tenant cart page
+        return gale()
+            ->redirect($result['redirect_url'])
+            ->with('success', __('Your cart has been pre-filled with items from your previous order.'));
     }
 
     /**

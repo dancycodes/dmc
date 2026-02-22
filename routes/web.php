@@ -230,6 +230,11 @@ Route::middleware('auth')->group(function () {
     // BR-241: Server re-validates before processing
     Route::post('/my-orders/{order}/cancel', [\App\Http\Controllers\Client\OrderController::class, 'cancel'])->name('client.orders.cancel');
 
+    // Reorder from Past Order (F-199)
+    // BR-356: Only Completed, Delivered, or Picked Up orders qualify
+    // BR-364: Redirects to tenant domain with pre-filled cart
+    Route::post('/my-orders/{order}/reorder', [\App\Http\Controllers\Client\OrderController::class, 'reorder'])->name('client.orders.reorder');
+
     // Order Rating (F-176)
     // BR-388: Only Completed orders can be rated
     // BR-390: Each order can be rated exactly once

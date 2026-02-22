@@ -35,6 +35,10 @@
         canRate: {{ $canRate ? 'true' : 'false' }},
         rated: {{ ($existingRating !== null) ? 'true' : 'false' }},
         showCancelConfirm: false,
+        showReorderConflictConfirm: false,
+        reorder_conflict: false,
+        reorder_conflict_tenant_name: '',
+        force_replace: false,
         submittedStars: {{ $existingRating?->stars ?? 0 }},
         submittedReview: '{{ addslashes($existingRating?->review ?? '') }}',
         hoverStars: 0,
@@ -44,6 +48,19 @@
         previousStatus: '{{ $order->status }}',
         showStatusToast: false,
         statusToastMessage: '',
+
+        initiateReorder() {
+            this.reorder_conflict = false;
+            this.reorder_conflict_tenant_name = '';
+            this.force_replace = false;
+            $action('{{ url('/my-orders/' . $order->id . '/reorder') }}');
+        },
+
+        confirmReplaceCart() {
+            this.force_replace = true;
+            this.showReorderConflictConfirm = false;
+            $action('{{ url('/my-orders/' . $order->id . '/reorder') }}', { include: ['force_replace'] });
+        },
 
         formatCountdown(seconds) {
             if (seconds <= 0) return '0:00';
@@ -95,7 +112,7 @@
         }
     }"
     x-component="order-tracker"
-    x-init="startCountdown(); $watch('currentStatus', () => checkStatusChange())"
+    x-init="startCountdown(); $watch('currentStatus', () => checkStatusChange()); $watch('reorder_conflict', val => { if (val) showReorderConflictConfirm = true; })"
     x-interval.10s.visible="$action('{{ url('/my-orders/' . $order->id . '/refresh-status') }}')"
 >
 
@@ -134,7 +151,7 @@
 
         {{-- Order Header --}}
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 flex-wrap">
                 <h1 class="text-2xl font-display font-bold text-on-surface-strong">
                     #{{ $order->order_number }}
                 </h1>
@@ -144,9 +161,110 @@
                     x-text="currentStatusLabel"
                 ></span>
             </div>
-            <p class="text-sm text-on-surface/60">
-                {{ __('Placed on') }} {{ $order->created_at->format('M d, Y') }} {{ __('at') }} {{ $order->created_at->format('H:i') }}
-            </p>
+            <div class="flex items-center gap-3 flex-wrap">
+                <p class="text-sm text-on-surface/60">
+                    {{ __('Placed on') }} {{ $order->created_at->format('M d, Y') }} {{ __('at') }} {{ $order->created_at->format('H:i') }}
+                </p>
+
+                {{-- F-199: Reorder button — BR-356: Only on Completed/Delivered/Picked Up orders --}}
+                @if(in_array($order->status, \App\Services\ReorderService::REORDER_ELIGIBLE_STATUSES))
+                    <button
+                        type="button"
+                        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-primary text-on-primary hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        :disabled="$fetching()"
+                        x-on:click="initiateReorder()"
+                        title="{{ __('Reorder these items') }}"
+                    >
+                        <span x-show="!$fetching()">
+                            {{-- RotateCcw icon (Lucide, sm=16) --}}
+                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                        </span>
+                        <span x-show="$fetching()" class="animate-spin-slow">
+                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+                        </span>
+                        <span x-show="!$fetching()">{{ __('Reorder') }}</span>
+                        <span x-show="$fetching()">{{ __('Preparing...') }}</span>
+                    </button>
+                @endif
+            </div>
+        </div>
+
+        {{-- F-199: Reorder validation error message --}}
+        <p x-message="reorder" class="text-sm text-danger mb-4"></p>
+
+        {{-- F-199: Reorder Cart Conflict Confirmation Modal (BR-365) --}}
+        <div
+            x-show="showReorderConflictConfirm"
+            x-cloak
+            class="fixed inset-0 z-50 flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reorder-conflict-modal-title"
+        >
+            {{-- Backdrop --}}
+            <div
+                class="absolute inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm"
+                x-on:click="showReorderConflictConfirm = false"
+            ></div>
+
+            {{-- Modal Panel --}}
+            <div
+                class="relative z-10 bg-surface dark:bg-surface rounded-2xl shadow-dropdown border border-outline dark:border-outline w-full max-w-sm p-6"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0 scale-95"
+                x-transition:enter-end="opacity-100 scale-100"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100 scale-100"
+                x-transition:leave-end="opacity-0 scale-95"
+            >
+                {{-- Warning Icon --}}
+                <div class="flex justify-center mb-4">
+                    <div class="w-14 h-14 rounded-full bg-warning-subtle flex items-center justify-center">
+                        {{-- ShoppingCart icon (Lucide, lg=24) --}}
+                        <svg class="w-7 h-7 text-warning" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>
+                    </div>
+                </div>
+
+                {{-- Title --}}
+                <h3 id="reorder-conflict-modal-title" class="text-lg font-display font-bold text-on-surface-strong text-center mb-2">
+                    {{ __('Replace your current cart?') }}
+                </h3>
+
+                {{-- Description --}}
+                <p class="text-sm text-on-surface/70 text-center mb-6">
+                    {{ __('You have items in your cart from') }}
+                    <span class="font-semibold text-on-surface-strong" x-text="reorder_conflict_tenant_name"></span>
+                    {{ __('. Reordering will replace those items.') }}
+                </p>
+
+                {{-- Actions --}}
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <button
+                        type="button"
+                        class="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium border border-outline dark:border-outline text-on-surface hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors"
+                        x-on:click="showReorderConflictConfirm = false"
+                        :disabled="$fetching()"
+                    >
+                        {{ __('Keep Current Cart') }}
+                    </button>
+
+                    <button
+                        type="button"
+                        class="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium bg-warning text-on-warning hover:bg-warning/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        :disabled="$fetching()"
+                        x-on:click="confirmReplaceCart()"
+                    >
+                        <span x-show="!$fetching()">
+                            {{-- RotateCcw icon (Lucide, sm=16) --}}
+                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                        </span>
+                        <span x-show="$fetching()" class="animate-spin-slow">
+                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+                        </span>
+                        {{ __('Replace Cart & Reorder') }}
+                    </button>
+                </div>
+            </div>
         </div>
 
         {{-- Cook Info Bar --}}

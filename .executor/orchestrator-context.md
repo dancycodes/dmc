@@ -1,10 +1,10 @@
 # Current Orchestrator Context
 ## Last Action
-- Completed F-197 (Favorite Meal Toggle, 0 retries), merged to main. Started F-198.
+- Completed F-198 (Favorites List View, 0 impl + 1 review retries), merged to main. Started F-199.
 ## Active Features
-- F-198: IMPLEMENT phase (retry 0) — Favorites List View
+- F-199: IMPLEMENT phase (retry 0) — Reorder from Past Order
 ## Next Up
-- 9 more eligible features after F-198
+- 8 more eligible features after F-199
 ## Recent Patterns
 - gale_compliance (15), ui_compliance (9), business_logic (7) most common error categories
 - Blade data islands: always {!! json_encode(..., JSON_HEX_*) !!} never @json or {{ json_encode }}
