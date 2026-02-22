@@ -83,6 +83,9 @@ class TenantLandingService
         // F-180: Testimonial submission context — eligibility + duplicate detection.
         $testimonialContext = $this->testimonialService->getSubmissionContext($currentUser, $tenant);
 
+        // F-182: Approved testimonials for display on the landing page.
+        $testimonialsDisplay = $this->testimonialService->getApprovedTestimonialsForDisplay($tenant);
+
         return [
             'tenant' => $tenant,
             'themeConfig' => $themeConfig,
@@ -96,6 +99,7 @@ class TenantLandingService
             'cancellationWindowMinutes' => $cancellationWindowMinutes,
             'minimumOrderAmount' => $minimumOrderAmount,
             'testimonialContext' => $testimonialContext,
+            'testimonialsDisplay' => $testimonialsDisplay,
         ];
     }
 
