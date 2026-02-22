@@ -2594,5 +2594,9 @@
     "(empty)": "(vide)",
     "(removed)": "(supprimé)",
     "null": "null",
-    "System": "Système"
+    "System": "Système",
+    "Quick Actions": "Actions rapides",
+    "Complete Setup": "Terminer la configuration",
+    "View Pending Orders": "Voir les commandes en attente",
+    "Update Availability": "Mettre à jour la disponibilité"
 }

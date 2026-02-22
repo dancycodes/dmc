@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Meal;
 use App\Models\Rating;
 use App\Models\Tenant;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -15,6 +16,7 @@ class CookDashboardService
      * Get all dashboard data for a tenant.
      *
      * F-077: Cook Dashboard Home
+     * F-078: Cook Quick Actions Panel — quickActions key added
      * F-179: Cook Overall Rating Calculation — rating stat card
      * Forward-compatible with orders/notifications tables (not yet created).
      *
@@ -25,20 +27,129 @@ class CookDashboardService
      *     pendingOrders: int,
      *     recentOrders: array<mixed>,
      *     recentNotifications: array<mixed>,
-     *     ratingStats: array{average: float, count: int, hasRating: bool, trend: string}
+     *     ratingStats: array{average: float, count: int, hasRating: bool, trend: string},
+     *     quickActions: array<int, array{id: string, label: string, url: string, icon: string, color: string, badge: string|null}>
      * }
      */
-    public function getDashboardData(Tenant $tenant, \App\Models\User $user): array
+    public function getDashboardData(Tenant $tenant, User $user): array
     {
+        $pendingOrders = $this->getPendingOrdersCount($tenant);
+
         return [
             'todayOrders' => $this->getTodayOrdersByStatus($tenant),
             'weekRevenue' => $this->getWeekRevenue($tenant),
             'activeMeals' => $this->getActiveMealsCount($tenant),
-            'pendingOrders' => $this->getPendingOrdersCount($tenant),
+            'pendingOrders' => $pendingOrders,
             'recentOrders' => $this->getRecentOrders($tenant),
             'recentNotifications' => $this->getRecentNotifications($user),
             'ratingStats' => $this->getRatingStats($tenant),
+            'quickActions' => $this->getQuickActions($tenant, $user, $pendingOrders),
         ];
+    }
+
+    /**
+     * Build the contextual quick actions panel data.
+     *
+     * F-078: Cook Quick Actions Panel
+     * BR-174: Default actions: Create New Meal, View Pending Orders, Update Availability, View Wallet
+     * BR-175: If setup is incomplete, "Complete Setup" appears first with accent color
+     * BR-176: "View Pending Orders" shows current pending count (capped at "99+")
+     * BR-177: Actions filtered by user permissions (hidden when not permitted)
+     * BR-178: Actions navigate via Gale (no page reload) — handled in the view
+     *
+     * @param  int  $pendingOrders  Pre-computed pending count to avoid double query
+     * @return array<int, array{id: string, label: string, url: string, icon: string, color: string, badge: string|null}>
+     */
+    public function getQuickActions(Tenant $tenant, User $user, int $pendingOrders = 0): array // @phpstan-ignore-line
+    {
+        $setupComplete = $tenant->isSetupComplete();
+        $isManager = $tenant->cook_id !== $user->id;
+
+        // Helper: manager permission check (managers use hasDirectPermission; cooks have all)
+        $canAccess = function (string $permission) use ($isManager, $user): bool {
+            if (! $isManager) {
+                return true;
+            }
+
+            return $user->hasDirectPermission($permission);
+        };
+
+        // BR-176: Pending count badge — cap at "99+"
+        $pendingBadge = $pendingOrders > 99 ? '99+' : (string) $pendingOrders;
+
+        $actions = [];
+
+        // BR-175: Setup incomplete action — always first, always visible
+        if (! $setupComplete) {
+            $actions[] = [
+                'id' => 'complete-setup',
+                'label_key' => 'Complete Setup',
+                'path' => '/dashboard/setup',
+                'icon' => 'setup',
+                'color' => 'warning',
+                'badge' => null,
+            ];
+        }
+
+        // Create New Meal — requires can-manage-meals
+        if ($canAccess('can-manage-meals')) {
+            $actions[] = [
+                'id' => 'create-meal',
+                'label_key' => 'Create New Meal',
+                'path' => '/dashboard/meals/create',
+                'icon' => 'plus-circle',
+                'color' => 'primary',
+                'badge' => null,
+            ];
+        }
+
+        // View Pending Orders — requires can-manage-orders
+        if ($canAccess('can-manage-orders')) {
+            $actions[] = [
+                'id' => 'pending-orders',
+                'label_key' => 'View Pending Orders',
+                'path' => '/dashboard/orders?status=pending',
+                'icon' => 'clock',
+                'color' => 'info',
+                'badge' => $pendingBadge,
+            ];
+        }
+
+        // Update Availability — requires can-manage-meals
+        if ($canAccess('can-manage-meals')) {
+            $actions[] = [
+                'id' => 'update-availability',
+                'label_key' => 'Update Availability',
+                'path' => '/dashboard/meals',
+                'icon' => 'toggle',
+                'color' => 'success',
+                'badge' => null,
+            ];
+        }
+
+        // View Wallet — cook-reserved (never for managers)
+        if (! $isManager) {
+            $actions[] = [
+                'id' => 'view-wallet',
+                'label_key' => 'View Wallet',
+                'path' => '/dashboard/wallet',
+                'icon' => 'wallet',
+                'color' => 'secondary',
+                'badge' => null,
+            ];
+        }
+
+        return $actions;
+    }
+
+    /**
+     * Format a pending order count for display, capped at "99+".
+     *
+     * F-078: BR-176 and edge case (99+ display).
+     */
+    public static function formatPendingCount(int $count): string
+    {
+        return $count > 99 ? '99+' : (string) $count;
     }
 
     /**

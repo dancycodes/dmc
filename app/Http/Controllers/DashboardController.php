@@ -67,6 +67,8 @@ class DashboardController extends Controller
             'recentOrders' => $dashboardData['recentOrders'],
             'recentNotifications' => $dashboardData['recentNotifications'],
             'ratingStats' => $dashboardData['ratingStats'],
+            // F-078: Quick actions panel — resolved with translated labels and absolute URLs
+            'quickActions' => $this->resolveQuickActions($dashboardData['quickActions']),
             // F-211: Manager-specific data
             'isManager' => $isManager,
             'managerHasAnyPermission' => $hasAnyPermission,
@@ -78,6 +80,7 @@ class DashboardController extends Controller
      * Refresh dashboard stats via Gale polling.
      *
      * F-077: BR-170 — Dashboard data updates in real-time via Gale SSE.
+     * F-078: BR-179 — Quick actions panel updates in real-time (pending count).
      * Called by x-interval on the dashboard view.
      */
     public function refreshDashboardStats(Request $request, CookDashboardService $dashboardService): mixed
@@ -112,7 +115,33 @@ class DashboardController extends Controller
                 'count' => $ratingStats['count'],
                 'hasRating' => $ratingStats['hasRating'],
                 'trend' => $ratingStats['trend'],
+            ])
+            // F-078: BR-179 — Quick actions panel real-time update
+            ->componentState('quick-actions', [
+                'actions' => $this->resolveQuickActions($dashboardData['quickActions']),
             ]);
+    }
+
+    /**
+     * Resolve quick action definitions into view-ready format (translate labels, build URLs).
+     *
+     * F-078: Separates service layer (container-free) from view layer (needs translator + url()).
+     * The service returns `label_key` (plain English string) and `path` (relative URL).
+     * This method maps them to `label` (translated) and `url` (absolute URL).
+     *
+     * @param  array<int, array{id: string, label_key: string, path: string, icon: string, color: string, badge: string|null}>  $rawActions
+     * @return array<int, array{id: string, label: string, url: string, icon: string, color: string, badge: string|null}>
+     */
+    private function resolveQuickActions(array $rawActions): array
+    {
+        return array_map(fn (array $action) => [
+            'id' => $action['id'],
+            'label' => __($action['label_key']),
+            'url' => url($action['path']),
+            'icon' => $action['icon'],
+            'color' => $action['color'],
+            'badge' => $action['badge'],
+        ], $rawActions);
     }
 
     /**

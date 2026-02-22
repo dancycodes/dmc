@@ -241,6 +241,107 @@
         </div>
     </div>
 
+    {{--
+        F-078: Cook Quick Actions Panel
+        --------------------------------
+        BR-174: Default actions: Create New Meal, View Pending Orders, Update Availability, View Wallet
+        BR-175: If setup incomplete, "Complete Setup" is first action with warning/accent color
+        BR-176: "View Pending Orders" shows pending count (capped at "99+")
+        BR-177: Actions filtered by user permissions — hidden when not permitted
+        BR-178: Navigation via Gale (x-navigate on each action link)
+        BR-179: Real-time updates via x-component targeting from refreshDashboardStats()
+        Edge case: All permissions revoked from manager → no actions → panel hidden entirely
+        Edge case: 99+ pending orders → badge shows "99+"
+    --}}
+    @if(count($quickActions) > 0)
+    <div
+        x-data="{
+            actions: @js($quickActions)
+        }"
+        x-component="quick-actions"
+        class="bg-surface dark:bg-surface rounded-xl shadow-card overflow-hidden"
+    >
+        <div class="px-5 py-4 border-b border-outline dark:border-outline">
+            <h2 class="text-base font-semibold text-on-surface-strong dark:text-on-surface-strong">{{ __('Quick Actions') }}</h2>
+        </div>
+
+        {{-- Desktop: horizontal row. Mobile: 2x2 grid --}}
+        <div class="p-4">
+            <template x-if="actions.length > 0">
+                <div class="grid grid-cols-2 sm:grid-cols-2 md:flex md:flex-row md:flex-wrap gap-3">
+                    <template x-for="action in actions" :key="action.id">
+                        <a
+                            :href="action.url"
+                            x-navigate
+                            class="group relative flex flex-col sm:flex-row items-center gap-2 sm:gap-3 px-4 py-3 rounded-xl border transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 md:flex-1 md:min-w-[140px] md:max-w-[200px]"
+                            :class="{
+                                'border-warning/30 bg-warning-subtle dark:bg-warning-subtle text-warning dark:text-warning hover:border-warning/60': action.color === 'warning',
+                                'border-primary/20 bg-primary-subtle dark:bg-primary-subtle text-primary dark:text-primary hover:border-primary/40': action.color === 'primary',
+                                'border-info/20 bg-info-subtle dark:bg-info-subtle text-info dark:text-info hover:border-info/40': action.color === 'info',
+                                'border-success/20 bg-success-subtle dark:bg-success-subtle text-success dark:text-success hover:border-success/40': action.color === 'success',
+                                'border-secondary/20 bg-secondary-subtle dark:bg-secondary-subtle text-secondary dark:text-secondary hover:border-secondary/40': action.color === 'secondary',
+                            }"
+                        >
+                            {{-- Icon --}}
+                            <span class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center"
+                                :class="{
+                                    'bg-warning/15 dark:bg-warning/15': action.color === 'warning',
+                                    'bg-primary/15 dark:bg-primary/15': action.color === 'primary',
+                                    'bg-info/15 dark:bg-info/15': action.color === 'info',
+                                    'bg-success/15 dark:bg-success/15': action.color === 'success',
+                                    'bg-secondary/15 dark:bg-secondary/15': action.color === 'secondary',
+                                }"
+                            >
+                                {{-- Setup / wand icon --}}
+                                <template x-if="action.icon === 'setup'">
+                                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"></path></svg>
+                                </template>
+                                {{-- Plus-circle / create meal --}}
+                                <template x-if="action.icon === 'plus-circle'">
+                                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 12h8"></path><path d="M12 8v8"></path></svg>
+                                </template>
+                                {{-- Clock / pending orders --}}
+                                <template x-if="action.icon === 'clock'">
+                                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                </template>
+                                {{-- Toggle / availability --}}
+                                <template x-if="action.icon === 'toggle'">
+                                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="12" x="2" y="6" rx="6"></rect><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"></circle></svg>
+                                </template>
+                                {{-- Wallet --}}
+                                <template x-if="action.icon === 'wallet'">
+                                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4z"></path></svg>
+                                </template>
+                            </span>
+
+                            {{-- Label + badge --}}
+                            <div class="flex-1 text-center sm:text-left min-w-0">
+                                <div class="flex items-center justify-center sm:justify-start gap-1.5 flex-wrap">
+                                    <span class="text-sm font-medium leading-tight" x-text="action.label"></span>
+                                    {{-- Badge: pending count or other --}}
+                                    <template x-if="action.badge !== null">
+                                        <span
+                                            class="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-xs font-bold leading-none text-on-primary bg-primary"
+                                            :class="{
+                                                'bg-warning text-on-primary': action.color === 'warning',
+                                                'bg-primary text-on-primary': action.color === 'primary',
+                                                'bg-info text-on-primary': action.color === 'info',
+                                                'bg-success text-on-primary': action.color === 'success',
+                                                'bg-secondary text-on-secondary': action.color === 'secondary',
+                                            }"
+                                            x-text="action.badge"
+                                        ></span>
+                                    </template>
+                                </div>
+                            </div>
+                        </a>
+                    </template>
+                </div>
+            </template>
+        </div>
+    </div>
+    @endif
+
     {{-- Recent Orders & Notifications Grid --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {{-- Recent Orders (2/3 width on desktop) --}}
