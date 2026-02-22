@@ -404,6 +404,14 @@ Route::middleware('main.domain')->group(function () {
 
         // Activity Log Viewer (F-064)
         Route::get('/activity-log', [ActivityLogController::class, 'index'])->name('admin.activity-log.index');
+
+        // System Announcement Notifications (F-195)
+        Route::get('/announcements', [\App\Http\Controllers\Admin\AnnouncementController::class, 'index'])->name('admin.announcements.index');
+        Route::get('/announcements/create', [\App\Http\Controllers\Admin\AnnouncementController::class, 'create'])->name('admin.announcements.create');
+        Route::post('/announcements', [\App\Http\Controllers\Admin\AnnouncementController::class, 'store'])->name('admin.announcements.store');
+        Route::get('/announcements/{announcement}/edit', [\App\Http\Controllers\Admin\AnnouncementController::class, 'edit'])->name('admin.announcements.edit');
+        Route::post('/announcements/{announcement}', [\App\Http\Controllers\Admin\AnnouncementController::class, 'update'])->name('admin.announcements.update');
+        Route::post('/announcements/{announcement}/cancel', [\App\Http\Controllers\Admin\AnnouncementController::class, 'cancel'])->name('admin.announcements.cancel');
     });
 });
 

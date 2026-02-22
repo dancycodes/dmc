@@ -45,3 +45,9 @@ Schedule::command('dancymeals:verify-pending-transfers')->everyFiveMinutes();
  * Runs every 15 minutes to detect and escalate overdue complaints.
  */
 Schedule::command('dancymeals:escalate-overdue-complaints')->everyFifteenMinutes();
+
+/*
+ * F-195 BR-317: Dispatch scheduled announcements at their specified time.
+ * Runs every minute to ensure timely dispatch of scheduled announcements.
+ */
+Schedule::command('dancymeals:dispatch-scheduled-announcements')->everyMinute();
