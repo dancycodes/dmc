@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AddressController;
+use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\CommissionController;
 use App\Http\Controllers\Admin\ComplaintController;
 use App\Http\Controllers\Admin\CookAssignmentController;
@@ -392,6 +393,9 @@ Route::middleware('main.domain')->group(function () {
         // Platform settings (F-063)
         Route::get('/settings', [PlatformSettingController::class, 'index'])->name('admin.settings.index');
         Route::post('/settings', [PlatformSettingController::class, 'update'])->name('admin.settings.update');
+
+        // Activity Log Viewer (F-064)
+        Route::get('/activity-log', [ActivityLogController::class, 'index'])->name('admin.activity-log.index');
     });
 });
 
