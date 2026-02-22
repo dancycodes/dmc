@@ -59,7 +59,7 @@ class DiscoveryController extends Controller
         if (Auth::check()) {
             /** @var \App\Models\User $user */
             $user = Auth::user();
-            $userFavoriteCookIds = $user->favoriteCooks()->pluck('cook_user_id')->toArray();
+            $userFavoriteCookIds = $user->favoriteCooks()->allRelatedIds()->toArray();
         }
 
         $data = [
