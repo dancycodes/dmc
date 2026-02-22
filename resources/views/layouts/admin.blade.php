@@ -83,6 +83,12 @@
                     'permission' => 'can-view-platform-analytics',
                 ],
                 [
+                    'url' => '/vault-entry/analytics/growth',
+                    'icon' => '<path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>',
+                    'label' => __('Growth Metrics'),
+                    'permission' => 'can-view-platform-analytics',
+                ],
+                [
                     'url' => '/vault-entry/finance/reports',
                     'icon' => '<line x1="12" x2="12" y1="1" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>',
                     'label' => __('Finance'),

@@ -432,6 +432,9 @@ Route::middleware('main.domain')->group(function () {
         // Admin Cook Performance Metrics (F-206)
         Route::get('/analytics/performance', [\App\Http\Controllers\Admin\CookPerformanceController::class, 'index'])->name('admin.analytics.performance');
 
+        // Admin Growth Metrics (F-207)
+        Route::get('/analytics/growth', [\App\Http\Controllers\Admin\AdminGrowthMetricsController::class, 'index'])->name('admin.analytics.growth');
+
         // Financial Reports & Export (F-058)
         Route::get('/finance/reports', [\App\Http\Controllers\Admin\FinancialReportsController::class, 'index'])->name('admin.finance.reports');
         Route::get('/finance/reports/export-csv', [\App\Http\Controllers\Admin\FinancialReportsController::class, 'exportCsv'])->name('admin.finance.reports.export-csv');
