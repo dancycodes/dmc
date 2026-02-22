@@ -311,6 +311,23 @@
                     <path d="m9 18 6-6-6-6"></path>
                 </svg>
             </a>
+
+            {{-- Favorites (F-198) --}}
+            <a href="{{ url('/my-favorites') }}" class="flex items-center gap-4 p-4 bg-surface-alt dark:bg-surface-alt rounded-xl border border-outline hover:border-primary hover:shadow-card transition-all duration-200 group">
+                <span class="w-10 h-10 rounded-full bg-danger-subtle flex items-center justify-center shrink-0 group-hover:bg-danger group-hover:text-on-danger transition-colors duration-200">
+                    {{-- Heart icon (Lucide md=20) --}}
+                    <svg class="w-5 h-5 text-danger group-hover:text-on-danger" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+                    </svg>
+                </span>
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-on-surface-strong">{{ __('Favorites') }}</p>
+                    <p class="text-xs text-on-surface mt-0.5">{{ __('Your saved cooks and meals') }}</p>
+                </div>
+                <svg class="w-4 h-4 text-on-surface ml-auto shrink-0 opacity-50 group-hover:opacity-100 transition-opacity" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m9 18 6-6-6-6"></path>
+                </svg>
+            </a>
         </div>
     </div>
 </div>

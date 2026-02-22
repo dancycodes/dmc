@@ -2674,5 +2674,25 @@
     "Send message": "Envoyer le message",
     "Enter to send \u00b7 Shift+Enter for new line": "Entr\u00e9e pour envoyer \u00b7 Maj+Entr\u00e9e pour nouvelle ligne",
     "New Message": "Nouveau message",
-    ":name: :preview": ":name: :preview"
+    ":name: :preview": ":name: :preview",
+
+    "My Favorites": "Mes favoris",
+    "Your saved cooks and meals in one place.": "Vos cuisiniers et plats sauvegardés en un seul endroit.",
+    "Favorite Cooks": "Cuisiniers favoris",
+    "Favorite Meals": "Plats favoris",
+    "No favorite cooks yet": "Aucun cuisinier favori",
+    "No favorite cooks yet. Discover cooks and add them to your favorites!": "Aucun cuisinier favori pour l'instant. Découvrez des cuisiniers et ajoutez-les à vos favoris !",
+    "No favorite meals yet": "Aucun plat favori",
+    "No favorite meals yet. Browse cooks and save the meals you love!": "Aucun plat favori pour l'instant. Parcourez les cuisiniers et sauvegardez les plats que vous aimez !",
+    "Your saved cooks and meals": "Vos cuisiniers et plats sauvegardés",
+    "Cook not found in favorites.": "Cuisinier introuvable dans les favoris.",
+    "Meal not found in favorites.": "Plat introuvable dans les favoris.",
+    "View Meal": "Voir le plat",
+    "XAF": "XAF",
+    "Price TBD": "Prix à définir",
+    "Favorites": "Favoris",
+    "Discover Cooks": "Découvrir des cuisiniers",
+    "Removed from favorites": "Retiré des favoris",
+    "Remove from favorites": "Retirer des favoris",
+    "Favorites tabs": "Onglets des favoris"
 }
