@@ -54,7 +54,7 @@ class CheckoutService
     /**
      * Get checkout session data for a tenant.
      *
-     * @return array{delivery_method: string|null, delivery_location: array|null, delivery_fee: int|null, pickup_location_id: int|null, phone: string|null, payment_provider: string|null, payment_phone: string|null, use_wallet: bool}
+     * @return array{delivery_method: string|null, delivery_location: array|null, delivery_fee: int|null, pickup_location_id: int|null, phone: string|null, payment_provider: string|null, payment_phone: string|null, use_wallet: bool, scheduled_date: string|null}
      */
     public function getCheckoutData(int $tenantId): array
     {
@@ -67,6 +67,7 @@ class CheckoutService
             'payment_provider' => null,
             'payment_phone' => null,
             'use_wallet' => false,
+            'scheduled_date' => null,
         ]);
     }
 
@@ -689,7 +690,7 @@ class CheckoutService
      */
     public function getSummaryBackUrl(): string
     {
-        return url('/checkout/phone');
+        return url('/checkout/schedule');
     }
 
     /**
@@ -1018,6 +1019,32 @@ class CheckoutService
         }
 
         return ['valid' => true, 'error' => null];
+    }
+
+    /**
+     * F-148: Save scheduled date to checkout session.
+     *
+     * BR-343: The order stores the scheduled date for cook reference.
+     * Pass null to clear the scheduled date (revert to next available slot).
+     */
+    public function setScheduledDate(int $tenantId, ?string $date): void
+    {
+        $data = $this->getCheckoutData($tenantId);
+        $data['scheduled_date'] = $date;
+
+        session([$this->getSessionKey($tenantId) => $data]);
+    }
+
+    /**
+     * F-148: Get the saved scheduled date from checkout session.
+     *
+     * Returns null if no date is scheduled (next available slot default).
+     */
+    public function getScheduledDate(int $tenantId): ?string
+    {
+        $data = $this->getCheckoutData($tenantId);
+
+        return $data['scheduled_date'] ?? null;
     }
 
     /**

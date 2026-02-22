@@ -62,13 +62,20 @@
                 <span class="text-success font-semibold">{{ __('Phone') }}</span>
                 <svg class="w-4 h-4 text-on-surface/30 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
 
-                {{-- Step 4: Review (current) --}}
-                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-on-primary text-xs font-bold shrink-0">4</span>
+                {{-- Step 4: Schedule (completed) --}}
+                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-success text-on-success text-xs font-bold shrink-0">
+                    <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+                </span>
+                <span class="text-success font-semibold">{{ __('Schedule') }}</span>
+                <svg class="w-4 h-4 text-on-surface/30 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+
+                {{-- Step 5: Review (current) --}}
+                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-on-primary text-xs font-bold shrink-0">5</span>
                 <span class="text-primary font-semibold">{{ __('Review') }}</span>
                 <svg class="w-4 h-4 text-on-surface/30 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
 
-                {{-- Step 5: Payment (upcoming) --}}
-                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-outline text-on-surface text-xs font-bold shrink-0">5</span>
+                {{-- Step 6: Payment (upcoming) --}}
+                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-outline text-on-surface text-xs font-bold shrink-0">6</span>
                 <span class="text-on-surface/50">{{ __('Payment') }}</span>
             </div>
         </div>
@@ -256,6 +263,35 @@
                             <p class="text-xs text-on-surface/60">{{ $phone }}</p>
                         </div>
                     </div>
+
+                    {{-- F-148: Scheduled date (shown if scheduling was selected) --}}
+                    @if (!empty($scheduledDate))
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-secondary-subtle flex items-center justify-center shrink-0">
+                                <svg class="w-4 h-4 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-on-surface-strong">{{ __('Scheduled for') }}</p>
+                                <p class="text-xs text-on-surface/60">{{ $scheduledDate }}</p>
+                            </div>
+                            <a href="{{ route('tenant.checkout.schedule') }}" class="ml-auto text-xs font-medium text-primary hover:text-primary-hover transition-colors duration-200" x-navigate>
+                                {{ __('Change') }}
+                            </a>
+                        </div>
+                    @else
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-primary-subtle flex items-center justify-center shrink-0">
+                                <svg class="w-4 h-4 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-on-surface-strong">{{ __('Delivery Time') }}</p>
+                                <p class="text-xs text-on-surface/60">{{ __('As soon as possible') }}</p>
+                            </div>
+                            <a href="{{ route('tenant.checkout.schedule') }}" class="ml-auto text-xs font-medium text-primary hover:text-primary-hover transition-colors duration-200" x-navigate>
+                                {{ __('Schedule') }}
+                            </a>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

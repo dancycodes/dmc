@@ -11,6 +11,7 @@ use App\Models\Tenant;
 use App\Services\CartService;
 use App\Services\CheckoutService;
 use App\Services\OrderNotificationService;
+use App\Services\OrderSchedulingService;
 use App\Services\PaymentNotificationService;
 use App\Services\PaymentReceiptService;
 use App\Services\PaymentRetryService;
@@ -49,6 +50,7 @@ class CheckoutController extends Controller
         private PaymentRetryService $paymentRetryService,
         private PaymentReceiptService $paymentReceiptService,
         private WalletPaymentService $walletPaymentService,
+        private OrderSchedulingService $orderSchedulingService,
     ) {}
 
     /**
@@ -699,13 +701,187 @@ class CheckoutController extends Controller
 
         $backUrl = $this->checkoutService->getSummaryBackUrl();
 
+        // F-148: Get scheduled date for display (null = ASAP)
+        $rawScheduledDate = $this->checkoutService->getScheduledDate($tenant->id);
+        $scheduledDate = $rawScheduledDate
+            ? $this->orderSchedulingService->formatScheduledDate($rawScheduledDate)
+            : null;
+
         return gale()->view('tenant.checkout.summary', [
             'tenant' => $tenant,
             'orderSummary' => $orderSummary,
             'deliveryMethod' => $deliveryMethod,
             'phone' => $phone,
             'backUrl' => $backUrl,
+            'scheduledDate' => $scheduledDate,
         ], web: true);
+    }
+
+    /**
+     * F-148: Display the order scheduling step.
+     *
+     * BR-335: Scheduling is optional; default is the next available slot.
+     * BR-336: Calendar shows only dates where the cook has available schedule entries.
+     * BR-337: Unavailable dates are greyed out and not selectable.
+     * BR-338: Maximum scheduling window is 14 days from today.
+     * BR-339: Today and past dates are not selectable.
+     */
+    public function schedule(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        if (! auth()->check()) {
+            return gale()->redirect(route('login'))
+                ->with('message', __('Please login to proceed with your order.'));
+        }
+
+        // Verify cart is not empty
+        $cart = $this->cartService->getCart($tenant->id);
+        if (empty($cart['items'])) {
+            return gale()->redirect(url('/cart'))
+                ->with('message', __('Your cart is empty.'));
+        }
+
+        // Verify a delivery method has been selected
+        $deliveryMethod = $this->checkoutService->getDeliveryMethod($tenant->id);
+        if (! $deliveryMethod) {
+            return gale()->redirect(url('/checkout/delivery-method'))
+                ->with('message', __('Please select a delivery method first.'));
+        }
+
+        // Get available dates and current scheduled date
+        $availableDates = $this->orderSchedulingService->getAvailableDates($tenant->id);
+        $currentScheduledDate = $this->checkoutService->getScheduledDate($tenant->id);
+        $nextAvailableSlot = $this->orderSchedulingService->getNextAvailableSlot($tenant->id);
+        $hasAvailableDates = $this->orderSchedulingService->hasAvailableDates($tenant->id);
+
+        // BR-341: If a date is already selected, check cart availability warnings
+        $cartWarnings = [];
+        if ($currentScheduledDate) {
+            $cartWarnings = $this->orderSchedulingService->getUnavailableCartItems(
+                $tenant->id,
+                $currentScheduledDate,
+                $cart['items'] ?? []
+            );
+        }
+
+        return gale()->view('tenant.checkout.schedule', [
+            'tenant' => $tenant,
+            'availableDates' => $availableDates,
+            'currentScheduledDate' => $currentScheduledDate,
+            'nextAvailableSlot' => $nextAvailableSlot,
+            'hasAvailableDates' => $hasAvailableDates,
+            'cartWarnings' => $cartWarnings,
+            'cartSummary' => $cart['summary'] ?? [],
+        ], web: true);
+    }
+
+    /**
+     * F-148: Save the scheduled date and proceed to summary.
+     *
+     * BR-335: If no date selected, order defaults to next available slot.
+     * BR-337: Validates that the selected date is available.
+     * BR-338: Validates the 14-day window.
+     * BR-339: Validates today/past dates are rejected.
+     * BR-343: Stores the scheduled date with the order.
+     */
+    public function saveSchedule(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        if (! auth()->check()) {
+            return gale()->redirect(route('login'))
+                ->with('message', __('Please login to proceed with your order.'));
+        }
+
+        // Verify cart is not empty
+        $cart = $this->cartService->getCart($tenant->id);
+        if (empty($cart['items'])) {
+            return gale()->redirect(url('/cart'))
+                ->with('message', __('Your cart is empty.'));
+        }
+
+        $validated = $request->validateState([
+            'schedule_type' => 'required|in:asap,scheduled',
+            'scheduled_date' => 'nullable|string|date_format:Y-m-d',
+        ]);
+
+        $scheduleType = $validated['schedule_type'];
+        $scheduledDate = $validated['scheduled_date'] ?? null;
+
+        // BR-335: If "as soon as possible", clear any scheduled date
+        if ($scheduleType === 'asap' || ! $scheduledDate) {
+            $this->checkoutService->setScheduledDate($tenant->id, null);
+
+            return gale()->redirect(url('/checkout/summary'))
+                ->with('message', __('Ordering for the next available slot.'));
+        }
+
+        // Validate the selected date
+        $validation = $this->orderSchedulingService->validateScheduledDate($tenant->id, $scheduledDate);
+
+        if (! $validation['valid']) {
+            return gale()->messages([
+                'scheduled_date' => $validation['error'],
+            ]);
+        }
+
+        // BR-343: Save the scheduled date to the checkout session
+        $this->checkoutService->setScheduledDate($tenant->id, $scheduledDate);
+
+        // BR-341: Check for cart items unavailable on this date (show warning, do not block)
+        $cartWarnings = $this->orderSchedulingService->getUnavailableCartItems(
+            $tenant->id,
+            $scheduledDate,
+            $cart['items'] ?? []
+        );
+
+        if (! empty($cartWarnings)) {
+            // Return state with warning — client may still proceed
+            $formattedDate = $this->orderSchedulingService->formatScheduledDate($scheduledDate);
+
+            return gale()
+                ->state('cartWarnings', $cartWarnings)
+                ->state('savedDate', $scheduledDate)
+                ->state('savedDateFormatted', $formattedDate)
+                ->state('showWarning', true);
+        }
+
+        return gale()->redirect(url('/checkout/summary'))
+            ->with('message', __('Order scheduled for :date.', [
+                'date' => $this->orderSchedulingService->formatScheduledDate($scheduledDate),
+            ]));
+    }
+
+    /**
+     * F-148: Clear the scheduled date and proceed to summary.
+     *
+     * BR-335: Allows reverting to "next available slot" after scheduling.
+     */
+    public function clearSchedule(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        if (! auth()->check()) {
+            return gale()->redirect(route('login'));
+        }
+
+        $this->checkoutService->setScheduledDate($tenant->id, null);
+
+        return gale()->redirect(url('/checkout/summary'))
+            ->with('message', __('Reverted to next available slot.'));
     }
 
     /**

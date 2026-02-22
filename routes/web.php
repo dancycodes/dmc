@@ -734,6 +734,17 @@ Route::middleware('tenant.domain')->group(function () {
     Route::get('/checkout/summary', [\App\Http\Controllers\Tenant\CheckoutController::class, 'summary'])
         ->name('tenant.checkout.summary');
 
+    // F-148: Order Scheduling for Future Date
+    // BR-335: Optional scheduling; default is next available slot
+    // BR-336: Calendar shows only dates with available schedule entries
+    // BR-338: Maximum 14 days from today
+    Route::get('/checkout/schedule', [\App\Http\Controllers\Tenant\CheckoutController::class, 'schedule'])
+        ->name('tenant.checkout.schedule');
+    Route::post('/checkout/schedule', [\App\Http\Controllers\Tenant\CheckoutController::class, 'saveSchedule'])
+        ->name('tenant.checkout.save-schedule');
+    Route::post('/checkout/schedule/clear', [\App\Http\Controllers\Tenant\CheckoutController::class, 'clearSchedule'])
+        ->name('tenant.checkout.clear-schedule');
+
     // F-149: Payment Method Selection
     // BR-345: MTN MoMo, Orange Money, Wallet Balance
     // BR-350: Total displayed prominently
