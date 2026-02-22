@@ -685,6 +685,12 @@ Route::middleware('tenant.domain')->group(function () {
         // BR-387: Charts update via Gale when date range changes
         Route::get('/analytics/orders', [\App\Http\Controllers\Cook\OrderAnalyticsController::class, 'index'])->name('cook.analytics.orders');
 
+        // F-202: Cook Customer Retention Analytics
+        // BR-390: Customer data is tenant-scoped
+        // BR-391: Unique customers by distinct user_id on completed orders
+        // BR-398: Date range selector applies to summary cards and charts
+        Route::get('/analytics/customers', [\App\Http\Controllers\Cook\CustomerRetentionController::class, 'index'])->name('cook.analytics.customers');
+
         // F-208: Analytics CSV/PDF Export (Cook side)
         // BR-449: Export formats: CSV and PDF
         // BR-453: Immediate download for datasets < 5,000 rows
