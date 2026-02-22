@@ -432,6 +432,33 @@ class MealService
     }
 
     /**
+     * Update a meal's estimated preparation time.
+     *
+     * F-117: Meal Estimated Preparation Time
+     * BR-270: Estimated preparation time is optional (nullable).
+     * BR-271: Value stored as an integer representing minutes.
+     * BR-272: Minimum value: 1 minute.
+     * BR-273: Maximum value: 1440 minutes (24 hours).
+     * BR-276: Only users with can-manage-meals permission (enforced in controller).
+     * BR-277: Changes are logged via Spatie Activitylog.
+     *
+     * @return array{success: bool, meal: Meal, old_prep_time: int|null, new_prep_time: int|null}
+     */
+    public function updatePrepTime(Meal $meal, ?int $prepTime): array
+    {
+        $oldPrepTime = $meal->estimated_prep_time;
+
+        $meal->update(['estimated_prep_time' => $prepTime]);
+
+        return [
+            'success' => true,
+            'meal' => $meal,
+            'old_prep_time' => $oldPrepTime,
+            'new_prep_time' => $prepTime,
+        ];
+    }
+
+    /**
      * Get the count of completed orders for a meal (for confirmation dialog context).
      *
      * Forward-compatible: returns 0 if orders table does not exist.

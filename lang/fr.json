@@ -2598,5 +2598,19 @@
     "Quick Actions": "Actions rapides",
     "Complete Setup": "Terminer la configuration",
     "View Pending Orders": "Voir les commandes en attente",
-    "Update Availability": "Mettre à jour la disponibilité"
+    "Update Availability": "Mettre à jour la disponibilité",
+    "Preparation Time": "Temps de préparation",
+    "Optional — helps clients plan their orders": "Optionnel — aide les clients à planifier leurs commandes",
+    "Estimated Preparation Time": "Temps de préparation estimé",
+    "How long does this meal typically take to prepare?": "Combien de temps ce plat prend-il généralement à préparer ?",
+    "Clients will see:": "Les clients verront :",
+    "No prep time will be shown to clients.": "Aucun temps de préparation ne sera affiché aux clients.",
+    "Preparation time updated.": "Temps de préparation mis à jour.",
+    "Preparation time cleared.": "Temps de préparation effacé.",
+    "Preparation time must be a positive number.": "Le temps de préparation doit être un nombre positif.",
+    "Preparation time must be at least 1 minute.": "Le temps de préparation doit être d'au moins 1 minute.",
+    "Preparation time cannot exceed 1440 minutes (24 hours).": "Le temps de préparation ne peut pas dépasser 1440 minutes (24 heures).",
+    "Est. prep: :time": "Prép. est. : :time",
+    "Est. prep: ~": "Prép. est. : ~",
+    "hr": "h"
 }

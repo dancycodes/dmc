@@ -504,7 +504,7 @@ class TenantLandingService
      * BR-151: Tags as chips (max 3 visible + "+N more")
      * BR-154: Name shown in user's current language
      *
-     * @return array{id: int, name: string, slug: string, image: string|null, startingPrice: int|null, prepTime: int|null, tags: array, tagOverflow: int, allComponentsUnavailable: bool}
+     * @return array{id: int, name: string, slug: string, image: string|null, startingPrice: int|null, prepTime: string|null, tags: array, tagOverflow: int, allComponentsUnavailable: bool}
      */
     public function buildMealCardData(Meal $meal): array
     {
@@ -538,7 +538,9 @@ class TenantLandingService
             'name' => $name,
             'image' => $imageUrl,
             'startingPrice' => $startingPrice,
-            'prepTime' => $meal->estimated_prep_time,
+            'prepTime' => $meal->estimated_prep_time !== null
+                ? self::formatPrepTime($meal->estimated_prep_time)
+                : null,
             'tags' => $visibleTags,
             'tagOverflow' => $tagOverflow,
             'allComponentsUnavailable' => $allComponentsUnavailable,
@@ -551,6 +553,30 @@ class TenantLandingService
     public static function formatPrice(int $price): string
     {
         return number_format($price, 0, '.', ',').' XAF';
+    }
+
+    /**
+     * Format an estimated preparation time for display.
+     *
+     * F-117: BR-274 — Display format:
+     * - Under 60 min: "~N min"
+     * - Exactly 60 min: "~1 hr"
+     * - 60+ min: "~N hr" or "~N.N hr" (e.g. 90 min → "~1.5 hr")
+     */
+    public static function formatPrepTime(int $minutes): string
+    {
+        if ($minutes < 60) {
+            return '~'.$minutes.' min';
+        }
+
+        $hours = $minutes / 60;
+
+        // Show whole number if no fraction, else 1 decimal place
+        $formatted = ($hours == floor($hours))
+            ? (int) $hours
+            : round($hours, 1);
+
+        return '~'.$formatted.' hr';
     }
 
     /**
@@ -588,7 +614,7 @@ class TenantLandingService
     /**
      * Build the core meal data for the detail view.
      *
-     * @return array{id: int, name: string, description: string|null, images: array, tags: array, prepTime: int|null, allUnavailable: bool, hasComponents: bool}
+     * @return array{id: int, name: string, description: string|null, images: array, tags: array, prepTime: string|null, allUnavailable: bool, hasComponents: bool}
      */
     private function buildMealDetail(Meal $meal, string $locale): array
     {
@@ -614,7 +640,9 @@ class TenantLandingService
             'description' => $description,
             'images' => $images,
             'tags' => $tags,
-            'prepTime' => $meal->estimated_prep_time,
+            'prepTime' => $meal->estimated_prep_time !== null
+                ? self::formatPrepTime($meal->estimated_prep_time)
+                : null,
             'allUnavailable' => $allUnavailable,
             'hasComponents' => $meal->components->isNotEmpty(),
         ];

@@ -542,6 +542,86 @@ class MealController extends Controller
     }
 
     /**
+     * Update a meal's estimated preparation time.
+     *
+     * F-117: Meal Estimated Preparation Time
+     * BR-270: Estimated preparation time is optional (nullable).
+     * BR-271: Value stored as an integer representing minutes.
+     * BR-272: Minimum value: 1 minute.
+     * BR-273: Maximum value: 1440 minutes (24 hours).
+     * BR-276: Only users with can-manage-meals permission.
+     * BR-277: Changes are logged via Spatie Activitylog.
+     */
+    public function updatePrepTime(Request $request, int $mealId, MealService $mealService): mixed
+    {
+        $user = $request->user();
+        $tenant = tenant();
+
+        // BR-276: Permission check
+        if (! $user->can('can-manage-meals')) {
+            abort(403);
+        }
+
+        $meal = $tenant->meals()->findOrFail($mealId);
+
+        // Dual Gale/HTTP validation pattern
+        if ($request->isGale()) {
+            $validated = $request->validateState([
+                'estimated_prep_time' => ['nullable', 'integer', 'min:1', 'max:1440'],
+            ], [
+                'estimated_prep_time.integer' => __('Preparation time must be a positive number.'),
+                'estimated_prep_time.min' => __('Preparation time must be at least 1 minute.'),
+                'estimated_prep_time.max' => __('Preparation time cannot exceed 1440 minutes (24 hours).'),
+            ]);
+        } else {
+            $validated = $request->validate([
+                'estimated_prep_time' => ['nullable', 'integer', 'min:1', 'max:1440'],
+            ], [
+                'estimated_prep_time.integer' => __('Preparation time must be a positive number.'),
+                'estimated_prep_time.min' => __('Preparation time must be at least 1 minute.'),
+                'estimated_prep_time.max' => __('Preparation time cannot exceed 1440 minutes (24 hours).'),
+            ]);
+        }
+
+        // Coerce empty string to null (nullable integer from form)
+        $prepTime = isset($validated['estimated_prep_time']) && $validated['estimated_prep_time'] !== ''
+            ? (int) $validated['estimated_prep_time']
+            : null;
+
+        $result = $mealService->updatePrepTime($meal, $prepTime);
+
+        // BR-277: Activity logging — only log if changed
+        if ($result['old_prep_time'] !== $result['new_prep_time']) {
+            activity('meals')
+                ->performedOn($meal)
+                ->causedBy($user)
+                ->withProperties([
+                    'action' => 'meal_prep_time_updated',
+                    'old_prep_time' => $result['old_prep_time'],
+                    'new_prep_time' => $result['new_prep_time'],
+                    'name_en' => $meal->name_en,
+                    'tenant_id' => $tenant->id,
+                ])
+                ->log('Meal preparation time updated');
+        }
+
+        $redirectUrl = url('/dashboard/meals/'.$meal->id.'/edit');
+
+        if ($request->isGale()) {
+            $toastMessage = $prepTime !== null
+                ? __('Preparation time updated.')
+                : __('Preparation time cleared.');
+
+            return gale()
+                ->redirect($redirectUrl)
+                ->with('success', $toastMessage);
+        }
+
+        return redirect($redirectUrl)
+            ->with('success', $prepTime !== null ? __('Preparation time updated.') : __('Preparation time cleared.'));
+    }
+
+    /**
      * Delete a meal (soft delete).
      *
      * F-111: Meal Delete

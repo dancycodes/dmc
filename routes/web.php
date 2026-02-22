@@ -525,6 +525,8 @@ Route::middleware('tenant.domain')->group(function () {
         Route::patch('/meals/{meal}/toggle-status', [MealController::class, 'toggleStatus'])->name('cook.meals.toggle-status');
         // F-113: Meal Availability Toggle
         Route::patch('/meals/{meal}/toggle-availability', [MealController::class, 'toggleAvailability'])->name('cook.meals.toggle-availability');
+        // F-117: Meal Estimated Preparation Time
+        Route::patch('/meals/{meal}/prep-time', [MealController::class, 'updatePrepTime'])->name('cook.meals.update-prep-time');
         // F-109: Meal Image Upload & Carousel
         Route::post('/meals/{meal}/images/upload', [MealImageController::class, 'upload'])->name('cook.meals.images.upload');
         Route::post('/meals/{meal}/images/reorder', [MealImageController::class, 'reorder'])->name('cook.meals.images.reorder');

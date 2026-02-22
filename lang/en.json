@@ -2598,5 +2598,19 @@
     "Quick Actions": "Quick Actions",
     "Complete Setup": "Complete Setup",
     "View Pending Orders": "View Pending Orders",
-    "Update Availability": "Update Availability"
+    "Update Availability": "Update Availability",
+    "Preparation Time": "Preparation Time",
+    "Optional — helps clients plan their orders": "Optional — helps clients plan their orders",
+    "Estimated Preparation Time": "Estimated Preparation Time",
+    "How long does this meal typically take to prepare?": "How long does this meal typically take to prepare?",
+    "Clients will see:": "Clients will see:",
+    "No prep time will be shown to clients.": "No prep time will be shown to clients.",
+    "Preparation time updated.": "Preparation time updated.",
+    "Preparation time cleared.": "Preparation time cleared.",
+    "Preparation time must be a positive number.": "Preparation time must be a positive number.",
+    "Preparation time must be at least 1 minute.": "Preparation time must be at least 1 minute.",
+    "Preparation time cannot exceed 1440 minutes (24 hours).": "Preparation time cannot exceed 1440 minutes (24 hours).",
+    "Est. prep: :time": "Est. prep: :time",
+    "Est. prep: ~": "Est. prep: ~",
+    "hr": "hr"
 }
