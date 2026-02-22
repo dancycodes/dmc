@@ -295,6 +295,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/my-favorites', [\App\Http\Controllers\FavoritesController::class, 'index'])->name('favorites.index');
     Route::post('/my-favorites/cooks/{cookUserId}/remove', [\App\Http\Controllers\FavoritesController::class, 'removeCook'])->name('favorites.cooks.remove');
     Route::post('/my-favorites/meals/{mealId}/remove', [\App\Http\Controllers\FavoritesController::class, 'removeMeal'])->name('favorites.meals.remove');
+
+    // Client Spending & Order Stats (F-204)
+    // BR-408: Stats are personal to the authenticated client
+    // BR-409: Total spent includes only completed/delivered/picked_up orders
+    Route::get('/my-stats', [\App\Http\Controllers\Client\SpendingStatsController::class, 'index'])->name('client.stats.index');
 });
 
 /*
