@@ -9,12 +9,33 @@ class MealSearchRequest extends FormRequest
     /**
      * F-135: Meal Search Bar
      * F-136: Meal Filters
-     * Public endpoint — anyone can search/filter meals on a tenant page.
+     * F-137: Meal Sort Options
+     * Public endpoint — anyone can search/filter/sort meals on a tenant page.
      */
     public function authorize(): bool
     {
         return true;
     }
+
+    /**
+     * Valid sort options for meal grid.
+     *
+     * F-137: BR-234 Sort options.
+     */
+    public const SORT_OPTIONS = [
+        'popular' => 'Most Popular',
+        'price_asc' => 'Price: Low to High',
+        'price_desc' => 'Price: High to Low',
+        'newest' => 'Newest First',
+        'name_asc' => 'A to Z',
+    ];
+
+    /**
+     * Default sort option.
+     *
+     * F-137: BR-234 Default sort is popularity.
+     */
+    public const DEFAULT_SORT = 'popular';
 
     /**
      * Validation rules for meal search and filter query parameters.
@@ -23,6 +44,7 @@ class MealSearchRequest extends FormRequest
      * F-136: BR-223: Tag filter is multi-select (array of tag IDs)
      * F-136: BR-224: Availability filter: "all" or "available_now"
      * F-136: BR-226: Price range filter with min/max
+     * F-137: BR-234: Sort options
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
@@ -35,6 +57,7 @@ class MealSearchRequest extends FormRequest
             'availability' => ['nullable', 'string', 'in:all,available_now'],
             'price_min' => ['nullable', 'integer', 'min:0'],
             'price_max' => ['nullable', 'integer', 'min:0'],
+            'sort' => ['nullable', 'string', 'in:popular,price_asc,price_desc,newest,name_asc'],
         ];
     }
 
@@ -116,6 +139,18 @@ class MealSearchRequest extends FormRequest
             || $this->availabilityFilter() !== 'all'
             || $this->priceMin() !== null
             || $this->priceMax() !== null;
+    }
+
+    /**
+     * Get the selected sort option.
+     *
+     * F-137: BR-234 — Default is "popular". Falls back if invalid.
+     */
+    public function sortOption(): string
+    {
+        $sort = $this->validated('sort', self::DEFAULT_SORT) ?? self::DEFAULT_SORT;
+
+        return array_key_exists($sort, self::SORT_OPTIONS) ? $sort : self::DEFAULT_SORT;
     }
 
     /**

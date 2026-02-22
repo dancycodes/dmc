@@ -13,22 +13,29 @@
 --}}
 @php
     $hasFilters = ($filterData['hasTags'] ?? false) || ($filterData['hasPriceRange'] ?? false);
+    $currentSort = $currentSort ?? 'popular';
 @endphp
 <div
     x-data="{
         query: '{{ addslashes($searchQuery ?? '') }}',
         hasFilters: {{ $hasFilters ? 'true' : 'false' }},
+        /* F-137: Track active sort so search preserves it in the URL */
+        currentSort: '{{ $currentSort }}',
         triggerSearch() {
             if (this.hasFilters) {
                 /* F-136: Delegate to filter component which builds the full URL */
                 $dispatch('apply-filters');
             } else {
-                /* F-135: No filters — search directly */
+                /* F-135: No filters — search directly, preserving sort (F-137 BR-240) */
+                let params = new URLSearchParams();
                 if (this.query.length >= 2) {
-                    $navigate('/meals/search?q=' + encodeURIComponent(this.query), { key: 'meal-search', merge: false, replace: true });
-                } else if (this.query.length === 0) {
-                    $navigate('/meals/search', { key: 'meal-search', merge: false, replace: true });
+                    params.set('q', this.query);
                 }
+                if (this.currentSort && this.currentSort !== 'popular') {
+                    params.set('sort', this.currentSort);
+                }
+                const url = '/meals/search' + (params.toString() ? '?' + params.toString() : '');
+                $navigate(url, { key: 'meal-search', merge: false, replace: true });
             }
         },
         clearSearch() {
@@ -36,6 +43,7 @@
             this.triggerSearch();
         }
     }"
+    x-on:apply-sort.window="currentSort = $event.detail.sort; if (!hasFilters) { triggerSearch(); }"
     class="mb-8"
 >
     <div class="relative max-w-xl mx-auto sm:max-w-2xl">

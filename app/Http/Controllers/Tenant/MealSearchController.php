@@ -13,10 +13,11 @@ class MealSearchController extends Controller
     ) {}
 
     /**
-     * Search and filter meals on the tenant landing page.
+     * Search, filter, and sort meals on the tenant landing page.
      *
      * F-135: Meal Search Bar
      * F-136: Meal Filters
+     * F-137: Meal Sort Options
      * BR-214: Search across meal names, descriptions, component names, tag names
      * BR-215: Case-insensitive search
      * BR-217: Results filter the existing meals grid via Gale fragment (no page reload)
@@ -28,6 +29,8 @@ class MealSearchController extends Controller
      * BR-228: AND logic between filter types
      * BR-231: Filters applied via Gale without page reload
      * BR-232: Filters combinable with search
+     * BR-239: Sort applied via Gale without page reload
+     * BR-240: Sort works in combination with active search and filters
      */
     public function search(MealSearchRequest $request): mixed
     {
@@ -43,12 +46,13 @@ class MealSearchController extends Controller
         $availability = $request->availabilityFilter();
         $priceMin = $request->priceMin();
         $priceMax = $request->priceMax();
+        $sort = $request->sortOption();
 
         $hasFilters = $request->hasActiveFilters();
         $hasSearch = mb_strlen($query) >= 2;
 
-        // Use filterMeals when any filter or search is active
-        if ($hasFilters || $hasSearch) {
+        // Use filterMeals when any filter, search, or non-default sort is active
+        if ($hasFilters || $hasSearch || $sort !== MealSearchRequest::DEFAULT_SORT) {
             $meals = $this->landingService->filterMeals(
                 $tenant,
                 $query,
@@ -57,21 +61,23 @@ class MealSearchController extends Controller
                 $priceMin,
                 $priceMax,
                 $page,
+                $sort,
             );
         } else {
-            $meals = $this->landingService->getAvailableMeals($tenant, $page);
+            $meals = $this->landingService->getAvailableMeals($tenant, $page, $sort);
         }
 
         $sections = ['schedule' => ['hasData' => $tenant->cookSchedules()->exists()]];
         $activeFilterCount = $request->activeFilterCount();
 
-        // BR-217/BR-231: For Gale navigate requests, return only the meals grid fragment
+        // BR-217/BR-231/BR-239: For Gale navigate requests, return only the meals grid fragment
         if ($request->isGaleNavigate('meal-search')) {
             return gale()->fragment('tenant._meals-grid', 'meals-grid-fragment', [
                 'meals' => $meals,
                 'sections' => $sections,
                 'searchQuery' => $query,
                 'activeFilterCount' => $activeFilterCount,
+                'currentSort' => $sort,
             ]);
         }
 
