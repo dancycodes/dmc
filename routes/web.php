@@ -45,6 +45,7 @@ use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\LocationSearchController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProfilePhotoController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ThemeController;
 use App\Services\TenantService;
@@ -196,6 +197,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile/payment-methods/{paymentMethod}/edit', [PaymentMethodController::class, 'edit'])->name('payment-methods.edit');
     Route::post('/profile/payment-methods/{paymentMethod}', [PaymentMethodController::class, 'update'])->name('payment-methods.update');
     Route::delete('/profile/payment-methods/{paymentMethod}', [PaymentMethodController::class, 'destroy'])->name('payment-methods.destroy');
+
+    // Profile Photo Upload (F-031)
+    Route::get('/profile/photo', [ProfilePhotoController::class, 'show'])->name('profile.photo.show');
+    Route::post('/profile/photo', [ProfilePhotoController::class, 'upload'])->name('profile.photo.upload');
+    Route::delete('/profile/photo', [ProfilePhotoController::class, 'destroy'])->name('profile.photo.destroy');
 
     // Language Preference (F-042)
     Route::get('/profile/language', [LanguagePreferenceController::class, 'show'])->name('language.show');
