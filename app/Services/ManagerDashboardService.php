@@ -56,6 +56,7 @@ class ManagerDashboardService
         'dashboard/schedule' => 'can-manage-schedules',
         'dashboard/locations' => 'can-manage-locations',
         'dashboard/analytics' => 'can-view-cook-analytics',
+        'dashboard/analytics/orders' => 'can-view-cook-analytics',
         'dashboard/complaints' => 'can-manage-complaints',
         'dashboard/messages' => 'can-manage-messages',
         'dashboard/testimonials' => 'can-manage-testimonials',
