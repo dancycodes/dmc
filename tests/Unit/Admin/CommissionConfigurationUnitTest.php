@@ -6,7 +6,7 @@ use App\Models\User;
 use App\Services\CommissionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class)->in(__DIR__);
+uses(Tests\TestCase::class, RefreshDatabase::class);
 
 $projectRoot = dirname(__DIR__, 2);
 
