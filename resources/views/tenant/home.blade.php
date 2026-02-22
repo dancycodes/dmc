@@ -298,9 +298,31 @@
     </section>
 
     {{-- ============================================ --}}
-    {{-- RATINGS SECTION (F-130 will populate)        --}}
+    {{-- RATINGS SECTION — F-130: Ratings Summary     --}}
+    {{-- BR-167: Average rating with star display      --}}
+    {{-- BR-168: Star distribution bar chart           --}}
+    {{-- BR-169: 5 most recent reviews                 --}}
+    {{-- BR-172: "See all reviews" when > 5 reviews    --}}
+    {{-- BR-173: Empty state when no reviews           --}}
     {{-- ============================================ --}}
-    {{-- Hidden until F-130 populates with data --}}
+    <section id="ratings" class="scroll-mt-16 py-12 sm:py-16 bg-surface-alt dark:bg-surface-alt">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-8 sm:mb-12">
+                <h2 class="text-2xl sm:text-3xl font-display font-bold text-on-surface-strong dark:text-on-surface-strong">
+                    {{ __('Ratings & Reviews') }}
+                </h2>
+                @if($ratingsDisplay['hasReviews'])
+                    <p class="mt-2 text-on-surface dark:text-on-surface max-w-2xl mx-auto">
+                        {{ __('What our customers are saying.') }}
+                    </p>
+                @endif
+            </div>
+
+            <div class="max-w-2xl mx-auto">
+                @include('tenant._ratings-section', ['ratingsDisplay' => $ratingsDisplay])
+            </div>
+        </div>
+    </section>
 
     {{-- ============================================ --}}
     {{-- TESTIMONIALS SECTION (F-131 will populate)   --}}
