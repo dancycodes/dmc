@@ -23,13 +23,13 @@
     $isScheduled = $announcement->status === \App\Models\Announcement::STATUS_SCHEDULED;
 @endphp
 
-<script type="application/json" id="edit-announcement-data">@json([
+<script type="application/json" id="edit-announcement-data">{!! json_encode([
     'content' => $announcement->content,
     'target_type' => $announcement->target_type,
     'target_tenant_id' => (string) ($announcement->target_tenant_id ?? ''),
     'scheduled_at' => $existingScheduledAt,
     'isScheduled' => $isScheduled,
-])</script>
+], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) !!}</script>
 
 <div
     x-data="(() => {

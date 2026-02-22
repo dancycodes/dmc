@@ -302,16 +302,14 @@
                         class="flex-1 px-4 py-2.5 text-sm font-medium text-on-surface bg-surface border border-outline rounded-lg hover:bg-surface-alt transition-colors">
                         {{ __('Keep It') }}
                     </button>
-                    <template x-for="announcement in [confirmCancelId]" :key="announcement">
-                        <button
-                            type="button"
-                            @click="executeCancel(confirmCancelId, '/vault-entry/announcements/' + confirmCancelId + '/cancel')"
-                            :disabled="cancellingId === confirmCancelId"
-                            class="flex-1 px-4 py-2.5 text-sm font-medium text-on-danger bg-danger hover:bg-danger/90 rounded-lg transition-colors disabled:opacity-50">
-                            <span x-show="cancellingId !== confirmCancelId">{{ __('Cancel Schedule') }}</span>
-                            <span x-show="cancellingId === confirmCancelId">{{ __('Cancelling...') }}</span>
-                        </button>
-                    </template>
+                    <button
+                        type="button"
+                        @click="executeCancel(confirmCancelId, '/vault-entry/announcements/' + confirmCancelId + '/cancel')"
+                        :disabled="cancellingId !== null"
+                        class="flex-1 px-4 py-2.5 text-sm font-medium text-on-danger bg-danger hover:bg-danger/90 rounded-lg transition-colors disabled:opacity-50">
+                        <span x-show="cancellingId === null">{{ __('Cancel Schedule') }}</span>
+                        <span x-show="cancellingId !== null">{{ __('Cancelling...') }}</span>
+                    </button>
                 </div>
             </div>
         </div>

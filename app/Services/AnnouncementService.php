@@ -305,7 +305,7 @@ class AnnouncementService
     {
         return Tenant::query()
             ->where('is_active', true)
-            ->orderBy('name')
-            ->get(['id', 'name', 'slug']);
+            ->orderBy('name_en')
+            ->get(['id', 'name_en', 'name_fr', 'slug']);
     }
 }
