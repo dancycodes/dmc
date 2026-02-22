@@ -39,8 +39,8 @@ class MealService
                 $q->orderBy('position')->limit(1);
             }]);
 
-        // Forward-compatible: eager load order count if orders table exists
-        if (Schema::hasTable('orders')) {
+        // Forward-compatible: eager load order count if orders table and meal_id column exist
+        if (Schema::hasTable('orders') && Schema::hasColumn('orders', 'meal_id')) {
             $query->withCount('orders');
         }
 
@@ -81,7 +81,7 @@ class MealService
                 $query->orderBy('created_at', 'asc');
                 break;
             case 'most_ordered':
-                if (Schema::hasTable('orders')) {
+                if (Schema::hasTable('orders') && Schema::hasColumn('orders', 'meal_id')) {
                     $query->orderByDesc('orders_count');
                 } else {
                     $query->orderByDesc('created_at');
@@ -295,8 +295,8 @@ class MealService
      */
     public function canDeleteMeal(Meal $meal): array
     {
-        // Forward-compatible: orders table does not exist yet (created in future features)
-        if (! Schema::hasTable('orders')) {
+        // Forward-compatible: orders table does not exist yet or meal_id column not yet added
+        if (! Schema::hasTable('orders') || ! Schema::hasColumn('orders', 'meal_id')) {
             return ['can_delete' => true, 'pending_count' => 0];
         }
 
@@ -465,7 +465,7 @@ class MealService
      */
     public function getCompletedOrderCount(Meal $meal): int
     {
-        if (! Schema::hasTable('orders')) {
+        if (! Schema::hasTable('orders') || ! Schema::hasColumn('orders', 'meal_id')) {
             return 0;
         }
 
