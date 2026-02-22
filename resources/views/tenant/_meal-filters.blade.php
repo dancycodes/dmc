@@ -20,6 +20,7 @@
     $hasTags = $filterData['hasTags'] ?? false;
     $hasPriceRange = $filterData['hasPriceRange'] ?? false;
     $hasAnyFilter = $hasTags || $hasPriceRange;
+    $currentSort = $currentSort ?? 'popular';
 @endphp
 
 @if($hasAnyFilter)
@@ -31,6 +32,8 @@
         priceMax: {{ $priceRange['max'] }},
         priceRangeMin: {{ $priceRange['min'] }},
         priceRangeMax: {{ $priceRange['max'] }},
+        /* F-137: Track current sort so filters preserve it when applying */
+        currentSort: '{{ $currentSort }}',
         mobileOpen: false,
 
         get activeFilterCount() {
@@ -96,12 +99,17 @@
             if (this.priceMax < this.priceRangeMax) {
                 params.set('price_max', String(this.priceMax));
             }
+            /* F-137: BR-240 — Preserve active sort when applying filters */
+            if (this.currentSort && this.currentSort !== 'popular') {
+                params.set('sort', this.currentSort);
+            }
 
             const url = '/meals/search' + (params.toString() ? '?' + params.toString() : '');
             $navigate(url, { key: 'meal-search', merge: false, replace: true });
         }
     }"
     x-on:apply-filters.window="applyFilters()"
+    x-on:apply-sort.window="currentSort = $event.detail.sort; applyFilters()"
     class="relative"
 >
     {{-- ============================= --}}

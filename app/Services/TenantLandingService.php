@@ -191,13 +191,15 @@ class TenantLandingService
      * Get available meals for the tenant landing page grid.
      *
      * F-128: Available Meals Grid Display
+     * F-137: Meal Sort Options
      * BR-146: Only meals with status=live AND is_available=true
      * BR-147: Filtered against cook's current schedule
      * BR-148: Each card data includes image, name, starting price, prep time, tags
      * BR-149: Starting price = min component price
-     * BR-155: Ordered by position, then by name
+     * BR-155: Ordered by position, then by name (default/no sort)
+     * BR-234/BR-235/BR-236/BR-237/BR-238: Sort options applied when sort is set
      */
-    public function getAvailableMeals(Tenant $tenant, int $page = 1): LengthAwarePaginator
+    public function getAvailableMeals(Tenant $tenant, int $page = 1, string $sort = 'popular'): LengthAwarePaginator
     {
         $scheduledDays = $this->getScheduledDays($tenant);
 
@@ -224,14 +226,9 @@ class TenantLandingService
             });
         }
 
-        // BR-155: Order by position, then name
-        $locale = app()->getLocale();
-        $nameColumn = 'name_'.$locale;
+        $this->applySortOrder($query, $sort);
 
-        return $query
-            ->orderBy('position')
-            ->orderBy($nameColumn)
-            ->paginate(self::MEALS_PER_PAGE, ['*'], 'page', $page);
+        return $query->paginate(self::MEALS_PER_PAGE, ['*'], 'page', $page);
     }
 
     /**
@@ -354,14 +351,16 @@ class TenantLandingService
     }
 
     /**
-     * Filter available meals with search, tags, availability, and price range.
+     * Filter available meals with search, tags, availability, price range, and sort.
      *
      * F-136: Meal Filters
+     * F-137: Meal Sort Options
      * BR-223: Tag filter OR logic (meals matching ANY selected tag)
      * BR-224/BR-225: Availability filter ("Available Now" = within current schedule window)
      * BR-226: Price range uses meal starting price (min component price)
      * BR-228: AND logic between filter types
      * BR-232: Combinable with search (F-135)
+     * BR-239/BR-240: Sort combined with active search and filters
      *
      * @param  array<int>  $tagIds
      */
@@ -373,10 +372,9 @@ class TenantLandingService
         ?int $priceMin = null,
         ?int $priceMax = null,
         int $page = 1,
+        string $sort = 'popular',
     ): LengthAwarePaginator {
         $scheduledDays = $this->getScheduledDays($tenant);
-        $locale = app()->getLocale();
-        $nameColumn = 'name_'.$locale;
 
         $query = Meal::query()
             ->where('tenant_id', $tenant->id)
@@ -443,10 +441,10 @@ class TenantLandingService
             }
         }
 
-        return $query
-            ->orderBy('position')
-            ->orderBy($nameColumn)
-            ->paginate(self::MEALS_PER_PAGE, ['*'], 'page', $page);
+        // BR-239/BR-240: Apply sort — works with all active search/filter combinations
+        $this->applySortOrder($query, $sort);
+
+        return $query->paginate(self::MEALS_PER_PAGE, ['*'], 'page', $page);
     }
 
     /**
@@ -493,6 +491,59 @@ class TenantLandingService
             });
             $q->orWhereDoesntHave('schedules');
         });
+    }
+
+    /**
+     * Apply sort order to a meal query builder.
+     *
+     * F-137: Meal Sort Options
+     * BR-234: Valid sort options: popular, price_asc, price_desc, newest, name_asc
+     * BR-235: "popular" sorts by total order count (via JSONB containment) descending
+     * BR-236: Price sort uses starting price (min available component price)
+     * BR-237: "newest" sorts by meal creation date descending
+     * BR-238: "name_asc" sorts alphabetically by meal name in current locale
+     * Edge case (BR-235): Zero-order meals fall back to creation date for popularity sort
+     * Edge case (BR-238): Same name falls back to creation date (stable secondary sort)
+     */
+    private function applySortOrder(Builder $query, string $sort): void
+    {
+        $locale = app()->getLocale();
+        $nameColumn = 'name_'.$locale;
+
+        // BR-235: Popularity subquery — count orders that contain this meal via JSONB
+        // Use jsonb_build_array with jsonb_build_object to avoid quoting issues
+        $popularitySubquery = '(SELECT COUNT(*) FROM orders o WHERE o.tenant_id = meals.tenant_id AND o.items_snapshot @> jsonb_build_array(jsonb_build_object(\'meal_id\', meals.id)))';
+
+        match ($sort) {
+            // BR-235: Most Popular — order count descending, fallback to created_at
+            'popular' => $query
+                ->orderByRaw($popularitySubquery.' DESC')
+                ->orderBy('meals.created_at', 'desc'),
+
+            // BR-236: Price Low to High — min available component price ascending, NULLS LAST
+            'price_asc' => $query
+                ->orderByRaw('(SELECT MIN(mc.price) FROM meal_components mc WHERE mc.meal_id = meals.id AND mc.is_available = true) ASC NULLS LAST')
+                ->orderBy('meals.'.$nameColumn),
+
+            // BR-236: Price High to Low — min available component price descending, NULLS LAST
+            'price_desc' => $query
+                ->orderByRaw('(SELECT MIN(mc.price) FROM meal_components mc WHERE mc.meal_id = meals.id AND mc.is_available = true) DESC NULLS LAST')
+                ->orderBy('meals.'.$nameColumn),
+
+            // BR-237: Newest First — creation date descending
+            'newest' => $query
+                ->orderBy('meals.created_at', 'desc'),
+
+            // BR-238: A to Z — alphabetical by current locale name, secondary sort by created_at
+            'name_asc' => $query
+                ->orderBy('meals.'.$nameColumn)
+                ->orderBy('meals.created_at', 'asc'),
+
+            // Default fallback: popularity
+            default => $query
+                ->orderByRaw($popularitySubquery.' DESC')
+                ->orderBy('meals.created_at', 'desc'),
+        };
     }
 
     /**

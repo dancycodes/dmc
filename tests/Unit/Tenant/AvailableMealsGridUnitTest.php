@@ -235,18 +235,21 @@ it('does not show sold out when meal has no components', function () {
     expect($card['allComponentsUnavailable'])->toBeFalse();
 });
 
-// --- BR-155: Ordering ---
+// --- BR-155/BR-234: Ordering ---
+// F-137: Default sort is "Most Popular" (BR-234). With zero orders, falls back to created_at desc.
 
-it('orders meals by position then name', function () {
-    $meal3 = Meal::factory()->for($this->tenant)->live()->positioned(3)->create(['name_en' => 'AAA Meal 999']);
-    $meal1 = Meal::factory()->for($this->tenant)->live()->positioned(1)->create(['name_en' => 'BBB Meal 998']);
-    $meal1b = Meal::factory()->for($this->tenant)->live()->positioned(1)->create(['name_en' => 'AAA Meal 997']);
+it('orders meals by popularity (most popular first) by default', function () {
+    // All have zero orders, so fallback is created_at DESC (newest first)
+    $mealOldest = Meal::factory()->for($this->tenant)->live()->create(['created_at' => now()->subDays(3)]);
+    $mealMiddle = Meal::factory()->for($this->tenant)->live()->create(['created_at' => now()->subDay()]);
+    $mealNewest = Meal::factory()->for($this->tenant)->live()->create(['created_at' => now()]);
 
     $meals = $this->service->getAvailableMeals($this->tenant);
 
-    expect($meals->first()->id)->toBe($meal1b->id) // position 1, name AAA
-        ->and($meals->items()[1]->id)->toBe($meal1->id) // position 1, name BBB
-        ->and($meals->last()->id)->toBe($meal3->id); // position 3
+    // All have 0 orders, so sorted by created_at DESC: newest first
+    expect($meals->first()->id)->toBe($mealNewest->id)
+        ->and($meals->items()[1]->id)->toBe($mealMiddle->id)
+        ->and($meals->last()->id)->toBe($mealOldest->id);
 });
 
 // --- Pagination ---
