@@ -381,6 +381,9 @@ Route::middleware('main.domain')->group(function () {
         Route::post('/payouts/{task}/retry', [PayoutController::class, 'retry'])->name('admin.payouts.retry');
         Route::post('/payouts/{task}/mark-complete', [PayoutController::class, 'markComplete'])->name('admin.payouts.mark-complete');
 
+        // Platform Analytics Dashboard (F-057)
+        Route::get('/analytics', [\App\Http\Controllers\Admin\PlatformAnalyticsController::class, 'index'])->name('admin.analytics.index');
+
         // Platform settings (F-063)
         Route::get('/settings', [PlatformSettingController::class, 'index'])->name('admin.settings.index');
         Route::post('/settings', [PlatformSettingController::class, 'update'])->name('admin.settings.update');
