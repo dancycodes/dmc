@@ -119,7 +119,7 @@
                                 >
                                     @if($isAuthenticated ?? false)
                                         <button
-                                            @click.stop="$action('{{ route('favorite-cooks.toggle', ['tenant' => $tenant->id]) }}')"
+                                            @click.stop="$action('{{ route('favorite-cooks.toggle', ['tenant' => $tenant->slug]) }}')"
                                             class="inline-flex items-center gap-2 h-12 px-4 sm:px-5 rounded-lg bg-black/40 backdrop-blur-sm hover:bg-black/60 text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white/50 cursor-pointer border border-white/20"
                                             :aria-label="isFavorited ? '{{ __('Remove from favorites') }}' : '{{ __('Add to favorites') }}'"
                                             :title="isFavorited ? '{{ __('Remove from favorites') }}' : '{{ __('Add to favorites') }}'"
@@ -243,7 +243,7 @@
                         >
                             @if($isAuthenticated ?? false)
                                 <button
-                                    @click.stop="$action('{{ route('favorite-cooks.toggle', ['tenant' => $tenant->id]) }}')"
+                                    @click.stop="$action('{{ route('favorite-cooks.toggle', ['tenant' => $tenant->slug]) }}')"
                                     class="inline-flex items-center gap-2 h-12 px-4 sm:px-5 rounded-lg border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
                                     :class="isFavorited
                                         ? 'bg-danger-subtle dark:bg-danger-subtle border-danger/30 dark:border-danger/30 text-danger dark:text-danger'

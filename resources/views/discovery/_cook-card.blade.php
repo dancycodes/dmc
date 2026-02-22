@@ -67,7 +67,7 @@
         @if($isAuthenticated)
             {{-- Authenticated: Gale toggle --}}
             <button
-                @click.stop="$action('{{ route('favorite-cooks.toggle', ['tenant' => $tenant->id]) }}')"
+                @click.stop="$action('{{ route('favorite-cooks.toggle', ['tenant' => $tenant->slug]) }}')"
                 class="w-11 h-11 rounded-full flex items-center justify-center bg-black/30 backdrop-blur-sm hover:bg-black/50 dark:bg-black/40 dark:hover:bg-black/60 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 cursor-pointer"
                 :aria-label="isFavorited ? '{{ __('Remove from favorites') }}' : '{{ __('Add to favorites') }}'"
                 :title="isFavorited ? '{{ __('Remove from favorites') }}' : '{{ __('Add to favorites') }}'"
