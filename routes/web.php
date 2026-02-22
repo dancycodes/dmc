@@ -300,6 +300,11 @@ Route::middleware('auth')->group(function () {
     // BR-408: Stats are personal to the authenticated client
     // BR-409: Total spent includes only completed/delivered/picked_up orders
     Route::get('/my-stats', [\App\Http\Controllers\Client\SpendingStatsController::class, 'index'])->name('client.stats.index');
+
+    // F-208: Analytics CSV/PDF Export (Client side)
+    // BR-459: Client sees only their own data
+    Route::get('/my-stats/export-csv', [\App\Http\Controllers\Client\SpendingStatsExportController::class, 'exportCsv'])->name('client.stats.export-csv');
+    Route::get('/my-stats/export-pdf', [\App\Http\Controllers\Client\SpendingStatsExportController::class, 'exportPdf'])->name('client.stats.export-pdf');
 });
 
 /*
@@ -434,6 +439,18 @@ Route::middleware('main.domain')->group(function () {
 
         // Admin Growth Metrics (F-207)
         Route::get('/analytics/growth', [\App\Http\Controllers\Admin\AdminGrowthMetricsController::class, 'index'])->name('admin.analytics.growth');
+
+        // F-208: Analytics CSV/PDF Export (Admin side)
+        // BR-449: Export formats: CSV and PDF
+        // BR-459: Admin sees platform-wide data
+        Route::get('/analytics/export-csv', [\App\Http\Controllers\Admin\AnalyticsExportController::class, 'platformExportCsv'])->name('admin.analytics.export-csv');
+        Route::get('/analytics/export-pdf', [\App\Http\Controllers\Admin\AnalyticsExportController::class, 'platformExportPdf'])->name('admin.analytics.export-pdf');
+        Route::get('/analytics/revenue/export-csv', [\App\Http\Controllers\Admin\AnalyticsExportController::class, 'revenueExportCsv'])->name('admin.analytics.revenue.export-csv');
+        Route::get('/analytics/revenue/export-pdf', [\App\Http\Controllers\Admin\AnalyticsExportController::class, 'revenueExportPdf'])->name('admin.analytics.revenue.export-pdf');
+        Route::get('/analytics/performance/export-csv', [\App\Http\Controllers\Admin\AnalyticsExportController::class, 'performanceExportCsv'])->name('admin.analytics.performance.export-csv');
+        Route::get('/analytics/performance/export-pdf', [\App\Http\Controllers\Admin\AnalyticsExportController::class, 'performanceExportPdf'])->name('admin.analytics.performance.export-pdf');
+        Route::get('/analytics/growth/export-csv', [\App\Http\Controllers\Admin\AnalyticsExportController::class, 'growthExportCsv'])->name('admin.analytics.growth.export-csv');
+        Route::get('/analytics/growth/export-pdf', [\App\Http\Controllers\Admin\AnalyticsExportController::class, 'growthExportPdf'])->name('admin.analytics.growth.export-pdf');
 
         // Financial Reports & Export (F-058)
         Route::get('/finance/reports', [\App\Http\Controllers\Admin\FinancialReportsController::class, 'index'])->name('admin.finance.reports');
@@ -667,6 +684,15 @@ Route::middleware('tenant.domain')->group(function () {
         // BR-380: All order statuses included in count
         // BR-387: Charts update via Gale when date range changes
         Route::get('/analytics/orders', [\App\Http\Controllers\Cook\OrderAnalyticsController::class, 'index'])->name('cook.analytics.orders');
+
+        // F-208: Analytics CSV/PDF Export (Cook side)
+        // BR-449: Export formats: CSV and PDF
+        // BR-453: Immediate download for datasets < 5,000 rows
+        // BR-459: Cook sees only their tenant's data
+        Route::get('/analytics/export-csv', [\App\Http\Controllers\Cook\AnalyticsExportController::class, 'revenueExportCsv'])->name('cook.analytics.export-csv');
+        Route::get('/analytics/export-pdf', [\App\Http\Controllers\Cook\AnalyticsExportController::class, 'revenueExportPdf'])->name('cook.analytics.export-pdf');
+        Route::get('/analytics/orders/export-csv', [\App\Http\Controllers\Cook\AnalyticsExportController::class, 'orderExportCsv'])->name('cook.analytics.orders.export-csv');
+        Route::get('/analytics/orders/export-pdf', [\App\Http\Controllers\Cook\AnalyticsExportController::class, 'orderExportPdf'])->name('cook.analytics.orders.export-pdf');
 
         // F-184: Cook/Manager Complaint Response
         // BR-195: Only cook or manager with manage-complaints permission (enforced in controller)

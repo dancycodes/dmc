@@ -11,6 +11,7 @@
         customEnd: @js($customEnd ?? ''),
         showCustom: @js($period === 'custom'),
         compare: @js($compare),
+        showExportMenu: false,
 
         changePeriod(newPeriod) {
             this.period = newPeriod;
@@ -32,6 +33,14 @@
                 url += '&custom_start=' + this.customStart + '&custom_end=' + this.customEnd;
             }
             $navigate(url, { key: 'revenue-analytics', replace: true });
+        },
+
+        buildExportUrl(format) {
+            let url = '/vault-entry/analytics/revenue/export-' + format + '?period=' + this.period;
+            if (this.period === 'custom' && this.customStart && this.customEnd) {
+                url += '&custom_start=' + this.customStart + '&custom_end=' + this.customEnd;
+            }
+            return url;
         }
     }"
     class="space-y-6"
@@ -49,6 +58,46 @@
             <p class="text-sm text-on-surface mt-0.5">
                 {{ __('Revenue, commission, cook performance and regional breakdown.') }}
             </p>
+        </div>
+
+        {{-- Top-right actions: Export + Period selector --}}
+        <div class="flex items-start gap-2">
+
+        {{-- Export Button (F-208) --}}
+        <div class="relative" @click.outside="showExportMenu = false">
+            <button
+                type="button"
+                @click="showExportMenu = !showExportMenu"
+                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-surface-alt border border-outline text-on-surface hover:bg-surface hover:border-outline-strong transition-colors duration-150 dark:bg-surface-alt dark:border-outline dark:text-on-surface dark:hover:bg-surface"
+                :aria-expanded="showExportMenu.toString()"
+            >
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>
+                </svg>
+                {{ __('Export') }}
+                <svg class="w-3.5 h-3.5 transition-transform duration-150" :class="showExportMenu ? 'rotate-180' : ''" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div
+                x-show="showExportMenu"
+                x-transition:enter="transition ease-out duration-100"
+                x-transition:enter-start="opacity-0 scale-95"
+                x-transition:enter-end="opacity-100 scale-100"
+                x-transition:leave="transition ease-in duration-75"
+                x-transition:leave-start="opacity-100 scale-100"
+                x-transition:leave-end="opacity-0 scale-95"
+                x-cloak
+                class="absolute right-0 mt-1 w-48 bg-surface border border-outline rounded-xl shadow-dropdown z-20 py-1 dark:bg-surface dark:border-outline"
+                role="menu"
+            >
+                <a :href="buildExportUrl('csv')" x-navigate-skip class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors duration-100" role="menuitem" @click="showExportMenu = false">
+                    <svg class="w-4 h-4 text-success shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
+                    <span>{{ __('Export as CSV') }}</span>
+                </a>
+                <a :href="buildExportUrl('pdf')" x-navigate-skip class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors duration-100" role="menuitem" @click="showExportMenu = false">
+                    <svg class="w-4 h-4 text-danger shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <span>{{ __('Export as PDF') }}</span>
+                </a>
+            </div>
         </div>
 
         {{-- Toolbar: period selector + comparison toggle --}}
@@ -115,6 +164,7 @@
                 </button>
             </div>
         </div>
+        </div>{{-- end flex actions wrapper --}}
     </div>
 
     @fragment('revenue-analytics-content')

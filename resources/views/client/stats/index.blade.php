@@ -19,16 +19,66 @@
 @section('title', __('My Stats'))
 
 @section('content')
-<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8" x-data>
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8" x-data="{ showExportMenu: false }">
 
     {{-- Page Header --}}
-    <div class="mb-6">
-        <h1 class="text-2xl sm:text-3xl font-display font-bold text-on-surface-strong">
-            {{ __('My Stats') }}
-        </h1>
-        <p class="mt-1 text-sm text-on-surface">
-            {{ __('Your personal spending and ordering patterns.') }}
-        </p>
+    <div class="flex items-start justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-display font-bold text-on-surface-strong">
+                {{ __('My Stats') }}
+            </h1>
+            <p class="mt-1 text-sm text-on-surface">
+                {{ __('Your personal spending and ordering patterns.') }}
+            </p>
+        </div>
+
+        @if($hasOrders)
+        {{-- Export Dropdown --}}
+        <div class="relative shrink-0">
+            <button
+                type="button"
+                @click="showExportMenu = !showExportMenu"
+                class="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-outline bg-surface text-on-surface hover:bg-surface-alt text-sm font-medium transition-colors duration-150"
+            >
+                {{-- Download icon (Lucide, sm=16) --}}
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
+                {{ __('Export') }}
+                <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div
+                x-show="showExportMenu"
+                @click.outside="showExportMenu = false"
+                x-transition:enter="transition ease-out duration-100"
+                x-transition:enter-start="opacity-0 scale-95"
+                x-transition:enter-end="opacity-100 scale-100"
+                x-transition:leave="transition ease-in duration-75"
+                x-transition:leave-start="opacity-100 scale-100"
+                x-transition:leave-end="opacity-0 scale-95"
+                class="absolute right-0 mt-1 w-40 bg-surface border border-outline rounded-lg shadow-dropdown z-20 overflow-hidden"
+            >
+                <a
+                    href="{{ route('client.stats.export-csv') }}"
+                    x-navigate-skip
+                    @click="showExportMenu = false"
+                    class="flex items-center gap-2 px-3 py-2 text-sm text-on-surface hover:bg-surface-alt transition-colors"
+                >
+                    {{-- FileText icon (Lucide, sm=16) --}}
+                    <svg class="w-4 h-4 text-on-surface/60" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" x2="8" y1="13" y2="13"></line><line x1="16" x2="8" y1="17" y2="17"></line><line x1="10" x2="8" y1="9" y2="9"></line></svg>
+                    {{ __('Export CSV') }}
+                </a>
+                <a
+                    href="{{ route('client.stats.export-pdf') }}"
+                    x-navigate-skip
+                    @click="showExportMenu = false"
+                    class="flex items-center gap-2 px-3 py-2 text-sm text-on-surface hover:bg-surface-alt transition-colors"
+                >
+                    {{-- File icon (Lucide, sm=16) --}}
+                    <svg class="w-4 h-4 text-on-surface/60" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                    {{ __('Export PDF') }}
+                </a>
+            </div>
+        </div>
+        @endif
     </div>
 
     @if(!$hasOrders)
