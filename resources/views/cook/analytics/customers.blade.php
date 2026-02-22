@@ -245,35 +245,29 @@
                     $maxValue = $chartData->max(fn($p) => $p['new'] + $p['returning']) ?: 1;
                 @endphp
 
-                {{-- Stacked bar chart --}}
-                <div class="h-40 flex items-end gap-1 sm:gap-2 overflow-x-auto pb-1">
+                {{-- Stacked bar chart: each column is a flex-col container with explicit h-40 reference --}}
+                <div class="flex items-end gap-1 sm:gap-2 overflow-x-auto pb-1">
                     @foreach($chartData as $point)
                         @php
                             $stackTotal = $point['new'] + $point['returning'];
-                            $totalPct = $maxValue > 0 ? round(($stackTotal / $maxValue) * 100) : 0;
-                            $totalPct = max($totalPct, $stackTotal > 0 ? 2 : 0);
-                            $newPct = $stackTotal > 0 ? round(($point['new'] / $stackTotal) * 100) : 0;
-                            $retPct = $stackTotal > 0 ? (100 - $newPct) : 0;
+                            $heightPx = $maxValue > 0 ? round(($stackTotal / $maxValue) * 160) : 0;
+                            $heightPx = $stackTotal > 0 ? max($heightPx, 4) : 0;
+                            $newPx = $stackTotal > 0 ? round(($point['new'] / $stackTotal) * $heightPx) : 0;
+                            $retPx = $heightPx - $newPx;
                         @endphp
-                        <div class="flex flex-col items-center flex-1 min-w-[28px]">
-                            <div
-                                class="w-full flex flex-col-reverse rounded-t overflow-hidden transition-all duration-300"
-                                style="height: {{ max($totalPct, 2) }}%; min-height: {{ $stackTotal > 0 ? '4px' : '0' }};"
-                                title="{{ $point['label'] }}: {{ $point['new'] }} {{ __('new') }}, {{ $point['returning'] }} {{ __('returning') }}"
-                            >
-                                @if($point['returning'] > 0)
-                                    <div
-                                        class="bg-success w-full shrink-0"
-                                        style="height: {{ $retPct }}%;"
-                                    ></div>
-                                @endif
-                                @if($point['new'] > 0)
-                                    <div
-                                        class="bg-primary w-full shrink-0"
-                                        style="height: {{ $newPct }}%;"
-                                    ></div>
-                                @endif
-                            </div>
+                        <div
+                            class="flex flex-col-reverse flex-1 min-w-[28px] rounded-t overflow-hidden cursor-default"
+                            style="height: 160px;"
+                            title="{{ $point['label'] }}: {{ $point['new'] }} {{ __('new') }}, {{ $point['returning'] }} {{ __('returning') }}"
+                        >
+                            {{-- Spacer to push bars to bottom --}}
+                            <div class="flex-1"></div>
+                            @if($retPx > 0)
+                                <div class="bg-success w-full shrink-0" style="height: {{ $retPx }}px;"></div>
+                            @endif
+                            @if($newPx > 0)
+                                <div class="bg-primary w-full shrink-0" style="height: {{ $newPx }}px;"></div>
+                            @endif
                         </div>
                     @endforeach
                 </div>
@@ -384,7 +378,7 @@
                         <thead>
                             <tr class="border-b border-outline">
                                 <th class="text-left py-2.5 pr-4 font-semibold text-on-surface text-xs uppercase tracking-wide w-8">#</th>
-                                <th class="text-left py-2.5 pr-4 font-semibold text-on-surface text-xs uppercase tracking-wide">{{ __('Customer') }}</th>
+                                <th class="text-left py-2.5 pr-4 font-semibold text-on-surface text-xs uppercase tracking-wide w-full max-w-0">{{ __('Customer') }}</th>
                                 <th class="text-right py-2.5 pr-4 font-semibold text-on-surface text-xs uppercase tracking-wide">{{ __('Orders') }}</th>
                                 <th class="text-right py-2.5 pr-4 font-semibold text-on-surface text-xs uppercase tracking-wide">{{ __('Total Spent') }}</th>
                                 <th class="text-right py-2.5 font-semibold text-on-surface text-xs uppercase tracking-wide">{{ __('Last Order') }}</th>
@@ -398,8 +392,8 @@
                                             {{ $i + 1 }}
                                         </span>
                                     </td>
-                                    <td class="py-3 pr-4">
-                                        <span class="font-medium text-on-surface-strong">{{ $customer['name'] }}</span>
+                                    <td class="py-3 pr-4 max-w-0">
+                                        <span class="font-medium text-on-surface-strong truncate block">{{ $customer['name'] }}</span>
                                     </td>
                                     <td class="py-3 pr-4 text-right">
                                         <span class="font-semibold text-on-surface-strong">{{ number_format($customer['order_count']) }}</span>
