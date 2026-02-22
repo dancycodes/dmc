@@ -168,7 +168,7 @@
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0 flex-1">
                             <p class="text-sm font-medium text-on-surface">{{ $card['label'] }}</p>
-                            <p class="text-2xl font-bold text-on-surface-strong mt-1 truncate">{{ $card['value'] }}</p>
+                            <p class="text-lg font-bold text-on-surface-strong mt-1 break-words leading-tight">{{ $card['value'] }}</p>
                             <p class="text-xs text-on-surface/60 mt-0.5">{{ $card['note'] }}</p>
                             @if($compare && $card['prev'])
                                 <p class="text-xs text-on-surface/50 mt-1">
