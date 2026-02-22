@@ -244,6 +244,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/my-orders/{order}/complaint', [\App\Http\Controllers\Client\ComplaintController::class, 'store'])->name('client.complaints.store');
     Route::get('/my-orders/{order}/complaint/{complaint}', [\App\Http\Controllers\Client\ComplaintController::class, 'show'])->name('client.complaints.show');
 
+    // Order Message Thread View (F-188)
+    // BR-244: Thread accessible only by order's client
+    Route::get('/my-orders/{order}/messages', [\App\Http\Controllers\Client\OrderMessageController::class, 'show'])->name('client.orders.messages');
+    Route::post('/my-orders/{order}/messages/load-older', [\App\Http\Controllers\Client\OrderMessageController::class, 'loadOlder'])->name('client.orders.messages.load-older');
+
     // Client Transaction History (F-164)
     // BR-260: All transactions across all tenants
     // BR-269: Authentication required
@@ -582,6 +587,11 @@ Route::middleware('tenant.domain')->group(function () {
         // F-158: Mass Order Status Update
         // BR-197: Only users with can-manage-orders permission (enforced in controller)
         Route::post('/orders/mass-update-status', [OrderController::class, 'massUpdateStatus'])->name('cook.orders.mass-update-status');
+
+        // F-188: Order Message Thread View (Cook/Manager)
+        // BR-244: Thread accessible only by cook or managers with manage-orders
+        Route::get('/orders/{order}/messages', [\App\Http\Controllers\Cook\OrderMessageController::class, 'show'])->name('cook.orders.messages');
+        Route::post('/orders/{order}/messages/load-older', [\App\Http\Controllers\Cook\OrderMessageController::class, 'loadOlder'])->name('cook.orders.messages.load-older');
 
         // F-181: Cook Testimonial Moderation
         // BR-443: Only users with can-manage-testimonials permission (enforced in controller)
