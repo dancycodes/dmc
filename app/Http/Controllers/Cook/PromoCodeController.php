@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Cook;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cook\StorePromoCodeRequest;
+use App\Http\Requests\Cook\UpdatePromoCodeRequest;
 use App\Models\PromoCode;
 use App\Services\PromoCodeService;
 use Illuminate\Http\Request;
@@ -170,5 +171,171 @@ class PromoCodeController extends Controller
 
         return gale()->redirect(route('cook.promo-codes.index'))
             ->with('toast', ['type' => 'success', 'message' => __('Promo code :code created.', ['code' => $promoCode->code])]);
+    }
+
+    /**
+     * Show the edit form data for a promo code.
+     *
+     * BR-549: Code string is displayed read-only.
+     * BR-551: Discount type is displayed but not editable.
+     * BR-552: If used, a usage count warning is displayed.
+     * BR-556: Only the cook can edit promo codes.
+     */
+    public function edit(Request $request, PromoCode $promoCode): mixed
+    {
+        $tenant = tenant();
+
+        // Ensure this promo code belongs to the current tenant
+        if ($promoCode->tenant_id !== $tenant->id) {
+            abort(404);
+        }
+
+        $usageCount = $promoCode->usages()->count();
+
+        if ($request->isGale()) {
+            // Return state to populate the edit modal
+            return gale()
+                ->state('showEditModal', true)
+                ->state('editId', $promoCode->id)
+                ->state('editCode', $promoCode->code)
+                ->state('editDiscountType', $promoCode->discount_type)
+                ->state('editDiscountValue', $promoCode->discount_value)
+                ->state('editMinimumOrderAmount', $promoCode->minimum_order_amount)
+                ->state('editMaxUses', $promoCode->max_uses)
+                ->state('editMaxUsesPerClient', $promoCode->max_uses_per_client)
+                ->state('editStartsAt', $promoCode->starts_at->toDateString())
+                ->state('editEndsAt', $promoCode->ends_at ? $promoCode->ends_at->toDateString() : '')
+                ->state('editNoEndDate', $promoCode->ends_at === null)
+                ->state('editUsageCount', $usageCount)
+                ->state('editTimesUsed', $promoCode->times_used);
+        }
+
+        return gale()->redirect(route('cook.promo-codes.index'));
+    }
+
+    /**
+     * Update an existing promo code.
+     *
+     * BR-549: Code string cannot be changed after creation.
+     * BR-550: Editable: discount_value, minimum_order_amount, max_uses,
+     *         max_uses_per_client, starts_at, ends_at.
+     * BR-551: Discount type cannot be changed after creation.
+     * BR-554: Validation rules same as creation for editable fields.
+     * BR-555: Setting max_uses below current usage is allowed (code becomes exhausted).
+     * BR-556: Only the cook can edit promo codes.
+     * BR-557: All edits logged via Spatie Activitylog.
+     */
+    public function update(Request $request, PromoCode $promoCode): mixed
+    {
+        $tenant = tenant();
+
+        // Ensure this promo code belongs to the current tenant
+        if ($promoCode->tenant_id !== $tenant->id) {
+            abort(404);
+        }
+
+        $today = now()->toDateString();
+
+        // Start date validation: allowed if code is already active and date is today or earlier
+        $isAlreadyActive = $promoCode->starts_at->toDateString() <= $today;
+
+        if ($request->isGale()) {
+            $validated = $request->validateState([
+                'editDiscountValue' => [
+                    'required',
+                    'integer',
+                    'min:1',
+                    'max:'.PromoCode::MAX_FIXED,
+                ],
+                'editMinimumOrderAmount' => [
+                    'required',
+                    'integer',
+                    'min:'.PromoCode::MIN_ORDER_AMOUNT,
+                    'max:'.PromoCode::MAX_ORDER_AMOUNT,
+                ],
+                'editMaxUses' => [
+                    'required',
+                    'integer',
+                    'min:0',
+                    'max:'.PromoCode::MAX_TOTAL_USES,
+                ],
+                'editMaxUsesPerClient' => [
+                    'required',
+                    'integer',
+                    'min:0',
+                    'max:'.PromoCode::MAX_PER_CLIENT_USES,
+                ],
+                'editStartsAt' => [
+                    'required',
+                    'date',
+                    'date_format:Y-m-d',
+                    // Allow today or future; but also allow keeping or setting an earlier date
+                    // when the code is already active (BR-554 edge case in F-216 spec)
+                    $isAlreadyActive ? 'before_or_equal:today' : 'after_or_equal:today',
+                ],
+                'editEndsAt' => [
+                    'nullable',
+                    'date',
+                    'date_format:Y-m-d',
+                    'after_or_equal:editStartsAt',
+                ],
+            ], [
+                'editDiscountValue.min' => __('The discount value must be at least 1.'),
+                'editStartsAt.after_or_equal' => __('The start date must be today or later.'),
+                'editStartsAt.before_or_equal' => __('The start date cannot be in the future for an active code.'),
+                'editEndsAt.after_or_equal' => __('The end date must be on or after the start date.'),
+            ]);
+        } else {
+            $httpValidated = app(UpdatePromoCodeRequest::class)->validated();
+            $validated = [
+                'editDiscountValue' => $httpValidated['discount_value'],
+                'editMinimumOrderAmount' => $httpValidated['minimum_order_amount'],
+                'editMaxUses' => $httpValidated['max_uses'],
+                'editMaxUsesPerClient' => $httpValidated['max_uses_per_client'],
+                'editStartsAt' => $httpValidated['starts_at'],
+                'editEndsAt' => $httpValidated['ends_at'] ?? null,
+            ];
+        }
+
+        // BR-554: Percentage range validation for editable discount value
+        if ($promoCode->discount_type === PromoCode::TYPE_PERCENTAGE
+            && ($validated['editDiscountValue'] < PromoCode::MIN_PERCENTAGE
+                || $validated['editDiscountValue'] > PromoCode::MAX_PERCENTAGE)
+        ) {
+            $errorMessage = __('Percentage discount must be between 1 and 100.');
+
+            if ($request->isGale()) {
+                return gale()->messages(['editDiscountValue' => [$errorMessage]]);
+            }
+
+            return back()->withErrors(['discount_value' => $errorMessage])->withInput();
+        }
+
+        $data = [
+            'discount_value' => $validated['editDiscountValue'],
+            'minimum_order_amount' => $validated['editMinimumOrderAmount'],
+            'max_uses' => $validated['editMaxUses'],
+            'max_uses_per_client' => $validated['editMaxUsesPerClient'],
+            'starts_at' => $validated['editStartsAt'],
+            'ends_at' => $validated['editEndsAt'] ?: null,
+        ];
+
+        $this->promoCodeService->updatePromoCode($promoCode, $data);
+
+        if ($request->isGale()) {
+            $promoCodes = $this->promoCodeService->getPromoCodesForTenant($tenant);
+
+            return gale()
+                ->fragment('cook.promo-codes.index', 'promo-list', compact('promoCodes'))
+                ->state('showEditModal', false)
+                ->state('editId', 0)
+                ->dispatch('toast', [
+                    'type' => 'success',
+                    'message' => __('Promo code :code updated.', ['code' => $promoCode->code]),
+                ]);
+        }
+
+        return gale()->redirect(route('cook.promo-codes.index'))
+            ->with('toast', ['type' => 'success', 'message' => __('Promo code :code updated.', ['code' => $promoCode->code])]);
     }
 }

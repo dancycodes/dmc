@@ -2,16 +2,21 @@
     Cook Promo Codes Page
     ---------------------
     F-215: Cook Promo Code Creation
+    F-216: Cook Promo Code Edit
 
-    Allows cooks to create promotional discount codes for their tenant site.
+    Allows cooks to create and edit promotional discount codes for their tenant site.
 
     Features:
     - Promo code list: code, type, value, status, uses/max, dates
-    - "Create Promo Code" button opens modal form
-    - Form modal with: code (auto-uppercase), discount type, value, min order,
+    - "Create Promo Code" button opens create modal form
+    - "Edit" button on each row opens edit modal pre-populated with current values
+    - Create form modal: code (auto-uppercase), discount type, value, min order,
       max uses, max per client, start date, end date (optional)
+    - Edit form modal: editable fields only (code and type are read-only)
+    - Usage count warning badge on edit modal for used codes
+    - Exhaustion warning when max_uses set below current usage
     - "No end date" checkbox hides the end date field
-    - After creation: list updates via Gale fragment, modal closes, toast shown
+    - After create/update: list updates via Gale fragment, modal closes, toast shown
     - Inline validation errors
     - Mobile-first responsive layout
     - Light/dark mode support
@@ -30,6 +35,13 @@
     BR-544: Created as active.
     BR-545: Cook-reserved action.
     BR-548: Gale handles all interactions.
+    BR-549: Code string read-only after creation.
+    BR-550: Editable: discount_value, min order, max uses, max per client, starts_at, ends_at.
+    BR-551: Discount type read-only after creation.
+    BR-552: Usage count warning shown on edit form.
+    BR-555: Setting max_uses below current usage allowed (code becomes exhausted).
+    BR-556: Only cook can edit promo codes.
+    BR-557: All edits logged via Spatie Activitylog.
 --}}
 @extends('layouts.cook-dashboard')
 
@@ -51,6 +63,20 @@
         ends_at: '',
         no_end_date: true,
 
+        showEditModal: false,
+        editId: 0,
+        editCode: '',
+        editDiscountType: 'percentage',
+        editDiscountValue: '',
+        editMinimumOrderAmount: 0,
+        editMaxUses: 0,
+        editMaxUsesPerClient: 0,
+        editStartsAt: '{{ now()->toDateString() }}',
+        editEndsAt: '',
+        editNoEndDate: true,
+        editUsageCount: 0,
+        editTimesUsed: 0,
+
         openModal() {
             this.showCreateModal = true;
             this.$nextTick(() => {
@@ -69,8 +95,35 @@
             this.starts_at = '{{ now()->toDateString() }}';
             this.ends_at = '';
             this.no_end_date = true;
-            // Clear Gale validation messages
-            this.messages = {};
+        },
+        closeEditModal() {
+            this.showEditModal = false;
+            this.editId = 0;
+            this.editCode = '';
+            this.editDiscountType = 'percentage';
+            this.editDiscountValue = '';
+            this.editMinimumOrderAmount = 0;
+            this.editMaxUses = 0;
+            this.editMaxUsesPerClient = 0;
+            this.editStartsAt = '{{ now()->toDateString() }}';
+            this.editEndsAt = '';
+            this.editNoEndDate = true;
+            this.editUsageCount = 0;
+            this.editTimesUsed = 0;
+        },
+        openEditModal(promoCodeId) {
+            $action('/dashboard/promo-codes/' + promoCodeId + '/edit', {
+                include: []
+            });
+        },
+        getEditDiscountUnit() {
+            return this.editDiscountType === 'percentage' ? '%' : 'XAF';
+        },
+        getEditDiscountMax() {
+            return this.editDiscountType === 'percentage' ? 100 : 100000;
+        },
+        isEditExhausted() {
+            return this.editMaxUses > 0 && this.editTimesUsed > 0 && this.editMaxUses < this.editTimesUsed;
         },
         getDiscountUnit() {
             return this.discount_type === 'percentage' ? '%' : 'XAF';
@@ -139,6 +192,7 @@
                             <th class="px-4 py-3 text-left font-semibold text-on-surface-strong">{{ __('Uses') }}</th>
                             <th class="px-4 py-3 text-left font-semibold text-on-surface-strong hidden lg:table-cell">{{ __('Dates') }}</th>
                             <th class="px-4 py-3 text-left font-semibold text-on-surface-strong">{{ __('Status') }}</th>
+                            <th class="px-4 py-3 text-left font-semibold text-on-surface-strong">{{ __('Actions') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-outline">
@@ -150,13 +204,7 @@
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-1.5">
                                     <span class="font-semibold text-primary">{{ $promoCode->discount_label }}</span>
-                                    <span class="text-xs text-on-surface">
-                                        @if ($promoCode->discount_type === 'percentage')
-                                            {{ __('off') }}
-                                        @else
-                                            {{ __('off') }}
-                                        @endif
-                                    </span>
+                                    <span class="text-xs text-on-surface">{{ __('off') }}</span>
                                 </div>
                             </td>
                             <td class="px-4 py-3 hidden lg:table-cell text-on-surface">
@@ -192,6 +240,20 @@
                                     </span>
                                 @endif
                             </td>
+                            <td class="px-4 py-3">
+                                {{-- F-216: Edit button --}}
+                                <button
+                                    @click="openEditModal({{ $promoCode->id }})"
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-primary bg-primary-subtle hover:bg-primary/20 rounded-lg transition-colors"
+                                    :aria-label="'{{ __('Edit') }}'"
+                                >
+                                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+                                        <path d="m15 5 4 4"></path>
+                                    </svg>
+                                    {{ __('Edit') }}
+                                </button>
+                            </td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -204,17 +266,31 @@
                 <div class="bg-surface-alt border border-outline rounded-xl p-4 shadow-card">
                     <div class="flex items-start justify-between gap-3 mb-3">
                         <span class="font-mono font-bold text-base text-on-surface-strong tracking-wide">{{ $promoCode->code }}</span>
-                        @if ($promoCode->status === 'active')
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-success-subtle text-success shrink-0">
-                                <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
-                                {{ __('Active') }}
-                            </span>
-                        @else
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-surface text-on-surface border border-outline shrink-0">
-                                <span class="w-1.5 h-1.5 rounded-full bg-on-surface opacity-40"></span>
-                                {{ __('Inactive') }}
-                            </span>
-                        @endif
+                        <div class="flex items-center gap-2 shrink-0">
+                            @if ($promoCode->status === 'active')
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-success-subtle text-success">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+                                    {{ __('Active') }}
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-surface text-on-surface border border-outline">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-on-surface opacity-40"></span>
+                                    {{ __('Inactive') }}
+                                </span>
+                            @endif
+                            {{-- F-216: Edit button --}}
+                            <button
+                                @click="openEditModal({{ $promoCode->id }})"
+                                class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-primary bg-primary-subtle hover:bg-primary/20 rounded-lg transition-colors"
+                                :aria-label="'{{ __('Edit') }}'"
+                            >
+                                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+                                    <path d="m15 5 4 4"></path>
+                                </svg>
+                                {{ __('Edit') }}
+                            </button>
+                        </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
@@ -260,6 +336,299 @@
         @endif
     </div>
     @endfragment
+
+    {{-- F-216: Edit Promo Code Modal --}}
+    <div
+        x-show="showEditModal"
+        x-cloak
+        class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+        role="dialog"
+        aria-modal="true"
+        x-on:keydown.escape.window="closeEditModal()"
+    >
+        {{-- Backdrop --}}
+        <div
+            class="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            @click="closeEditModal()"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            aria-hidden="true"
+        ></div>
+
+        {{-- Modal Panel --}}
+        <div
+            class="relative w-full sm:max-w-lg bg-surface border border-outline rounded-t-2xl sm:rounded-2xl shadow-dropdown max-h-[90vh] overflow-y-auto"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+            x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+            x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+        >
+            {{-- Modal Header --}}
+            <div class="flex items-center justify-between px-5 py-4 border-b border-outline sticky top-0 bg-surface z-10">
+                <h2 class="text-base font-semibold text-on-surface-strong">{{ __('Edit Promo Code') }}</h2>
+                <button
+                    @click="closeEditModal()"
+                    class="p-1.5 rounded-lg text-on-surface hover:bg-surface-alt transition-colors"
+                    :aria-label="'{{ __('Close') }}'"
+                >
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M18 6 6 18"></path><path d="m6 6 12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            {{-- Modal Form --}}
+            <form
+                @submit.prevent="if (editNoEndDate) { editEndsAt = '' } $action('/dashboard/promo-codes/' + editId, { method: 'PUT', include: ['editDiscountValue','editMinimumOrderAmount','editMaxUses','editMaxUsesPerClient','editStartsAt','editEndsAt'] })"
+                class="p-5 space-y-4"
+            >
+                {{-- BR-552: Usage count warning for used codes --}}
+                <div x-show="editTimesUsed > 0" class="flex items-center gap-2.5 px-3.5 py-2.5 bg-warning-subtle border border-warning/30 rounded-lg">
+                    <svg class="w-4 h-4 text-warning shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                        <path d="M12 9v4"></path><path d="M12 17h.01"></path>
+                    </svg>
+                    <span class="text-sm text-warning font-medium">
+                        {{ __('This code has been redeemed') }} <span x-text="editTimesUsed"></span> <span x-text="editTimesUsed === 1 ? @js(__('time')) : @js(__('times'))"></span>{{ __('. Changes apply to future uses only.') }}
+                    </span>
+                </div>
+
+                {{-- BR-555: Exhaustion warning when max_uses < times_used --}}
+                <div x-show="isEditExhausted()" class="flex items-center gap-2.5 px-3.5 py-2.5 bg-danger-subtle border border-danger/30 rounded-lg">
+                    <svg class="w-4 h-4 text-danger shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="m15 9-6 6"></path><path d="m9 9 6 6"></path>
+                    </svg>
+                    <span class="text-sm text-danger font-medium">
+                        {{ __('This code has already been used') }} <span x-text="editTimesUsed"></span> {{ __('times and will be immediately exhausted.') }}
+                    </span>
+                </div>
+
+                {{-- BR-549: Code string read-only with lock icon --}}
+                <div>
+                    <label class="block text-sm font-medium text-on-surface-strong mb-1.5">
+                        {{ __('Promo Code') }}
+                    </label>
+                    <div class="relative">
+                        <div class="absolute left-3.5 inset-y-0 flex items-center pointer-events-none">
+                            <svg class="w-4 h-4 text-on-surface opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                        </div>
+                        <input
+                            type="text"
+                            :value="editCode"
+                            readonly
+                            tabindex="-1"
+                            class="w-full pl-10 pr-3.5 py-2.5 bg-surface-alt border border-outline rounded-lg text-on-surface font-mono text-sm cursor-not-allowed opacity-70"
+                        >
+                    </div>
+                    <p class="mt-1 text-xs text-on-surface opacity-60">{{ __('The code cannot be changed after creation.') }}</p>
+                </div>
+
+                {{-- BR-551: Discount type read-only label --}}
+                <div>
+                    <span class="block text-sm font-medium text-on-surface-strong mb-1.5">{{ __('Discount Type') }}</span>
+                    <div class="flex items-center gap-2 px-3.5 py-2.5 bg-surface-alt border border-outline rounded-lg">
+                        <span
+                            class="inline-flex items-center gap-1.5 text-sm font-medium text-on-surface-strong"
+                            x-show="editDiscountType === 'percentage'"
+                        >
+                            <svg class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <line x1="19" x2="5" y1="5" y2="19"></line>
+                                <circle cx="6.5" cy="6.5" r="2.5"></circle>
+                                <circle cx="17.5" cy="17.5" r="2.5"></circle>
+                            </svg>
+                            {{ __('Percentage') }}
+                        </span>
+                        <span
+                            class="inline-flex items-center gap-1.5 text-sm font-medium text-on-surface-strong"
+                            x-show="editDiscountType === 'fixed'"
+                        >
+                            <svg class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <line x1="12" x2="12" y1="2" y2="22"></line>
+                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                            </svg>
+                            {{ __('Fixed Amount') }}
+                        </span>
+                        <svg class="w-4 h-4 text-on-surface opacity-40 ml-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                    </div>
+                    <p class="mt-1 text-xs text-on-surface opacity-60">{{ __('The discount type cannot be changed after creation.') }}</p>
+                </div>
+
+                {{-- BR-550: Editable - Discount Value --}}
+                <div>
+                    <label for="edit-discount-value-input" class="block text-sm font-medium text-on-surface-strong mb-1.5">
+                        {{ __('Discount Value') }}
+                        <span class="text-danger" aria-hidden="true">*</span>
+                    </label>
+                    <div class="relative">
+                        <input
+                            id="edit-discount-value-input"
+                            type="number"
+                            x-model.number="editDiscountValue"
+                            x-name="editDiscountValue"
+                            :min="1"
+                            :max="getEditDiscountMax()"
+                            step="1"
+                            class="w-full px-3.5 py-2.5 pr-14 bg-surface border border-outline rounded-lg text-on-surface-strong placeholder:text-on-surface/40 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary text-sm transition-colors"
+                            :placeholder="editDiscountType === 'percentage' ? '10' : '500'"
+                        >
+                        <div class="absolute right-0 inset-y-0 flex items-center px-3 pointer-events-none">
+                            <span class="text-sm font-semibold text-on-surface" x-text="getEditDiscountUnit()"></span>
+                        </div>
+                    </div>
+                    <p x-message="editDiscountValue" class="mt-1 text-xs text-danger" role="alert"></p>
+                    <p class="mt-1 text-xs text-on-surface opacity-60" x-show="editDiscountType === 'percentage'">{{ __('Enter a value between 1 and 100.') }}</p>
+                    <p class="mt-1 text-xs text-on-surface opacity-60" x-show="editDiscountType === 'fixed'">{{ __('Enter a value between 1 and 100,000 XAF.') }}</p>
+                </div>
+
+                {{-- BR-550: Editable - Minimum Order Amount --}}
+                <div>
+                    <label for="edit-min-order-input" class="block text-sm font-medium text-on-surface-strong mb-1.5">
+                        {{ __('Minimum Order Amount') }}
+                    </label>
+                    <div class="relative">
+                        <input
+                            id="edit-min-order-input"
+                            type="number"
+                            x-model.number="editMinimumOrderAmount"
+                            x-name="editMinimumOrderAmount"
+                            min="0"
+                            max="100000"
+                            step="1"
+                            placeholder="0"
+                            class="w-full px-3.5 py-2.5 pr-14 bg-surface border border-outline rounded-lg text-on-surface-strong placeholder:text-on-surface/40 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary text-sm transition-colors"
+                        >
+                        <div class="absolute right-0 inset-y-0 flex items-center px-3 pointer-events-none">
+                            <span class="text-sm font-semibold text-on-surface">XAF</span>
+                        </div>
+                    </div>
+                    <p x-message="editMinimumOrderAmount" class="mt-1 text-xs text-danger" role="alert"></p>
+                    <p class="mt-1 text-xs text-on-surface opacity-60">{{ __('Set to 0 for no minimum required.') }}</p>
+                </div>
+
+                {{-- BR-550: Editable - Max Uses & Max Per Client (2-column grid) --}}
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="edit-max-uses-input" class="block text-sm font-medium text-on-surface-strong mb-1.5">
+                            {{ __('Max Total Uses') }}
+                        </label>
+                        <input
+                            id="edit-max-uses-input"
+                            type="number"
+                            x-model.number="editMaxUses"
+                            x-name="editMaxUses"
+                            min="0"
+                            max="100000"
+                            step="1"
+                            placeholder="0"
+                            class="w-full px-3.5 py-2.5 bg-surface border border-outline rounded-lg text-on-surface-strong placeholder:text-on-surface/40 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary text-sm transition-colors"
+                        >
+                        <p x-message="editMaxUses" class="mt-1 text-xs text-danger" role="alert"></p>
+                        <p class="mt-1 text-xs text-on-surface opacity-60">{{ __('0 = unlimited') }}</p>
+                    </div>
+                    <div>
+                        <label for="edit-max-per-client-input" class="block text-sm font-medium text-on-surface-strong mb-1.5">
+                            {{ __('Max Per Client') }}
+                        </label>
+                        <input
+                            id="edit-max-per-client-input"
+                            type="number"
+                            x-model.number="editMaxUsesPerClient"
+                            x-name="editMaxUsesPerClient"
+                            min="0"
+                            max="100"
+                            step="1"
+                            placeholder="0"
+                            class="w-full px-3.5 py-2.5 bg-surface border border-outline rounded-lg text-on-surface-strong placeholder:text-on-surface/40 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary text-sm transition-colors"
+                        >
+                        <p x-message="editMaxUsesPerClient" class="mt-1 text-xs text-danger" role="alert"></p>
+                        <p class="mt-1 text-xs text-on-surface opacity-60">{{ __('0 = unlimited') }}</p>
+                    </div>
+                </div>
+
+                {{-- BR-550: Editable - Start Date --}}
+                <div>
+                    <label for="edit-starts-at-input" class="block text-sm font-medium text-on-surface-strong mb-1.5">
+                        {{ __('Start Date') }}
+                        <span class="text-danger" aria-hidden="true">*</span>
+                    </label>
+                    <input
+                        id="edit-starts-at-input"
+                        type="date"
+                        x-model="editStartsAt"
+                        x-name="editStartsAt"
+                        class="w-full px-3.5 py-2.5 bg-surface border border-outline rounded-lg text-on-surface-strong focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary text-sm transition-colors"
+                    >
+                    <p x-message="editStartsAt" class="mt-1 text-xs text-danger" role="alert"></p>
+                </div>
+
+                {{-- BR-550: Editable - End Date --}}
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label for="edit-ends-at-input" class="block text-sm font-medium text-on-surface-strong">
+                            {{ __('End Date') }}
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                                type="checkbox"
+                                x-model="editNoEndDate"
+                                class="w-3.5 h-3.5 rounded border-outline accent-primary cursor-pointer"
+                            >
+                            <span class="text-xs text-on-surface">{{ __('No end date') }}</span>
+                        </label>
+                    </div>
+                    <input
+                        id="edit-ends-at-input"
+                        type="date"
+                        x-model="editEndsAt"
+                        x-name="editEndsAt"
+                        :min="editStartsAt || '{{ now()->toDateString() }}'"
+                        :disabled="editNoEndDate"
+                        :class="editNoEndDate ? 'opacity-40 cursor-not-allowed' : ''"
+                        class="w-full px-3.5 py-2.5 bg-surface border border-outline rounded-lg text-on-surface-strong focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                    <p x-message="editEndsAt" class="mt-1 text-xs text-danger" role="alert"></p>
+                    <p class="mt-1 text-xs text-on-surface opacity-60" x-show="!editNoEndDate">{{ __('Must be on or after the start date.') }}</p>
+                </div>
+
+                {{-- Form Actions --}}
+                <div class="flex items-center gap-3 pt-2 border-t border-outline">
+                    <button
+                        type="submit"
+                        class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-on-primary text-sm font-semibold rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-60"
+                        :disabled="$fetching()"
+                    >
+                        <span x-show="!$fetching()">{{ __('Save Changes') }}</span>
+                        <span x-show="$fetching()" class="flex items-center gap-2">
+                            <svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+                            </svg>
+                            {{ __('Saving...') }}
+                        </span>
+                    </button>
+                    <button
+                        type="button"
+                        @click="closeEditModal()"
+                        class="px-4 py-2.5 text-on-surface text-sm font-medium rounded-lg border border-outline hover:bg-surface-alt transition-colors"
+                    >
+                        {{ __('Cancel') }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     {{-- Create Promo Code Modal --}}
     <div

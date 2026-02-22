@@ -750,6 +750,8 @@ Route::middleware('tenant.domain')->group(function () {
         // BR-548: Gale handles form and list interactions without page reloads
         Route::get('/promo-codes', [\App\Http\Controllers\Cook\PromoCodeController::class, 'index'])->name('cook.promo-codes.index');
         Route::post('/promo-codes', [\App\Http\Controllers\Cook\PromoCodeController::class, 'store'])->name('cook.promo-codes.store');
+        Route::get('/promo-codes/{promoCode}/edit', [\App\Http\Controllers\Cook\PromoCodeController::class, 'edit'])->name('cook.promo-codes.edit');
+        Route::put('/promo-codes/{promoCode}', [\App\Http\Controllers\Cook\PromoCodeController::class, 'update'])->name('cook.promo-codes.update');
     });
 
     // F-135: Meal Search Bar (public, on tenant domain)

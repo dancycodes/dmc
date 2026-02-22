@@ -95,6 +95,39 @@ class PromoCodeService
     }
 
     /**
+     * Update an existing promo code with new values.
+     *
+     * BR-550: Only editable fields are updated (code, discount_type are immutable).
+     * BR-553: Changes apply to future uses only; past orders retain original values.
+     * BR-557: All edits are logged via Spatie Activitylog with before/after values.
+     * BR-558: dontSubmitEmptyLogs prevents spurious log entries when no changes occur.
+     *
+     * @param  array{
+     *   discount_value: int,
+     *   minimum_order_amount: int,
+     *   max_uses: int,
+     *   max_uses_per_client: int,
+     *   starts_at: string,
+     *   ends_at: string|null,
+     * } $data
+     */
+    public function updatePromoCode(PromoCode $promoCode, array $data): PromoCode
+    {
+        $promoCode->fill([
+            'discount_value' => (int) $data['discount_value'],
+            'minimum_order_amount' => (int) $data['minimum_order_amount'],
+            'max_uses' => (int) $data['max_uses'],
+            'max_uses_per_client' => (int) $data['max_uses_per_client'],
+            'starts_at' => $data['starts_at'],
+            'ends_at' => $data['ends_at'] ?: null,
+        ]);
+
+        $promoCode->save();
+
+        return $promoCode;
+    }
+
+    /**
      * Format a promo code's discount value for display.
      */
     public function formatDiscountLabel(PromoCode $promoCode): string
