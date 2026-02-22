@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\FinancialReportRequest;
 use App\Services\FinancialReportsService;
 use Illuminate\Http\Response;
-use Illuminate\Http\StreamedResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * FinancialReportsController — admin financial reporting.
