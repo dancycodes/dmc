@@ -160,6 +160,13 @@
                     'permission' => 'can-manage-testimonials',
                     'cook_reserved' => false,
                 ],
+                [
+                    'url' => '/dashboard/promo-codes',
+                    'icon' => '<path d="M9 5H2v7l6.29 6.29c.94.94 2.48.94 3.42 0l3.58-3.58c.94-.94.94-2.48 0-3.42L9 5Z"></path><path d="M6 9.01V9"></path>',
+                    'label' => __('Promo Codes'),
+                    'permission' => null,
+                    'cook_reserved' => true,
+                ],
             ],
         ],
         [
