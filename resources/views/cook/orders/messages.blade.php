@@ -24,11 +24,17 @@
 <div
     class="max-w-2xl mx-auto"
     x-data="{
-        messages: {{ \Illuminate\Support\Js::from($messages) }},
+        thread: {{ \Illuminate\Support\Js::from($messages) }},
         hasOlderMessages: {{ $hasOlderMessages ? 'true' : 'false' }},
         oldestMessageId: {{ $oldestMessageId ?? 'null' }},
         isLoadingOlder: false,
         olderMessages: [],
+        body: '',
+        newMessage: null,
+
+        get charCount() { return this.body.length; },
+        get isOverLimit() { return this.body.length > 500; },
+        get canSend() { return this.body.trim().length > 0 && !this.isOverLimit; },
 
         init() {
             this.$nextTick(() => this.scrollToBottom());
@@ -58,7 +64,8 @@
                 const container = this.$refs.messageContainer;
                 const previousScrollHeight = container ? container.scrollHeight : 0;
 
-                this.messages = [...this.olderMessages, ...this.messages];
+                const current = Array.isArray(this.thread) ? this.thread : Object.values(this.thread || {});
+                this.thread = [...this.olderMessages, ...current];
                 this.olderMessages = null;
                 this.isLoadingOlder = false;
 
@@ -68,9 +75,30 @@
                     }
                 });
             }
+        },
+
+        handleNewMessage() {
+            if (this.newMessage) {
+                const current = Array.isArray(this.thread) ? this.thread : Object.values(this.thread || {});
+                this.thread = [...current, this.newMessage];
+                this.newMessage = null;
+                this.$nextTick(() => this.scrollToBottom());
+            }
+        },
+
+        handleSendKeydown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                if (this.canSend) {
+                    $action('{{ url('/dashboard/orders/' . $order->id . '/messages') }}', {
+                        include: ['body']
+                    });
+                }
+            }
         }
     }"
-    x-init="init(); $watch('olderMessages', val => { if (val && val.length > 0) applyOlderMessages(); })"
+    x-init="init(); $watch('olderMessages', val => { if (val && val.length > 0) applyOlderMessages(); }); $watch('newMessage', val => { if (val) handleNewMessage(); })"
+    x-sync="['body']"
 >
 
     {{-- Breadcrumb + Header --}}
@@ -145,7 +173,7 @@
                 x-ref="messageContainer"
             >
                 {{-- Empty state --}}
-                <template x-if="messages.length === 0">
+                <template x-if="thread.length === 0">
                     <div class="flex flex-col items-center justify-center py-16 text-center">
                         {{-- MessageCircle icon (Lucide, lg=24) --}}
                         <svg class="w-8 h-8 text-on-surface/20 mb-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>
@@ -156,7 +184,7 @@
 
                 {{-- Message bubbles (BR-240: chronological order) --}}
                 {{-- Cook/manager view: own messages (cook/manager) on right, client on left --}}
-                <template x-for="message in messages" :key="message.id">
+                <template x-for="message in thread" :key="message.id">
                     <div
                         class="flex flex-col gap-1"
                         :class="message.sender_role === 'client' ? 'items-start' : 'items-end'"
@@ -215,14 +243,61 @@
                     </p>
                 </div>
             @else
-                {{-- Message input placeholder (F-189) --}}
+                {{-- Message Input (F-189: Message Send) --}}
                 <div class="px-4 py-3 border-t border-outline dark:border-outline bg-surface-alt dark:bg-surface-alt">
-                    <div class="flex items-center gap-2 p-3 rounded-xl bg-surface dark:bg-surface border border-outline dark:border-outline text-on-surface/40 text-sm cursor-default">
-                        {{-- PenLine icon (Lucide, sm=16) --}}
-                        <svg class="w-4 h-4 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"></path></svg>
-                        <span>{{ __('Type a message...') }}</span>
+                    {{-- Validation error --}}
+                    <p x-message="body" class="text-xs text-danger mb-2 px-1 empty:hidden"></p>
+
+                    <div class="flex items-end gap-2">
+                        {{-- Text input area --}}
+                        <div class="flex-1 relative">
+                            <textarea
+                                x-model="body"
+                                x-on:keydown="handleSendKeydown($event)"
+                                x-name="body"
+                                rows="1"
+                                maxlength="510"
+                                placeholder="{{ __('Type a message...') }}"
+                                class="w-full resize-none rounded-xl px-4 py-2.5 text-sm bg-surface dark:bg-surface border transition-colors duration-200 outline-none focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-on-surface/40 leading-relaxed"
+                                :class="isOverLimit
+                                    ? 'border-danger focus:border-danger'
+                                    : 'border-outline dark:border-outline focus:border-primary'"
+                                style="min-height: 42px; max-height: 120px; overflow-y: auto; field-sizing: content;"
+                            ></textarea>
+                        </div>
+
+                        {{-- Send button --}}
+                        <button
+                            type="button"
+                            :disabled="!canSend || $fetching()"
+                            x-on:click="canSend && $action('{{ url('/dashboard/orders/' . $order->id . '/messages') }}', { include: ['body'] })"
+                            class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                            :class="canSend && !$fetching()
+                                ? 'bg-primary text-on-primary hover:bg-primary-hover shadow-sm'
+                                : 'bg-surface dark:bg-surface border border-outline dark:border-outline text-on-surface/30 cursor-not-allowed'"
+                            :aria-label="@js(__('Send message'))"
+                        >
+                            {{-- Loading spinner --}}
+                            <span x-show="$fetching()" class="animate-spin-slow">
+                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+                            </span>
+                            {{-- Send arrow icon --}}
+                            <span x-show="!$fetching()">
+                                {{-- SendHorizontal icon (Lucide, sm=16) --}}
+                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"></path><path d="M6 12h16"></path></svg>
+                            </span>
+                        </button>
                     </div>
-                    <p class="text-[10px] text-on-surface/30 text-center mt-2">{{ __('Message sending will be available soon.') }}</p>
+
+                    {{-- Character counter --}}
+                    <div class="flex items-center justify-between mt-1.5 px-1">
+                        <p class="text-[10px] text-on-surface/40">{{ __('Enter to send · Shift+Enter for new line') }}</p>
+                        <span
+                            class="text-[10px] tabular-nums transition-colors duration-150"
+                            :class="isOverLimit ? 'text-danger font-medium' : (charCount > 450 ? 'text-warning' : 'text-on-surface/40')"
+                            x-text="charCount + '/500'"
+                        ></span>
+                    </div>
                 </div>
             @endif
 

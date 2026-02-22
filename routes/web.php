@@ -244,10 +244,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/my-orders/{order}/complaint', [\App\Http\Controllers\Client\ComplaintController::class, 'store'])->name('client.complaints.store');
     Route::get('/my-orders/{order}/complaint/{complaint}', [\App\Http\Controllers\Client\ComplaintController::class, 'show'])->name('client.complaints.show');
 
-    // Order Message Thread View (F-188)
+    // Order Message Thread View (F-188) & Message Send (F-189)
     // BR-244: Thread accessible only by order's client
+    // F-189 BR-257: messaging rate limiter (10/min per user)
     Route::get('/my-orders/{order}/messages', [\App\Http\Controllers\Client\OrderMessageController::class, 'show'])->name('client.orders.messages');
     Route::post('/my-orders/{order}/messages/load-older', [\App\Http\Controllers\Client\OrderMessageController::class, 'loadOlder'])->name('client.orders.messages.load-older');
+    Route::post('/my-orders/{order}/messages', [\App\Http\Controllers\Client\OrderMessageController::class, 'send'])->name('client.orders.messages.send')->middleware('throttle:messaging');
 
     // Client Transaction History (F-164)
     // BR-260: All transactions across all tenants
@@ -588,10 +590,12 @@ Route::middleware('tenant.domain')->group(function () {
         // BR-197: Only users with can-manage-orders permission (enforced in controller)
         Route::post('/orders/mass-update-status', [OrderController::class, 'massUpdateStatus'])->name('cook.orders.mass-update-status');
 
-        // F-188: Order Message Thread View (Cook/Manager)
+        // F-188: Order Message Thread View (Cook/Manager) & F-189: Message Send
         // BR-244: Thread accessible only by cook or managers with manage-orders
+        // F-189 BR-257: messaging rate limiter (10/min per user)
         Route::get('/orders/{order}/messages', [\App\Http\Controllers\Cook\OrderMessageController::class, 'show'])->name('cook.orders.messages');
         Route::post('/orders/{order}/messages/load-older', [\App\Http\Controllers\Cook\OrderMessageController::class, 'loadOlder'])->name('cook.orders.messages.load-older');
+        Route::post('/orders/{order}/messages', [\App\Http\Controllers\Cook\OrderMessageController::class, 'send'])->name('cook.orders.messages.send')->middleware('throttle:messaging');
 
         // F-181: Cook Testimonial Moderation
         // BR-443: Only users with can-manage-testimonials permission (enforced in controller)

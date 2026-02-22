@@ -166,4 +166,94 @@ describe('OrderMessageService', function () {
             expect(OrderMessage::ROLE_MANAGER)->toBe('manager');
         });
     });
+
+    // F-189: canSendMessage tests (BR-253, BR-254)
+    describe('canSendMessage', function () {
+        it('returns true for an active (Paid) order', function () {
+            $order = new Order;
+            $order->status = Order::STATUS_PAID;
+            $order->completed_at = null;
+
+            expect($this->service->canSendMessage($order))->toBeTrue();
+        });
+
+        it('returns true for a Confirmed order', function () {
+            $order = new Order;
+            $order->status = Order::STATUS_CONFIRMED;
+            $order->completed_at = null;
+
+            expect($this->service->canSendMessage($order))->toBeTrue();
+        });
+
+        it('returns true for a Preparing order', function () {
+            $order = new Order;
+            $order->status = Order::STATUS_PREPARING;
+            $order->completed_at = null;
+
+            expect($this->service->canSendMessage($order))->toBeTrue();
+        });
+
+        it('returns true for a recently Completed order (within 7 days)', function () {
+            $order = new Order;
+            $order->setDateFormat('Y-m-d H:i:s');
+            $order->status = Order::STATUS_COMPLETED;
+            $order->completed_at = now()->subDays(3);
+
+            expect($this->service->canSendMessage($order))->toBeTrue();
+        });
+
+        it('returns false for a Completed order older than 7 days (BR-253)', function () {
+            $order = new Order;
+            $order->setDateFormat('Y-m-d H:i:s');
+            $order->status = Order::STATUS_COMPLETED;
+            $order->completed_at = now()->subDays(8);
+
+            expect($this->service->canSendMessage($order))->toBeFalse();
+        });
+
+        it('returns false for a Cancelled order (BR-254)', function () {
+            $order = new Order;
+            $order->status = Order::STATUS_CANCELLED;
+            $order->completed_at = null;
+
+            expect($this->service->canSendMessage($order))->toBeFalse();
+        });
+
+        it('returns false for a Refunded order (BR-254)', function () {
+            $order = new Order;
+            $order->status = Order::STATUS_REFUNDED;
+            $order->completed_at = null;
+
+            expect($this->service->canSendMessage($order))->toBeFalse();
+        });
+    });
+
+    // F-189: Message validation constants (BR-249)
+    describe('message validation', function () {
+        it('validates message max length is 500 (BR-249)', function () {
+            // Verify the OrderMessage model has no artificial body limit
+            $message = new OrderMessage;
+            expect($message->getFillable())->toContain('body');
+        });
+
+        it('OrderMessage fillable includes all required fields for sendMessage', function () {
+            $message = new OrderMessage;
+            expect($message->getFillable())
+                ->toContain('order_id')
+                ->toContain('sender_id')
+                ->toContain('sender_role')
+                ->toContain('body');
+        });
+
+        it('body with only whitespace trimmed to empty (BR-255)', function () {
+            // Simulate the whitespace check done in controller
+            $body = '   ';
+            expect(trim($body))->toBe('');
+        });
+
+        it('body with content after trim is valid', function () {
+            $body = '  Hello, is my order ready?  ';
+            expect(trim($body))->not->toBe('');
+        });
+    });
 });

@@ -128,6 +128,45 @@ class OrderMessageService
     }
 
     /**
+     * Send a new message in the order thread.
+     *
+     * F-189 BR-248: Messages are text-only.
+     * F-189 BR-249: Max 500 characters.
+     * F-189 BR-255: Whitespace-only messages stripped via trim.
+     * F-189 BR-256: HTML entities escaped via e() in Blade — body stored as plain text.
+     *
+     * @return array{message: \App\Models\OrderMessage, formatted: array<string, mixed>}
+     */
+    public function sendMessage(Order $order, User $sender, string $body): array
+    {
+        $senderRole = $this->getSenderRole($order, $sender);
+
+        $message = $order->messages()->create([
+            'sender_id' => $sender->id,
+            'sender_role' => $senderRole,
+            'body' => $body,
+        ]);
+
+        $message->load('sender');
+
+        return [
+            'message' => $message,
+            'formatted' => $this->formatMessage($message, $sender),
+        ];
+    }
+
+    /**
+     * Check if the order is available for messaging (not read-only).
+     *
+     * F-189 BR-253: Available while active and up to 7 days after Completed.
+     * F-189 BR-254: Disabled for Cancelled or Refunded orders.
+     */
+    public function canSendMessage(Order $order): bool
+    {
+        return ! $this->isThreadReadOnly($order);
+    }
+
+    /**
      * Check if the user is authorized to view the thread for this order.
      *
      * F-188 BR-244: Thread accessible only by order's client, tenant's cook, and authorized managers.
