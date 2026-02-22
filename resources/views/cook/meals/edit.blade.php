@@ -345,6 +345,115 @@
         </form>
     </div>
 
+    {{-- F-117: Estimated Preparation Time Section --}}
+    @if($canManageMeals)
+        <div
+            class="bg-surface-alt dark:bg-surface-alt border border-outline dark:border-outline rounded-xl shadow-card p-6 mb-6"
+            x-data="{
+                estimated_prep_time: {{ $meal->estimated_prep_time !== null ? (int) $meal->estimated_prep_time : 'null' }}
+            }"
+            x-sync="['estimated_prep_time']"
+        >
+            <div class="flex items-center gap-3 mb-5">
+                <span class="w-8 h-8 rounded-full bg-secondary-subtle flex items-center justify-center">
+                    {{-- Lucide: clock (md=20) --}}
+                    <svg class="w-5 h-5 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                </span>
+                <div>
+                    <h3 class="text-lg font-semibold text-on-surface-strong">{{ __('Preparation Time') }}</h3>
+                    <p class="text-xs text-on-surface/60">{{ __('Optional — helps clients plan their orders') }}</p>
+                </div>
+            </div>
+
+            <form @submit.prevent="$action('{{ url('/dashboard/meals/' . $meal->id . '/prep-time') }}', { method: 'PATCH' })">
+                <div class="max-w-xs">
+                    <label for="estimated_prep_time" class="block text-sm font-medium text-on-surface-strong mb-1.5">
+                        {{ __('Estimated Preparation Time') }}
+                        <span class="text-on-surface/50 font-normal">({{ __('optional') }})</span>
+                    </label>
+
+                    <div class="flex items-center gap-2">
+                        <input
+                            type="number"
+                            id="estimated_prep_time"
+                            x-model.number="estimated_prep_time"
+                            x-name="estimated_prep_time"
+                            min="1"
+                            max="1440"
+                            step="1"
+                            placeholder="{{ __('e.g. 30') }}"
+                            class="w-32 px-3 py-2.5 rounded-lg border border-outline dark:border-outline bg-surface dark:bg-surface text-on-surface placeholder:text-on-surface/40 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors duration-200"
+                        >
+                        <span class="text-sm text-on-surface/70">{{ __('minutes') }}</span>
+                    </div>
+
+                    <p class="mt-1.5 text-xs text-on-surface/50">
+                        {{ __('How long does this meal typically take to prepare?') }}
+                    </p>
+
+                    <p x-message="estimated_prep_time" class="mt-1 text-sm text-danger"></p>
+
+                    {{-- Preview of the formatted display --}}
+                    <div
+                        class="mt-3 flex items-center gap-1.5 text-xs text-on-surface/60"
+                        x-show="estimated_prep_time && estimated_prep_time >= 1"
+                        x-cloak
+                    >
+                        <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>
+                        <span>{{ __('Clients will see:') }}</span>
+                        <span class="font-medium text-on-surface-strong" x-text="
+                            estimated_prep_time < 60
+                                ? '{{ __('Est. prep: ~') }}' + estimated_prep_time + ' {{ __('min') }}'
+                                : '{{ __('Est. prep: ~') }}' + (
+                                    estimated_prep_time % 60 === 0
+                                        ? (estimated_prep_time / 60)
+                                        : Math.round(estimated_prep_time / 60 * 10) / 10
+                                  ) + ' {{ __('hr') }}'
+                        "></span>
+                    </div>
+
+                    {{-- Hint when cleared --}}
+                    <div
+                        class="mt-3 flex items-center gap-1.5 text-xs text-on-surface/50"
+                        x-show="!estimated_prep_time || estimated_prep_time < 1"
+                        x-cloak
+                    >
+                        <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        {{ __('No prep time will be shown to clients.') }}
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-start mt-5 pt-4 border-t border-outline dark:border-outline gap-3">
+                    <button
+                        type="submit"
+                        class="px-5 py-2 rounded-lg text-sm font-medium bg-primary text-on-primary hover:bg-primary-hover shadow-sm transition-colors duration-200 flex items-center gap-2"
+                    >
+                        <span x-show="!$fetching()">
+                            {{-- Lucide: save (sm=16) --}}
+                            <svg class="w-4 h-4 inline-block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                            {{ __('Save') }}
+                        </span>
+                        <span x-show="$fetching()" x-cloak class="flex items-center gap-2">
+                            <svg class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                            {{ __('Saving...') }}
+                        </span>
+                    </button>
+
+                    {{-- Clear button --}}
+                    @if($meal->estimated_prep_time !== null)
+                        <button
+                            type="button"
+                            @click="estimated_prep_time = null; $action('{{ url('/dashboard/meals/' . $meal->id . '/prep-time') }}', { method: 'PATCH', include: ['estimated_prep_time'] })"
+                            class="px-4 py-2 rounded-lg text-sm font-medium text-on-surface/60 hover:text-danger hover:bg-danger-subtle border border-outline dark:border-outline transition-colors duration-200"
+                        >
+                            {{ __('Clear') }}
+                        </button>
+                    @endif
+                </div>
+            </form>
+        </div>
+    @endif
+
     {{-- F-096: Location Override Section --}}
     @if($canManageLocations && $locationData)
         @include('cook.meals._location-override')

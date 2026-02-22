@@ -114,11 +114,11 @@
                     </div>
                 @endif
 
-                {{-- Prep time badge --}}
+                {{-- Prep time badge (BR-274: ~N min or ~N hr format) --}}
                 @if($mealData['prepTime'])
                     <div class="mt-3 inline-flex items-center gap-1.5 bg-surface-alt dark:bg-surface-alt border border-outline dark:border-outline text-on-surface text-sm font-medium rounded-full px-3 py-1">
                         <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                        {{ __('Prep time: :minutes min', ['minutes' => $mealData['prepTime']]) }}
+                        {{ __('Est. prep: :time', ['time' => $mealData['prepTime']]) }}
                     </div>
                 @endif
 

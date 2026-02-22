@@ -39,8 +39,8 @@ class MealService
                 $q->orderBy('position')->limit(1);
             }]);
 
-        // Forward-compatible: eager load order count if orders table exists
-        if (Schema::hasTable('orders')) {
+        // Forward-compatible: eager load order count if orders table and meal_id column exist
+        if (Schema::hasTable('orders') && Schema::hasColumn('orders', 'meal_id')) {
             $query->withCount('orders');
         }
 
@@ -81,7 +81,7 @@ class MealService
                 $query->orderBy('created_at', 'asc');
                 break;
             case 'most_ordered':
-                if (Schema::hasTable('orders')) {
+                if (Schema::hasTable('orders') && Schema::hasColumn('orders', 'meal_id')) {
                     $query->orderByDesc('orders_count');
                 } else {
                     $query->orderByDesc('created_at');
@@ -295,8 +295,8 @@ class MealService
      */
     public function canDeleteMeal(Meal $meal): array
     {
-        // Forward-compatible: orders table does not exist yet (created in future features)
-        if (! Schema::hasTable('orders')) {
+        // Forward-compatible: orders table does not exist yet or meal_id column not yet added
+        if (! Schema::hasTable('orders') || ! Schema::hasColumn('orders', 'meal_id')) {
             return ['can_delete' => true, 'pending_count' => 0];
         }
 
@@ -432,13 +432,40 @@ class MealService
     }
 
     /**
+     * Update a meal's estimated preparation time.
+     *
+     * F-117: Meal Estimated Preparation Time
+     * BR-270: Estimated preparation time is optional (nullable).
+     * BR-271: Value stored as an integer representing minutes.
+     * BR-272: Minimum value: 1 minute.
+     * BR-273: Maximum value: 1440 minutes (24 hours).
+     * BR-276: Only users with can-manage-meals permission (enforced in controller).
+     * BR-277: Changes are logged via Spatie Activitylog.
+     *
+     * @return array{success: bool, meal: Meal, old_prep_time: int|null, new_prep_time: int|null}
+     */
+    public function updatePrepTime(Meal $meal, ?int $prepTime): array
+    {
+        $oldPrepTime = $meal->estimated_prep_time;
+
+        $meal->update(['estimated_prep_time' => $prepTime]);
+
+        return [
+            'success' => true,
+            'meal' => $meal,
+            'old_prep_time' => $oldPrepTime,
+            'new_prep_time' => $prepTime,
+        ];
+    }
+
+    /**
      * Get the count of completed orders for a meal (for confirmation dialog context).
      *
      * Forward-compatible: returns 0 if orders table does not exist.
      */
     public function getCompletedOrderCount(Meal $meal): int
     {
-        if (! Schema::hasTable('orders')) {
+        if (! Schema::hasTable('orders') || ! Schema::hasColumn('orders', 'meal_id')) {
             return 0;
         }
 

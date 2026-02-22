@@ -37,11 +37,11 @@
             </div>
         @endif
 
-        {{-- BR-150: Prep time badge --}}
+        {{-- BR-150: Prep time badge (BR-274: ~N min or ~N hr format) --}}
         @if($card['prepTime'])
             <div class="absolute top-2 right-2 flex items-center gap-1 bg-surface/90 dark:bg-surface/90 backdrop-blur-sm text-on-surface-strong text-xs font-medium rounded-full px-2.5 py-1 shadow-sm">
                 <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                {{ $card['prepTime'] }} {{ __('min') }}
+                {{ __('Est. prep: :time', ['time' => $card['prepTime']]) }}
             </div>
         @endif
 
