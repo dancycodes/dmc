@@ -361,7 +361,7 @@
 
         {{-- Modal Panel --}}
         <div
-            class="relative w-full sm:max-w-lg bg-surface border border-outline rounded-t-2xl sm:rounded-2xl shadow-dropdown max-h-[90vh] overflow-y-auto"
+            class="relative w-full sm:max-w-lg bg-surface dark:bg-surface border border-outline dark:border-outline rounded-t-2xl sm:rounded-2xl shadow-dropdown max-h-[90vh] overflow-y-auto"
             x-transition:enter="transition ease-out duration-200"
             x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
@@ -370,7 +370,7 @@
             x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
         >
             {{-- Modal Header --}}
-            <div class="flex items-center justify-between px-5 py-4 border-b border-outline sticky top-0 bg-surface z-10">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-outline dark:border-outline sticky top-0 bg-surface dark:bg-surface z-10">
                 <h2 class="text-base font-semibold text-on-surface-strong">{{ __('Edit Promo Code') }}</h2>
                 <button
                     @click="closeEditModal()"
@@ -412,12 +412,12 @@
 
                 {{-- BR-549: Code string read-only with lock icon --}}
                 <div>
-                    <label class="block text-sm font-medium text-on-surface-strong mb-1.5">
+                    <label class="block text-sm font-medium text-on-surface-strong dark:text-on-surface-strong mb-1.5">
                         {{ __('Promo Code') }}
                     </label>
                     <div class="relative">
                         <div class="absolute left-3.5 inset-y-0 flex items-center pointer-events-none">
-                            <svg class="w-4 h-4 text-on-surface opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <svg class="w-4 h-4 text-on-surface dark:text-on-surface opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                             </svg>
@@ -427,10 +427,10 @@
                             :value="editCode"
                             readonly
                             tabindex="-1"
-                            class="w-full pl-10 pr-3.5 py-2.5 bg-surface-alt border border-outline rounded-lg text-on-surface font-mono text-sm cursor-not-allowed opacity-70"
+                            class="w-full pl-10 pr-3.5 py-2.5 bg-surface-alt dark:bg-surface-alt border border-outline dark:border-outline rounded-lg text-on-surface dark:text-on-surface font-mono text-sm cursor-not-allowed opacity-70"
                         >
                     </div>
-                    <p class="mt-1 text-xs text-on-surface opacity-60">{{ __('The code cannot be changed after creation.') }}</p>
+                    <p class="mt-1 text-xs text-on-surface dark:text-on-surface opacity-60">{{ __('The code cannot be changed after creation.') }}</p>
                 </div>
 
                 {{-- BR-551: Discount type read-only label --}}
@@ -481,7 +481,7 @@
                             :min="1"
                             :max="getEditDiscountMax()"
                             step="1"
-                            class="w-full px-3.5 py-2.5 pr-14 bg-surface border border-outline rounded-lg text-on-surface-strong placeholder:text-on-surface/40 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary text-sm transition-colors"
+                            class="w-full px-3.5 py-2.5 pr-14 bg-surface dark:bg-surface border border-outline dark:border-outline rounded-lg text-on-surface-strong dark:text-on-surface-strong placeholder:text-on-surface/40 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary text-sm transition-colors"
                             :placeholder="editDiscountType === 'percentage' ? '10' : '500'"
                         >
                         <div class="absolute right-0 inset-y-0 flex items-center px-3 pointer-events-none">
@@ -654,7 +654,7 @@
 
         {{-- Modal Panel --}}
         <div
-            class="relative w-full sm:max-w-lg bg-surface border border-outline rounded-t-2xl sm:rounded-2xl shadow-dropdown max-h-[90vh] overflow-y-auto"
+            class="relative w-full sm:max-w-lg bg-surface dark:bg-surface border border-outline dark:border-outline rounded-t-2xl sm:rounded-2xl shadow-dropdown max-h-[90vh] overflow-y-auto"
             x-transition:enter="transition ease-out duration-200"
             x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
@@ -663,7 +663,7 @@
             x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
         >
             {{-- Modal Header --}}
-            <div class="flex items-center justify-between px-5 py-4 border-b border-outline sticky top-0 bg-surface z-10">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-outline dark:border-outline sticky top-0 bg-surface dark:bg-surface z-10">
                 <h2 class="text-base font-semibold text-on-surface-strong">{{ __('Create Promo Code') }}</h2>
                 <button
                     @click="closeModal()"
