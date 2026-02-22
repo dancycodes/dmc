@@ -39,6 +39,7 @@
         reorder_conflict: false,
         reorder_conflict_tenant_name: '',
         force_replace: false,
+        isReordering: false,
         submittedStars: {{ $existingRating?->stars ?? 0 }},
         submittedReview: '{{ addslashes($existingRating?->review ?? '') }}',
         hoverStars: 0,
@@ -50,16 +51,18 @@
         statusToastMessage: '',
 
         initiateReorder() {
+            this.isReordering = true;
             this.reorder_conflict = false;
             this.reorder_conflict_tenant_name = '';
             this.force_replace = false;
-            $action('{{ url('/my-orders/' . $order->id . '/reorder') }}');
+            $action('{{ url('/my-orders/' . $order->id . '/reorder') }}').finally(() => { this.isReordering = false; });
         },
 
         confirmReplaceCart() {
+            this.isReordering = true;
             this.force_replace = true;
             this.showReorderConflictConfirm = false;
-            $action('{{ url('/my-orders/' . $order->id . '/reorder') }}', { include: ['force_replace'] });
+            $action('{{ url('/my-orders/' . $order->id . '/reorder') }}', { include: ['force_replace'] }).finally(() => { this.isReordering = false; });
         },
 
         formatCountdown(seconds) {
@@ -171,19 +174,19 @@
                     <button
                         type="button"
                         class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-primary text-on-primary hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        :disabled="$fetching()"
+                        :disabled="isReordering"
                         x-on:click="initiateReorder()"
                         title="{{ __('Reorder these items') }}"
                     >
-                        <span x-show="!$fetching()">
+                        <span x-show="!isReordering">
                             {{-- RotateCcw icon (Lucide, sm=16) --}}
                             <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
                         </span>
-                        <span x-show="$fetching()" class="animate-spin-slow">
+                        <span x-show="isReordering" class="animate-spin-slow">
                             <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
                         </span>
-                        <span x-show="!$fetching()">{{ __('Reorder') }}</span>
-                        <span x-show="$fetching()">{{ __('Preparing...') }}</span>
+                        <span x-show="!isReordering">{{ __('Reorder') }}</span>
+                        <span x-show="isReordering">{{ __('Preparing...') }}</span>
                     </button>
                 @endif
             </div>
@@ -243,7 +246,7 @@
                         type="button"
                         class="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium border border-outline dark:border-outline text-on-surface hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors"
                         x-on:click="showReorderConflictConfirm = false"
-                        :disabled="$fetching()"
+                        :disabled="isReordering"
                     >
                         {{ __('Keep Current Cart') }}
                     </button>
@@ -251,14 +254,14 @@
                     <button
                         type="button"
                         class="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium bg-warning text-on-warning hover:bg-warning/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        :disabled="$fetching()"
+                        :disabled="isReordering"
                         x-on:click="confirmReplaceCart()"
                     >
-                        <span x-show="!$fetching()">
+                        <span x-show="!isReordering">
                             {{-- RotateCcw icon (Lucide, sm=16) --}}
                             <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
                         </span>
-                        <span x-show="$fetching()" class="animate-spin-slow">
+                        <span x-show="isReordering" class="animate-spin-slow">
                             <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
                         </span>
                         {{ __('Replace Cart & Reorder') }}
