@@ -642,6 +642,12 @@ Route::middleware('tenant.domain')->group(function () {
         Route::post('/testimonials/{testimonial}/unapprove', [TestimonialModerationController::class, 'unapprove'])->name('cook.testimonials.unapprove');
         Route::post('/testimonials/{testimonial}/toggle-featured', [TestimonialModerationController::class, 'toggleFeatured'])->name('cook.testimonials.toggle-featured');
 
+        // F-200: Cook Revenue Analytics
+        // BR-368: Revenue data is tenant-scoped
+        // BR-369: Revenue is from completed/delivered/picked_up orders only
+        // BR-370: Net revenue = grand_total - commission_amount (cook's portion)
+        Route::get('/analytics', [\App\Http\Controllers\Cook\RevenueAnalyticsController::class, 'index'])->name('cook.analytics.revenue');
+
         // F-184: Cook/Manager Complaint Response
         // BR-195: Only cook or manager with manage-complaints permission (enforced in controller)
         Route::get('/complaints', [\App\Http\Controllers\Cook\ComplaintController::class, 'index'])->name('cook.complaints.index');
