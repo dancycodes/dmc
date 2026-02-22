@@ -87,6 +87,18 @@
                     {{ __('Customers') }}
                 </span>
             </a>
+            <a
+                href="/dashboard/analytics/delivery"
+                x-navigate
+                class="px-4 py-2.5 text-sm font-medium text-on-surface hover:text-on-surface-strong border-b-2 border-transparent hover:border-outline-strong transition-colors duration-150 -mb-px whitespace-nowrap"
+            >
+                <span class="flex items-center gap-1.5">
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 3h15v13H1z"></path><path d="M16 8h4l3 3v5h-7V8z"></path><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle>
+                    </svg>
+                    {{ __('Delivery') }}
+                </span>
+            </a>
         </div>
 
         <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

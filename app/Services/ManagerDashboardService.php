@@ -58,6 +58,7 @@ class ManagerDashboardService
         'dashboard/analytics' => 'can-view-cook-analytics',
         'dashboard/analytics/orders' => 'can-view-cook-analytics',
         'dashboard/analytics/customers' => 'can-view-cook-analytics',
+        'dashboard/analytics/delivery' => 'can-view-cook-analytics',
         'dashboard/complaints' => 'can-manage-complaints',
         'dashboard/messages' => 'can-manage-messages',
         'dashboard/testimonials' => 'can-manage-testimonials',
