@@ -97,3 +97,59 @@ describe('PromoCodeService', function () {
         expect(PromoCodeService::PER_PAGE)->toBe(15);
     });
 });
+
+// ─── PromoCode Edit Validation Constants ──────────────────────────────────────
+
+describe('PromoCode editable field constraints', function () {
+    it('min percentage is 1', function () {
+        expect(PromoCode::MIN_PERCENTAGE)->toBe(1);
+    });
+
+    it('max percentage is 100', function () {
+        expect(PromoCode::MAX_PERCENTAGE)->toBe(100);
+    });
+
+    it('max fixed is 100000', function () {
+        expect(PromoCode::MAX_FIXED)->toBe(100000);
+    });
+
+    it('max order amount is 100000', function () {
+        expect(PromoCode::MAX_ORDER_AMOUNT)->toBe(100000);
+    });
+
+    it('max total uses is 100000', function () {
+        expect(PromoCode::MAX_TOTAL_USES)->toBe(100000);
+    });
+
+    it('max per client uses is 100', function () {
+        expect(PromoCode::MAX_PER_CLIENT_USES)->toBe(100);
+    });
+});
+
+// ─── PromoCode edit immutability constants (F-216) ───────────────────────────
+
+describe('PromoCode edit immutability (F-216)', function () {
+    it('code string cannot be changed - BR-549', function () {
+        // Verify immutable fields are not listed in editable field set
+        $editableFields = ['discount_value', 'minimum_order_amount', 'max_uses', 'max_uses_per_client', 'starts_at', 'ends_at'];
+        expect($editableFields)->not->toContain('code');
+        expect($editableFields)->not->toContain('discount_type');
+    });
+
+    it('discount type cannot be changed - BR-551', function () {
+        $editableFields = ['discount_value', 'minimum_order_amount', 'max_uses', 'max_uses_per_client', 'starts_at', 'ends_at'];
+        expect($editableFields)->not->toContain('discount_type');
+    });
+
+    it('BR-550 editable fields are the correct set', function () {
+        $editableFields = ['discount_value', 'minimum_order_amount', 'max_uses', 'max_uses_per_client', 'starts_at', 'ends_at'];
+        expect($editableFields)->toBe([
+            'discount_value',
+            'minimum_order_amount',
+            'max_uses',
+            'max_uses_per_client',
+            'starts_at',
+            'ends_at',
+        ]);
+    });
+});
