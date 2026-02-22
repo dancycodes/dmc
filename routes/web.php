@@ -656,6 +656,16 @@ Route::middleware('tenant.domain')->group(function () {
     Route::get('/reviews/load-more', [\App\Http\Controllers\Tenant\AllReviewsController::class, 'loadMore'])
         ->name('tenant.reviews.load-more');
 
+    // F-180: Testimonial Submission Form
+    // BR-426: Only authenticated clients with completed orders can submit
+    // BR-427: One testimonial per client per tenant
+    // BR-428: Max 1,000 characters enforced server-side
+    // BR-429: Submitted testimonials start as 'pending'
+    // honeypot: Bot protection on public-facing form
+    Route::post('/testimonials', [\App\Http\Controllers\Tenant\TestimonialController::class, 'submit'])
+        ->middleware('honeypot')
+        ->name('tenant.testimonial.submit');
+
     // F-138: Meal Component Selection & Cart Add (public, on tenant domain)
     // BR-246: Cart state in session, accessible across tenant site
     // BR-247: Guest carts work via session without authentication

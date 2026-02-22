@@ -157,7 +157,9 @@ class DashboardController extends Controller
         $tenant = tenant();
         $page = max(1, (int) $request->query('page', 1));
 
-        $landingData = $landingService->getLandingPageData($tenant, $page);
+        // F-180: Pass current user for testimonial eligibility + duplicate detection.
+        $currentUser = auth()->user();
+        $landingData = $landingService->getLandingPageData($tenant, $page, $currentUser);
 
         return gale()->view('tenant.home', $landingData, web: true);
     }

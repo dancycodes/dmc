@@ -327,9 +327,29 @@
     </section>
 
     {{-- ============================================ --}}
-    {{-- TESTIMONIALS SECTION (F-131 will populate)   --}}
+    {{-- TESTIMONIALS SECTION — F-180: Submission     --}}
+    {{-- F-131: Approved display (populates hasData)  --}}
+    {{-- BR-431: Accessible on the cook's page        --}}
+    {{-- BR-436: All text localized via __()          --}}
     {{-- ============================================ --}}
-    {{-- Hidden until F-131 populates with data --}}
+    <section id="testimonials" class="scroll-mt-16 py-12 sm:py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-8 sm:mb-12">
+                <h2 class="text-2xl sm:text-3xl font-display font-bold text-on-surface-strong dark:text-on-surface-strong">
+                    {{ __('Testimonials') }}
+                </h2>
+                <p class="mt-2 text-on-surface dark:text-on-surface max-w-2xl mx-auto">
+                    {{ __('What our customers are saying about us.') }}
+                </p>
+            </div>
+
+            {{-- F-180: Testimonial submission form section --}}
+            @include('tenant._testimonial-submission', [
+                'testimonialContext' => $testimonialContext,
+                'tenant' => $tenant,
+            ])
+        </div>
+    </section>
 
     {{-- ============================================ --}}
     {{-- SCHEDULE SECTION — F-132: Schedule &         --}}

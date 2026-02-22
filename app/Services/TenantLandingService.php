@@ -14,6 +14,7 @@ use App\Models\QuarterGroup;
 use App\Models\Rating;
 use App\Models\Tag;
 use App\Models\Tenant;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -33,6 +34,7 @@ class TenantLandingService
 
     public function __construct(
         private TenantThemeService $tenantThemeService,
+        private TestimonialService $testimonialService,
     ) {}
 
     /**
@@ -59,9 +61,9 @@ class TenantLandingService
      * BR-126: Only renders on tenant domains
      * BR-127: Cook's selected theme applied dynamically
      *
-     * @return array{tenant: Tenant, themeConfig: array, sections: array, cookProfile: array, meals: LengthAwarePaginator, scheduleDisplay: array, deliveryDisplay: array, filterData: array, ratingsDisplay: array, cancellationWindowMinutes: int, minimumOrderAmount: int}
+     * @return array{tenant: Tenant, themeConfig: array, sections: array, cookProfile: array, meals: LengthAwarePaginator, scheduleDisplay: array, deliveryDisplay: array, filterData: array, ratingsDisplay: array, cancellationWindowMinutes: int, minimumOrderAmount: int, testimonialContext: array{isAuthenticated: bool, isEligible: bool, existingTestimonial: \App\Models\Testimonial|null}}
      */
-    public function getLandingPageData(Tenant $tenant, int $page = 1): array
+    public function getLandingPageData(Tenant $tenant, int $page = 1, ?User $currentUser = null): array
     {
         $themeConfig = $this->tenantThemeService->resolveThemeConfig($tenant);
         $cookProfile = $this->buildCookProfile($tenant);
@@ -78,6 +80,9 @@ class TenantLandingService
         // F-213 BR-512: The minimum order amount is displayed on the tenant landing page (when > 0).
         $minimumOrderAmount = $tenant->getMinimumOrderAmount();
 
+        // F-180: Testimonial submission context — eligibility + duplicate detection.
+        $testimonialContext = $this->testimonialService->getSubmissionContext($currentUser, $tenant);
+
         return [
             'tenant' => $tenant,
             'themeConfig' => $themeConfig,
@@ -90,6 +95,7 @@ class TenantLandingService
             'filterData' => $filterData,
             'cancellationWindowMinutes' => $cancellationWindowMinutes,
             'minimumOrderAmount' => $minimumOrderAmount,
+            'testimonialContext' => $testimonialContext,
         ];
     }
 
