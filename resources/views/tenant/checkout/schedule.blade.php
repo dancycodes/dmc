@@ -21,14 +21,17 @@
     $availableDateKeys = array_keys(array_filter($availableDates, fn($d) => $d['available']));
 @endphp
 
+{{-- Safe JSON data island — avoids HTML attribute escaping issues with double quotes --}}
+<script id="cart-warnings-data" type="application/json">@json($cartWarnings)</script>
+
 <div class="min-h-screen"
     x-data="{
         scheduleType: @js($currentScheduledDate ? 'scheduled' : 'asap'),
         scheduled_date: @js($currentScheduledDate ?? ''),
-        cartWarnings: @json($cartWarnings),
+        cartWarnings: JSON.parse(document.getElementById('cart-warnings-data').textContent),
         showWarning: {{ !empty($cartWarnings) ? 'true' : 'false' }},
         savedDate: @js($currentScheduledDate ?? ''),
-        savedDateFormatted: @js($currentScheduledDate ? app(\App\Services\OrderSchedulingService::class)->formatScheduledDate($currentScheduledDate) : ''),
+        savedDateFormatted: @js($currentScheduledDateFormatted ?? ''),
 
         get hasDate() {
             return this.scheduleType === 'scheduled' && this.scheduled_date !== '';
@@ -51,11 +54,6 @@
             this.cartWarnings = [];
             this.savedDate = '';
             this.savedDateFormatted = '';
-        },
-
-        proceed() {
-            if (!this.canProceed) { return; }
-            $action('/checkout/schedule', { include: ['scheduleType', 'scheduled_date'] });
         },
 
         proceedDespiteWarning() {
@@ -306,7 +304,7 @@
                 type="button"
                 class="flex-1 h-11 inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg shadow-card transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 :disabled="!canProceed || $fetching()"
-                @click="proceed()"
+                @click="canProceed && $action('/checkout/schedule', { include: ['scheduleType', 'scheduled_date'] })"
             >
                 <span x-show="!$fetching()">
                     {{ __('Continue to Review') }}
@@ -339,7 +337,7 @@
                 type="button"
                 class="shrink-0 h-11 px-6 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg shadow-card transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
                 :disabled="!canProceed || $fetching()"
-                @click="proceed()"
+                @click="canProceed && $action('/checkout/schedule', { include: ['scheduleType', 'scheduled_date'] })"
             >
                 <span x-show="!$fetching()">{{ __('Continue') }}</span>
                 <svg x-show="!$fetching()" class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>

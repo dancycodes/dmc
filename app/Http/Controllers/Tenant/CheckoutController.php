@@ -773,6 +773,9 @@ class CheckoutController extends Controller
             'tenant' => $tenant,
             'availableDates' => $availableDates,
             'currentScheduledDate' => $currentScheduledDate,
+            'currentScheduledDateFormatted' => $currentScheduledDate
+                ? $this->orderSchedulingService->formatScheduledDate($currentScheduledDate)
+                : '',
             'nextAvailableSlot' => $nextAvailableSlot,
             'hasAvailableDates' => $hasAvailableDates,
             'cartWarnings' => $cartWarnings,
@@ -810,11 +813,11 @@ class CheckoutController extends Controller
         }
 
         $validated = $request->validateState([
-            'schedule_type' => 'required|in:asap,scheduled',
+            'scheduleType' => 'required|in:asap,scheduled',
             'scheduled_date' => 'nullable|string|date_format:Y-m-d',
         ]);
 
-        $scheduleType = $validated['schedule_type'];
+        $scheduleType = $validated['scheduleType'];
         $scheduledDate = $validated['scheduled_date'] ?? null;
 
         // BR-335: If "as soon as possible", clear any scheduled date
