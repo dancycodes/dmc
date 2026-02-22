@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Order;
 use App\Models\PaymentTransaction;
+use App\Models\PromoCode;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +26,7 @@ class PaymentService
         private FlutterwaveService $flutterwaveService,
         private CheckoutService $checkoutService,
         private CartService $cartService,
+        private PromoCodeValidationService $promoValidationService,
     ) {}
 
     /**
@@ -72,6 +74,36 @@ class PaymentService
 
         try {
             $order = DB::transaction(function () use ($tenant, $client, $checkoutData, $orderSummary, $cart) {
+                // BR-583: Re-validate promo code at order placement time (race condition check)
+                $promoCodeId = $orderSummary['promo_code_id'] ?? null;
+                $promoDiscount = $orderSummary['promo_discount'];
+                $promoCode = null;
+
+                if ($promoCodeId) {
+                    $promoCode = PromoCode::lockForUpdate()->find($promoCodeId);
+
+                    if ($promoCode) {
+                        $revalidation = $this->promoValidationService->validate(
+                            $promoCode->code,
+                            $tenant->id,
+                            $client->id,
+                            $orderSummary['subtotal'],
+                        );
+
+                        if (! $revalidation['valid']) {
+                            // Clear the promo from session and re-throw as exception
+                            // so the controller can handle it gracefully
+                            $this->checkoutService->clearPromoCode($tenant->id);
+                            throw new \RuntimeException('promo_invalid:'.$revalidation['error']);
+                        }
+                    } else {
+                        // Promo code was deleted between apply and submit
+                        $this->checkoutService->clearPromoCode($tenant->id);
+                        $promoCodeId = null;
+                        $promoDiscount = 0;
+                    }
+                }
+
                 $order = Order::create([
                     'client_id' => $client->id,
                     'tenant_id' => $tenant->id,
@@ -85,7 +117,8 @@ class PaymentService
                     'pickup_location_id' => $checkoutData['pickup_location_id'] ?? null,
                     'subtotal' => $orderSummary['subtotal'],
                     'delivery_fee' => $orderSummary['delivery_fee'],
-                    'promo_discount' => $orderSummary['promo_discount'],
+                    'promo_discount' => $promoDiscount,
+                    'promo_code_id' => $promoCodeId,
                     'grand_total' => $orderSummary['grand_total'],
                     'phone' => $checkoutData['phone'],
                     'payment_provider' => $checkoutData['payment_provider'],
@@ -94,6 +127,16 @@ class PaymentService
                     'scheduled_date' => $checkoutData['scheduled_date'] ?? null,
                 ]);
 
+                // BR-582: Record promo code usage only when order is successfully placed
+                if ($promoCode && $promoCodeId) {
+                    $this->promoValidationService->recordUsage(
+                        $promoCode,
+                        $order->id,
+                        $client->id,
+                        $promoDiscount,
+                    );
+                }
+
                 return $order;
             });
 
@@ -101,6 +144,31 @@ class PaymentService
                 'success' => true,
                 'order' => $order,
                 'error' => null,
+            ];
+        } catch (\RuntimeException $e) {
+            // BR-583: Promo code became invalid between apply and submit
+            if (str_starts_with($e->getMessage(), 'promo_invalid:')) {
+                $promoError = substr($e->getMessage(), strlen('promo_invalid:'));
+
+                return [
+                    'success' => false,
+                    'order' => null,
+                    'error' => $promoError,
+                    'promo_invalid' => true,
+                ];
+            }
+
+            Log::error('Order creation failed', [
+                'tenant_id' => $tenant->id,
+                'client_id' => $client->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'order' => null,
+                'error' => __('Failed to create order. Please try again.'),
+                'promo_invalid' => false,
             ];
         } catch (\Exception $e) {
             Log::error('Order creation failed', [
@@ -113,6 +181,7 @@ class PaymentService
                 'success' => false,
                 'order' => null,
                 'error' => __('Failed to create order. Please try again.'),
+                'promo_invalid' => false,
             ];
         }
     }

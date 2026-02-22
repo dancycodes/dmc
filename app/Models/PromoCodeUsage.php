@@ -20,11 +20,43 @@ class PromoCodeUsage extends Model
     protected $table = 'promo_code_usages';
 
     /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
+    protected $fillable = [
+        'promo_code_id',
+        'order_id',
+        'user_id',
+        'discount_amount',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'discount_amount' => 'integer',
+        ];
+    }
+
+    /**
      * The promo code that was used.
      */
     public function promoCode(): BelongsTo
     {
         return $this->belongsTo(PromoCode::class);
+    }
+
+    /**
+     * The order on which this promo code was used.
+     */
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
     }
 
     /**

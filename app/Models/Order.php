@@ -150,6 +150,7 @@ class Order extends Model
         'subtotal',
         'delivery_fee',
         'promo_discount',
+        'promo_code_id',
         'grand_total',
         'wallet_amount',
         'phone',
@@ -240,6 +241,26 @@ class Order extends Model
     public function pickupLocation(): BelongsTo
     {
         return $this->belongsTo(PickupLocation::class);
+    }
+
+    /**
+     * Get the promo code applied to this order.
+     *
+     * F-218: Nullable — orders may not have a promo code.
+     */
+    public function promoCode(): BelongsTo
+    {
+        return $this->belongsTo(PromoCode::class);
+    }
+
+    /**
+     * Get the promo code usage record for this order.
+     *
+     * F-218: Created when order is successfully placed (not at application time).
+     */
+    public function promoCodeUsage(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(PromoCodeUsage::class);
     }
 
     /**

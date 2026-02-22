@@ -10,12 +10,14 @@ use App\Models\Quarter;
 use App\Models\Tenant;
 use App\Services\CartService;
 use App\Services\CheckoutService;
+use App\Services\CookSettingsService;
 use App\Services\OrderNotificationService;
 use App\Services\OrderSchedulingService;
 use App\Services\PaymentNotificationService;
 use App\Services\PaymentReceiptService;
 use App\Services\PaymentRetryService;
 use App\Services\PaymentService;
+use App\Services\PromoCodeValidationService;
 use App\Services\WalletPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -51,6 +53,8 @@ class CheckoutController extends Controller
         private PaymentReceiptService $paymentReceiptService,
         private WalletPaymentService $walletPaymentService,
         private OrderSchedulingService $orderSchedulingService,
+        private PromoCodeValidationService $promoValidationService,
+        private CookSettingsService $cookSettingsService,
     ) {}
 
     /**
@@ -707,6 +711,15 @@ class CheckoutController extends Controller
             ? $this->orderSchedulingService->formatScheduledDate($rawScheduledDate)
             : null;
 
+        // F-218: Get applied promo code data for the summary view
+        $appliedPromoCode = $this->checkoutService->getPromoCode($tenant->id) ?? '';
+        $minimumOrderAmount = $this->cookSettingsService->getMinimumOrderAmount($tenant);
+
+        // BR-580/BR-581: Check if post-discount total is below minimum
+        $postDiscountSubtotal = $orderSummary['subtotal'] - $orderSummary['promo_discount'];
+        $belowMinimum = $minimumOrderAmount > 0 && $postDiscountSubtotal < $minimumOrderAmount;
+        $amountNeeded = $belowMinimum ? ($minimumOrderAmount - $postDiscountSubtotal) : 0;
+
         return gale()->view('tenant.checkout.summary', [
             'tenant' => $tenant,
             'orderSummary' => $orderSummary,
@@ -714,6 +727,10 @@ class CheckoutController extends Controller
             'phone' => $phone,
             'backUrl' => $backUrl,
             'scheduledDate' => $scheduledDate,
+            'appliedPromoCode' => $appliedPromoCode,
+            'minimumOrderAmount' => $minimumOrderAmount,
+            'belowMinimum' => $belowMinimum,
+            'amountNeeded' => $amountNeeded,
         ], web: true);
     }
 
@@ -885,6 +902,140 @@ class CheckoutController extends Controller
 
         return gale()->redirect(url('/checkout/summary'))
             ->with('message', __('Reverted to next available slot.'));
+    }
+
+    /**
+     * F-218: Apply a promo code during checkout.
+     *
+     * BR-572: Only one promo code per order.
+     * BR-573: Code is case-insensitive (normalized to uppercase).
+     * BR-574: Validation follows all rules in F-219.
+     * BR-584: Order summary updates reactively via Gale.
+     * BR-585: All user-facing text uses __() localization.
+     */
+    public function applyPromoCode(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        if (! auth()->check()) {
+            return gale()->redirect(route('login'))
+                ->with('message', __('Please login to proceed with your order.'));
+        }
+
+        $cart = $this->cartService->getCartWithAvailability($tenant->id);
+        if (empty($cart['items'])) {
+            return gale()->redirect(url('/cart'))
+                ->with('message', __('Your cart is empty.'));
+        }
+
+        // Validate input
+        $validated = $request->validateState([
+            'promo_code_input' => 'required|string|max:20',
+        ]);
+
+        // BR-573: Normalize to uppercase, trim whitespace
+        $code = strtoupper(trim($validated['promo_code_input']));
+
+        // BR-572: One promo code only — reject if another is already applied
+        $existingCode = $this->checkoutService->getPromoCode($tenant->id);
+        if ($existingCode) {
+            return gale()->state('promoError', __('Only one promo code can be applied per order. Remove the current code first.'));
+        }
+
+        // Calculate food subtotal for minimum order check
+        $orderSummary = $this->checkoutService->getOrderSummary($tenant->id, $cart);
+        $foodSubtotal = $orderSummary['subtotal'];
+
+        // BR-574: Run full F-219 validation
+        $validation = $this->promoValidationService->validate(
+            $code,
+            $tenant->id,
+            auth()->id(),
+            $foodSubtotal,
+        );
+
+        if (! $validation['valid']) {
+            return gale()->state('promoError', $validation['error']);
+        }
+
+        $promoCode = $validation['promoCode'];
+
+        // Save promo code to session
+        $this->checkoutService->setPromoCode($tenant->id, $promoCode->id, $promoCode->code);
+
+        // Recalculate summary with promo
+        $updatedSummary = $this->checkoutService->getOrderSummary($tenant->id, $cart);
+        $discountAmount = $updatedSummary['promo_discount'];
+
+        // BR-581: Check post-discount total against tenant minimum order amount
+        $minimumOrderAmount = $this->cookSettingsService->getMinimumOrderAmount($tenant);
+        $postDiscountSubtotal = $foodSubtotal - $discountAmount;
+        $belowMinimum = $minimumOrderAmount > 0 && $postDiscountSubtotal < $minimumOrderAmount;
+        $amountNeeded = $belowMinimum ? ($minimumOrderAmount - $postDiscountSubtotal) : 0;
+
+        // Build discount label for display
+        $discountLabel = $promoCode->discount_type === \App\Models\PromoCode::TYPE_PERCENTAGE
+            ? '-'.$promoCode->discount_value.'%: -'.number_format($discountAmount).' XAF'
+            : '-'.number_format($discountAmount).' XAF';
+
+        return gale()
+            ->state('promoError', '')
+            ->state('appliedPromoCode', $promoCode->code)
+            ->state('promoDiscountAmount', $discountAmount)
+            ->state('promoDiscountLabel', $discountLabel)
+            ->state('promoInput', '')
+            ->state('grandTotal', $updatedSummary['grand_total'])
+            ->state('belowMinimum', $belowMinimum)
+            ->state('amountNeeded', $amountNeeded)
+            ->state('minimumOrderAmount', $minimumOrderAmount);
+    }
+
+    /**
+     * F-218: Remove an applied promo code during checkout.
+     *
+     * BR-579: Client can remove an applied code; the discount is immediately reversed.
+     * BR-584: Order summary updates reactively via Gale.
+     */
+    public function removePromoCode(Request $request): mixed
+    {
+        $tenant = tenant();
+
+        if (! $tenant) {
+            abort(404);
+        }
+
+        if (! auth()->check()) {
+            return gale()->redirect(route('login'))
+                ->with('message', __('Please login to proceed with your order.'));
+        }
+
+        // Clear the promo code from session
+        $this->checkoutService->clearPromoCode($tenant->id);
+
+        // Recalculate summary without promo
+        $cart = $this->cartService->getCartWithAvailability($tenant->id);
+        $updatedSummary = $this->checkoutService->getOrderSummary($tenant->id, $cart);
+
+        // Recheck minimum order amount without discount
+        $minimumOrderAmount = $this->cookSettingsService->getMinimumOrderAmount($tenant);
+        $postDiscountSubtotal = $updatedSummary['subtotal'];
+        $belowMinimum = $minimumOrderAmount > 0 && $postDiscountSubtotal < $minimumOrderAmount;
+        $amountNeeded = $belowMinimum ? ($minimumOrderAmount - $postDiscountSubtotal) : 0;
+
+        return gale()
+            ->state('promoError', '')
+            ->state('appliedPromoCode', '')
+            ->state('promoDiscountAmount', 0)
+            ->state('promoDiscountLabel', '')
+            ->state('promoInput', '')
+            ->state('grandTotal', $updatedSummary['grand_total'])
+            ->state('belowMinimum', $belowMinimum)
+            ->state('amountNeeded', $amountNeeded)
+            ->state('minimumOrderAmount', $minimumOrderAmount);
     }
 
     /**

@@ -54,7 +54,7 @@ class CheckoutService
     /**
      * Get checkout session data for a tenant.
      *
-     * @return array{delivery_method: string|null, delivery_location: array|null, delivery_fee: int|null, pickup_location_id: int|null, phone: string|null, payment_provider: string|null, payment_phone: string|null, use_wallet: bool, scheduled_date: string|null}
+     * @return array{delivery_method: string|null, delivery_location: array|null, delivery_fee: int|null, pickup_location_id: int|null, phone: string|null, payment_provider: string|null, payment_phone: string|null, use_wallet: bool, scheduled_date: string|null, promo_code_id: int|null, promo_code: string|null}
      */
     public function getCheckoutData(int $tenantId): array
     {
@@ -68,6 +68,8 @@ class CheckoutService
             'payment_phone' => null,
             'use_wallet' => false,
             'scheduled_date' => null,
+            'promo_code_id' => null,
+            'promo_code' => null,
         ]);
     }
 
@@ -609,9 +611,33 @@ class CheckoutService
         $deliveryFee = $this->getStoredDeliveryFee($tenantId);
         $deliveryDisplay = $this->getDeliveryFeeDisplayData($tenantId);
 
-        // BR-320: Promo discount (F-215 - forward-compatible stub)
+        // BR-320: Promo discount (F-218)
         $promoDiscount = 0;
         $promoCode = null;
+        $promoCodeId = null;
+
+        // Load promo code from session and calculate discount
+        $sessionPromoId = $this->getPromoCodeId($tenantId);
+        $sessionPromoCode = $this->getPromoCode($tenantId);
+
+        if ($sessionPromoId && $sessionPromoCode) {
+            $promoCodeModel = \App\Models\PromoCode::find($sessionPromoId);
+
+            if ($promoCodeModel && $promoCodeModel->isCurrentlyActive()) {
+                // BR-575/BR-576: Calculate discount on food subtotal only
+                $rawDiscount = $promoCodeModel->discount_type === \App\Models\PromoCode::TYPE_PERCENTAGE
+                    ? (int) floor($subtotal * $promoCodeModel->discount_value / 100)
+                    : $promoCodeModel->discount_value;
+
+                // BR-577: Cap at food subtotal — never negative
+                $promoDiscount = min($rawDiscount, $subtotal);
+                $promoCode = $sessionPromoCode;
+                $promoCodeId = $promoCodeModel->id;
+            } else {
+                // Code became invalid; clear from session silently
+                $this->clearPromoCode($tenantId);
+            }
+        }
 
         // BR-321: Grand total = subtotal + delivery fee - promo discount
         // Edge case: promo discount exceeding subtotal means food portion is free
@@ -635,6 +661,7 @@ class CheckoutService
             'delivery_display' => $deliveryDisplay,
             'promo_discount' => $effectiveDiscount,
             'promo_code' => $promoCode,
+            'promo_code_id' => $promoCodeId,
             'grand_total' => $grandTotal,
             'item_count' => $itemCount,
             'price_changes' => $priceChanges,
@@ -1045,6 +1072,55 @@ class CheckoutService
         $data = $this->getCheckoutData($tenantId);
 
         return $data['scheduled_date'] ?? null;
+    }
+
+    /**
+     * F-218: Save an applied promo code to the checkout session.
+     *
+     * BR-572: Only one promo code per order.
+     * BR-573: Stored as PromoCode id to re-validate at submit time.
+     */
+    public function setPromoCode(int $tenantId, int $promoCodeId, string $promoCode): void
+    {
+        $data = $this->getCheckoutData($tenantId);
+        $data['promo_code_id'] = $promoCodeId;
+        $data['promo_code'] = strtoupper($promoCode);
+
+        session([$this->getSessionKey($tenantId) => $data]);
+    }
+
+    /**
+     * F-218: Remove the applied promo code from the checkout session.
+     *
+     * BR-579: Client can remove an applied code; discount is immediately reversed.
+     */
+    public function clearPromoCode(int $tenantId): void
+    {
+        $data = $this->getCheckoutData($tenantId);
+        $data['promo_code_id'] = null;
+        $data['promo_code'] = null;
+
+        session([$this->getSessionKey($tenantId) => $data]);
+    }
+
+    /**
+     * F-218: Get the saved promo code ID from checkout session.
+     */
+    public function getPromoCodeId(int $tenantId): ?int
+    {
+        $data = $this->getCheckoutData($tenantId);
+
+        return $data['promo_code_id'] ?? null;
+    }
+
+    /**
+     * F-218: Get the saved promo code string from checkout session.
+     */
+    public function getPromoCode(int $tenantId): ?string
+    {
+        $data = $this->getCheckoutData($tenantId);
+
+        return $data['promo_code'] ?? null;
     }
 
     /**
