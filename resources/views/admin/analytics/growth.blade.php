@@ -42,45 +42,24 @@
 
         <div class="flex items-start gap-2">
             {{-- Export Dropdown --}}
-            <div class="relative" x-data>
+            <div class="relative" @click.outside="showExportMenu = false">
                 <button
                     type="button"
-                    @click="$root.showExportMenu = !$root.showExportMenu"
+                    @click="showExportMenu = !showExportMenu"
                     class="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-outline bg-surface text-on-surface hover:bg-surface-alt text-sm font-medium transition-colors duration-150 shrink-0"
+                    :aria-expanded="showExportMenu.toString()"
                 >
                     {{-- Download icon (Lucide, sm=16) --}}
                     <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
                     {{ __('Export') }}
-                    <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                    <svg class="w-3.5 h-3.5 transition-transform duration-150" :class="showExportMenu ? 'rotate-180' : ''" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
                 </button>
-                <div
-                    x-show="$root.showExportMenu"
-                    @click.outside="$root.showExportMenu = false"
-                    x-transition:enter="transition ease-out duration-100"
-                    x-transition:enter-start="opacity-0 scale-95"
-                    x-transition:enter-end="opacity-100 scale-100"
-                    x-transition:leave="transition ease-in duration-75"
-                    x-transition:leave-start="opacity-100 scale-100"
-                    x-transition:leave-end="opacity-0 scale-95"
-                    class="absolute right-0 mt-1 w-40 bg-surface border border-outline rounded-lg shadow-dropdown z-20 overflow-hidden"
-                >
-                    <a
-                        :href="$root.buildExportUrl('csv')"
-                        x-navigate-skip
-                        @click="$root.showExportMenu = false"
-                        class="flex items-center gap-2 px-3 py-2 text-sm text-on-surface hover:bg-surface-alt transition-colors"
-                    >
-                        {{-- FileText icon (Lucide, sm=16) --}}
+                <div x-show="showExportMenu" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-75" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" x-cloak class="absolute right-0 mt-1 w-48 bg-surface border border-outline rounded-xl shadow-dropdown z-20 py-1 dark:bg-surface dark:border-outline" role="menu">
+                    <a :href="buildExportUrl('csv')" x-navigate-skip class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors duration-100" role="menuitem" @click="showExportMenu = false">
                         <svg class="w-4 h-4 text-on-surface/60" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" x2="8" y1="13" y2="13"></line><line x1="16" x2="8" y1="17" y2="17"></line><line x1="10" x2="8" y1="9" y2="9"></line></svg>
                         {{ __('Export CSV') }}
                     </a>
-                    <a
-                        :href="$root.buildExportUrl('pdf')"
-                        x-navigate-skip
-                        @click="$root.showExportMenu = false"
-                        class="flex items-center gap-2 px-3 py-2 text-sm text-on-surface hover:bg-surface-alt transition-colors"
-                    >
-                        {{-- File icon (Lucide, sm=16) --}}
+                    <a :href="buildExportUrl('pdf')" x-navigate-skip class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors duration-100" role="menuitem" @click="showExportMenu = false">
                         <svg class="w-4 h-4 text-on-surface/60" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
                         {{ __('Export PDF') }}
                     </a>
