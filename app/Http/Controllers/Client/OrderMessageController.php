@@ -61,7 +61,7 @@ class OrderMessageController extends Controller
             abort(403);
         }
 
-        $beforeId = (int) $request->state('beforeId', 0);
+        $beforeId = (int) $request->state('oldestMessageId', 0);
 
         if ($beforeId <= 0) {
             return gale()->state('hasOlderMessages', false);
