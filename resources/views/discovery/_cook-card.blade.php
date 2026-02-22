@@ -1,6 +1,6 @@
 {{--
-    Cook Card Component (F-067)
-    ---------------------------
+    Cook Card Component (F-067, F-196)
+    -----------------------------------
     Reusable card displaying a cook's summary on the discovery grid.
     BR-074: Shows name, description, cover carousel, meal count, rating, town.
     BR-075: Cover images auto-carousel every 4s, pauses on hover (desktop).
@@ -10,6 +10,11 @@
     BR-079: Description truncated to 2 lines with ellipsis.
     BR-080: Grid responsiveness is handled by parent (1/2/3 columns).
     BR-081: All text localized; name/description via HasTranslatable.
+    F-196 BR-323: Guests clicking heart are redirected to login.
+    F-196 BR-325: Heart toggle is idempotent (add/remove).
+    F-196 BR-327: Heart icon reflects current favorite state on page load.
+    F-196 BR-328: Toggle happens via Gale without page reload.
+    F-196 BR-329: Brief scale animation on toggle.
 --}}
 @php
     $cookName = $tenant->name;
@@ -18,35 +23,119 @@
     $tenantUrl = $tenant->getUrl();
 
     // Cover images: forward-compatible for F-081 (Cook Cover Images Management).
-    // When F-081 is built, this will be populated with actual image URLs.
     $coverImages = $tenant->cover_images ?? [];
 
     // Active meal count: forward-compatible for F-108 (Meal Creation).
-    // When meals table exists, DiscoveryService will load this.
     $mealCount = $tenant->active_meal_count ?? 0;
 
     // F-179: Cook Overall Rating Calculation
-    // BR-421: Rating cached in tenant settings JSON.
-    // BR-418: Displayed as X.X/5 with one decimal place.
-    // BR-419: Total count includes all ratings (with or without review text).
-    // BR-423: Cooks with zero ratings show "New" instead of stars.
     $averageRating = $tenant->getSetting('average_rating', null);
     $totalRatings = (int) $tenant->getSetting('total_ratings', 0);
     $hasRating = $averageRating !== null && $averageRating > 0 && $totalRatings > 0;
 
     // Primary delivery town: forward-compatible for F-082 (Add Town).
-    // When towns table exists, DiscoveryService will load this.
     $primaryTown = $tenant->primary_town ?? null;
+
+    // F-196: Favorite state for the authenticated user.
+    // BR-327: Determine initial heart state from the userFavoriteCookIds array passed by controller.
+    $cookUserId = (int) ($tenant->cook_id ?? 0);
+    $initialIsFavorited = $cookUserId > 0 && isset($userFavoriteCookIds) && in_array($cookUserId, $userFavoriteCookIds);
+    $isAuthenticated = $isAuthenticated ?? false;
 @endphp
 
 <article
-    class="group bg-surface-alt dark:bg-surface-alt rounded-xl border border-outline dark:border-outline shadow-card hover:shadow-dropdown hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer"
+    class="group bg-surface-alt dark:bg-surface-alt rounded-xl border border-outline dark:border-outline shadow-card hover:shadow-dropdown hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer relative"
     onclick="window.location.href='{{ $tenantUrl }}'"
     role="link"
     aria-label="{{ __('Visit :cook', ['cook' => $cookName]) }}"
     tabindex="0"
     onkeydown="if(event.key==='Enter')window.location.href='{{ $tenantUrl }}'"
 >
+    {{-- F-196: Favorite Heart Button (BR-323/325/327/328/329) --}}
+    {{-- Positioned top-right, above the cover image area. --}}
+    {{-- Each button has its own x-data scope so isFavorited state is per-card. --}}
+    {{-- Gale state('isFavorited') updates ONLY this scope (the $action initiator). --}}
+    <div
+        x-data="{
+            isFavorited: {{ $initialIsFavorited ? 'true' : 'false' }},
+            favoriteError: null
+        }"
+        x-sync="['isFavorited']"
+        class="absolute top-2 right-2 z-20"
+        @click.stop
+    >
+        @if($isAuthenticated)
+            {{-- Authenticated: Gale toggle --}}
+            <button
+                @click.stop="$action('{{ route('favorite-cooks.toggle', ['tenant' => $tenant->id]) }}')"
+                class="w-11 h-11 rounded-full flex items-center justify-center bg-black/30 backdrop-blur-sm hover:bg-black/50 dark:bg-black/40 dark:hover:bg-black/60 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 cursor-pointer"
+                :aria-label="isFavorited ? '{{ __('Remove from favorites') }}' : '{{ __('Add to favorites') }}'"
+                :title="isFavorited ? '{{ __('Remove from favorites') }}' : '{{ __('Add to favorites') }}'"
+                aria-label="{{ $initialIsFavorited ? __('Remove from favorites') : __('Add to favorites') }}"
+            >
+                {{-- Loading spinner --}}
+                <svg
+                    x-show="$fetching()"
+                    x-cloak
+                    class="w-4 h-4 text-white animate-spin"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+
+                {{-- Filled heart (favorited) — BR-329: scale animation on state change --}}
+                <svg
+                    x-show="isFavorited && !$fetching()"
+                    class="w-5 h-5 text-red-400 transition-all duration-200 scale-100 hover:scale-110"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    stroke="currentColor"
+                    stroke-width="1"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                >
+                    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+                </svg>
+
+                {{-- Outline heart (not favorited) --}}
+                <svg
+                    x-show="!isFavorited && !$fetching()"
+                    class="w-5 h-5 text-white/90 transition-all duration-200 hover:text-red-300 hover:scale-110"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                >
+                    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+                </svg>
+            </button>
+        @else
+            {{-- Guest: redirect to login on click --}}
+            <a
+                href="{{ route('login') }}"
+                class="w-11 h-11 rounded-full flex items-center justify-center bg-black/30 backdrop-blur-sm hover:bg-black/50 dark:bg-black/40 dark:hover:bg-black/60 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                aria-label="{{ __('Log in to add to favorites') }}"
+                title="{{ __('Log in to add to favorites') }}"
+                x-navigate-skip
+                @click.stop
+            >
+                <svg class="w-5 h-5 text-white/90 hover:text-red-300 transition-colors duration-200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+                </svg>
+            </a>
+        @endif
+    </div>
+
     {{-- Cover Image Area (~60% of card height) --}}
     @if(count($coverImages) > 1)
         {{-- Carousel for multiple images (BR-075) --}}

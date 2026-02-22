@@ -7,6 +7,7 @@ use App\Mail\PasswordResetMail;
 use App\Traits\LogsActivityTrait;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -121,6 +122,35 @@ class User extends Authenticatable implements MustVerifyEmail
     public function clientWallet(): HasOne
     {
         return $this->hasOne(ClientWallet::class);
+    }
+
+    /**
+     * Get the cooks favorited by this user.
+     *
+     * F-196: Favorite Cook Toggle.
+     * BR-326: Favorite state stored as a user-cook relationship (pivot table).
+     * BR-330: A user can favorite unlimited cooks.
+     *
+     * @return BelongsToMany<User, $this>
+     */
+    public function favoriteCooks(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            User::class,
+            'favorite_cooks',
+            'user_id',
+            'cook_user_id'
+        )->withPivot('created_at')->select(['users.id', 'users.name']);
+    }
+
+    /**
+     * Check if the user has favorited a specific cook (by cook user ID).
+     *
+     * F-196: Used for initial state resolution on cook cards.
+     */
+    public function hasFavoritedCook(int $cookUserId): bool
+    {
+        return $this->favoriteCooks()->where('cook_user_id', $cookUserId)->exists();
     }
 
     /**

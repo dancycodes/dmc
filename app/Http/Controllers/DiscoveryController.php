@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\DiscoveryRequest;
 use App\Services\DiscoveryService;
+use Illuminate\Support\Facades\Auth;
 
 class DiscoveryController extends Controller
 {
@@ -19,6 +20,7 @@ class DiscoveryController extends Controller
      * BR-091: Filters between categories combine with AND logic.
      * BR-095: Filter changes update the grid via Gale without page reload.
      * BR-096: Filters combine with any active search query (F-068).
+     * BR-327 (F-196): Heart icon visually reflects current favorite state on page load.
      */
     public function index(DiscoveryRequest $request, DiscoveryService $discoveryService): mixed
     {
@@ -51,6 +53,15 @@ class DiscoveryController extends Controller
             minRating: $minRating,
         );
 
+        // F-196: Resolve favorite cook IDs for the current user (keyed by cook_user_id).
+        // BR-327: Heart icon visually reflects current favorite state on page load.
+        $userFavoriteCookIds = [];
+        if (Auth::check()) {
+            /** @var \App\Models\User $user */
+            $user = Auth::user();
+            $userFavoriteCookIds = $user->favoriteCooks()->pluck('cook_user_id')->toArray();
+        }
+
         $data = [
             'cooks' => $cooks,
             'totalCooks' => $totalCooks,
@@ -65,6 +76,8 @@ class DiscoveryController extends Controller
             'selectedMinRating' => $minRating,
             'activeFilterCount' => $activeFilterCount,
             'hasActiveFilters' => $activeFilterCount > 0,
+            'userFavoriteCookIds' => $userFavoriteCookIds,
+            'isAuthenticated' => Auth::check(),
         ];
 
         // BR-073/BR-088/BR-095: Fragment-based partial update for Gale navigate requests

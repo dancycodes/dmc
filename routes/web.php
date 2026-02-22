@@ -267,6 +267,13 @@ Route::middleware('auth')->group(function () {
     // BR-280: Each client has one wallet with a single balance
     // BR-288: Authentication required
     Route::get('/my-wallet', [\App\Http\Controllers\Client\WalletController::class, 'index'])->name('client.wallet.index');
+
+    // Favorite Cook Toggle (F-196)
+    // BR-323: Requires authentication; guests are prompted to log in
+    // BR-324: A user can favorite any active cook
+    // BR-325: Toggle is idempotent (add when not favorited, remove when favorited)
+    // BR-328: Toggle happens via Gale without page reload
+    Route::post('/favorite-cooks/{tenant}', [\App\Http\Controllers\FavoriteCookController::class, 'toggle'])->name('favorite-cooks.toggle');
 });
 
 /*
