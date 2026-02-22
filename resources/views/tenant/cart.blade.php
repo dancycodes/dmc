@@ -115,6 +115,68 @@
             <span x-text="cartSuccess"></span>
         </div>
 
+        {{-- F-199: Reorder warnings and price change notices --}}
+        @if(session()->has('reorder_warnings') || session()->has('reorder_price_changes'))
+            @php
+                $reorderWarnings = session('reorder_warnings', []);
+                $reorderPriceChanges = session('reorder_price_changes', []);
+            @endphp
+
+            {{-- Unavailable items warning --}}
+            @if(!empty($reorderWarnings))
+                <div class="mb-4 bg-warning-subtle border border-warning/20 rounded-xl p-4">
+                    <div class="flex items-start gap-3">
+                        {{-- AlertTriangle icon (Lucide, md=20) --}}
+                        <svg class="w-5 h-5 text-warning shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-semibold text-on-surface-strong mb-2">
+                                {{ trans_choice(
+                                    ':count item from your original order is currently unavailable.|:count items from your original order are currently unavailable.',
+                                    count($reorderWarnings),
+                                    ['count' => count($reorderWarnings)]
+                                ) }}
+                            </p>
+                            <ul class="space-y-1">
+                                @foreach($reorderWarnings as $warning)
+                                    <li class="text-xs text-on-surface/70 flex items-start gap-1.5">
+                                        <span class="text-warning mt-0.5">•</span>
+                                        <span>{{ $warning }}</span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            {{-- Price change notices --}}
+            @if(!empty($reorderPriceChanges))
+                <div class="mb-4 bg-info-subtle border border-info/20 rounded-xl p-4">
+                    <div class="flex items-start gap-3">
+                        {{-- TrendingUp icon (Lucide, md=20) --}}
+                        <svg class="w-5 h-5 text-info shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-semibold text-on-surface-strong mb-2">{{ __('Price updates since your last order:') }}</p>
+                            <ul class="space-y-1">
+                                @foreach($reorderPriceChanges as $change)
+                                    <li class="text-xs text-on-surface/70 flex items-start gap-1.5">
+                                        <span class="text-info mt-0.5">•</span>
+                                        <span>
+                                            <span class="font-medium text-on-surface-strong">{{ $change['component_name'] }}</span>:
+                                            {{ __('Price updated from') }}
+                                            <span class="font-mono line-through text-on-surface/40">{{ number_format($change['old_price'], 0, '.', ',') }} XAF</span>
+                                            {{ __('to') }}
+                                            <span class="font-mono font-semibold text-on-surface-strong">{{ number_format($change['new_price'], 0, '.', ',') }} XAF</span>
+                                        </span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            @endif
+        @endif
+
         {{-- Empty cart state --}}
         <template x-if="isEmpty">
             <div class="text-center py-16">
