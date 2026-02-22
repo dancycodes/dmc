@@ -691,6 +691,12 @@ Route::middleware('tenant.domain')->group(function () {
         // BR-398: Date range selector applies to summary cards and charts
         Route::get('/analytics/customers', [\App\Http\Controllers\Cook\CustomerRetentionController::class, 'index'])->name('cook.analytics.customers');
 
+        // F-203: Cook Delivery Performance Analytics
+        // BR-401: Delivery data is tenant-scoped
+        // BR-402: Only completed/delivered orders with delivery addresses included
+        // BR-406: Date range selector applies to all charts
+        Route::get('/analytics/delivery', [\App\Http\Controllers\Cook\DeliveryAnalyticsController::class, 'index'])->name('cook.analytics.delivery');
+
         // F-208: Analytics CSV/PDF Export (Cook side)
         // BR-449: Export formats: CSV and PDF
         // BR-453: Immediate download for datasets < 5,000 rows
