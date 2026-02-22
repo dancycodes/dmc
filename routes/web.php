@@ -649,6 +649,13 @@ Route::middleware('tenant.domain')->group(function () {
     Route::get('/meals/{meal}/reviews', [\App\Http\Controllers\Tenant\MealDetailController::class, 'loadMoreReviews'])
         ->name('tenant.meal.reviews');
 
+    // F-130: All Reviews Page (public, on tenant domain)
+    // BR-172: Paginated "See all reviews" destination
+    Route::get('/reviews', [\App\Http\Controllers\Tenant\AllReviewsController::class, 'index'])
+        ->name('tenant.reviews');
+    Route::get('/reviews/load-more', [\App\Http\Controllers\Tenant\AllReviewsController::class, 'loadMore'])
+        ->name('tenant.reviews.load-more');
+
     // F-138: Meal Component Selection & Cart Add (public, on tenant domain)
     // BR-246: Cart state in session, accessible across tenant site
     // BR-247: Guest carts work via session without authentication

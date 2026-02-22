@@ -2612,5 +2612,17 @@
     "Preparation time cannot exceed 1440 minutes (24 hours).": "Le temps de préparation ne peut pas dépasser 1440 minutes (24 heures).",
     "Est. prep: :time": "Prép. est. : :time",
     "Est. prep: ~": "Prép. est. : ~",
-    "hr": "h"
+    "hr": "h",
+    "See all :count reviews": "Voir les :count avis",
+    "Be the first to order and leave a review!": "Soyez le premier à commander et laisser un avis !",
+    "What our customers are saying.": "Ce que disent nos clients.",
+    "out of 5": "sur 5",
+    "Read less": "Lire moins",
+    "Back to :name": "Retour à :name",
+    "Ratings & Reviews": "Avis & Notes",
+    "No reviews yet": "Pas encore d'avis",
+    "View Meals": "Voir les plats",
+    "Page :current of :total": "Page :current sur :total",
+    "Previous": "Précédent",
+    "Next": "Suivant"
 }

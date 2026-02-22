@@ -11,6 +11,7 @@ use App\Models\MealComponent;
 use App\Models\MealSchedule;
 use App\Models\PickupLocation;
 use App\Models\QuarterGroup;
+use App\Models\Rating;
 use App\Models\Tag;
 use App\Models\Tenant;
 use Carbon\Carbon;
@@ -35,22 +36,38 @@ class TenantLandingService
     ) {}
 
     /**
+     * Number of recent reviews to show in the ratings summary section.
+     *
+     * F-130 BR-169: The 5 most recent reviews are displayed.
+     */
+    public const RECENT_REVIEWS_COUNT = 5;
+
+    /**
+     * Number of reviews per page on the all-reviews page.
+     *
+     * F-130 BR-172: "See all reviews" links to a paginated view.
+     */
+    public const ALL_REVIEWS_PER_PAGE = 10;
+
+    /**
      * Gather all data needed for the tenant landing page.
      *
      * F-126: Tenant Landing Page Layout
      * F-128: Available Meals Grid Display
+     * F-130: Ratings Summary Display
      * F-132: Schedule & Availability Display
      * BR-126: Only renders on tenant domains
      * BR-127: Cook's selected theme applied dynamically
      *
-     * @return array{tenant: Tenant, themeConfig: array, sections: array, cookProfile: array, meals: LengthAwarePaginator, scheduleDisplay: array, deliveryDisplay: array, filterData: array, cancellationWindowMinutes: int, minimumOrderAmount: int}
+     * @return array{tenant: Tenant, themeConfig: array, sections: array, cookProfile: array, meals: LengthAwarePaginator, scheduleDisplay: array, deliveryDisplay: array, filterData: array, ratingsDisplay: array, cancellationWindowMinutes: int, minimumOrderAmount: int}
      */
     public function getLandingPageData(Tenant $tenant, int $page = 1): array
     {
         $themeConfig = $this->tenantThemeService->resolveThemeConfig($tenant);
         $cookProfile = $this->buildCookProfile($tenant);
         $meals = $this->getAvailableMeals($tenant, $page);
-        $sections = $this->buildSections($tenant);
+        $ratingsDisplay = $this->getRatingsDisplayData($tenant);
+        $sections = $this->buildSections($tenant, $ratingsDisplay);
         $scheduleDisplay = $this->getScheduleDisplayData($tenant);
         $deliveryDisplay = $this->getDeliveryDisplayData($tenant);
         $filterData = $this->getFilterData($tenant);
@@ -67,6 +84,7 @@ class TenantLandingService
             'cookProfile' => $cookProfile,
             'sections' => $sections,
             'meals' => $meals,
+            'ratingsDisplay' => $ratingsDisplay,
             'scheduleDisplay' => $scheduleDisplay,
             'deliveryDisplay' => $deliveryDisplay,
             'filterData' => $filterData,
@@ -1382,6 +1400,149 @@ class TenantLandingService
     }
 
     /**
+     * Get the ratings summary display data for the tenant landing page.
+     *
+     * F-130: Ratings Summary Display
+     * BR-167: Overall rating = arithmetic average of all review scores, rounded to 1 decimal
+     * BR-168: Star distribution chart shows count per star level (1-5)
+     * BR-169: Recent reviews: 5 most recent sorted by creation date descending
+     * BR-170: Each review shows reviewer name+initial, date, star rating, review text
+     * BR-171: Review text truncation handled in Blade (line-clamp-3)
+     * BR-172: "See all reviews" appears only when more than 5 reviews exist
+     * BR-173: Zero reviews → show empty state
+     * BR-175: Reviewer identity partially anonymized: first name + last initial
+     *
+     * @return array{hasReviews: bool, average: float, totalCount: int, distribution: array<int, int>, recentReviews: array, showSeeAll: bool}
+     */
+    public function getRatingsDisplayData(Tenant $tenant): array
+    {
+        $ratingService = app(RatingService::class);
+
+        // Get aggregate stats
+        $stats = $ratingService->getCookRatingStats($tenant->id);
+        $totalCount = $stats['total'];
+        $average = $stats['average'];
+
+        if ($totalCount === 0) {
+            return [
+                'hasReviews' => false,
+                'average' => 0.0,
+                'totalCount' => 0,
+                'distribution' => [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0],
+                'recentReviews' => [],
+                'showSeeAll' => false,
+            ];
+        }
+
+        // BR-168: Star distribution
+        $distributionRaw = Rating::query()
+            ->where('tenant_id', $tenant->id)
+            ->selectRaw('stars, COUNT(*) as count')
+            ->groupBy('stars')
+            ->pluck('count', 'stars')
+            ->toArray();
+
+        $distribution = [];
+        for ($i = Rating::MAX_STARS; $i >= Rating::MIN_STARS; $i--) {
+            $distribution[$i] = (int) ($distributionRaw[$i] ?? 0);
+        }
+
+        // BR-169: 5 most recent reviews
+        $recentRatings = Rating::query()
+            ->where('tenant_id', $tenant->id)
+            ->with('user:id,name')
+            ->orderByDesc('created_at')
+            ->limit(self::RECENT_REVIEWS_COUNT)
+            ->get();
+
+        $recentReviews = $recentRatings->map(function (Rating $rating) use ($ratingService) {
+            return $ratingService->formatReviewForDisplay($rating);
+        })->toArray();
+
+        // BR-172: Show "See all reviews" only when > 5 reviews exist
+        $showSeeAll = $totalCount > self::RECENT_REVIEWS_COUNT;
+
+        return [
+            'hasReviews' => true,
+            'average' => $average,
+            'totalCount' => $totalCount,
+            'distribution' => $distribution,
+            'recentReviews' => $recentReviews,
+            'showSeeAll' => $showSeeAll,
+        ];
+    }
+
+    /**
+     * Get paginated all-reviews data for the full reviews page.
+     *
+     * F-130 BR-172: Destination of the "See all reviews" link.
+     * Reviews are paginated with ALL_REVIEWS_PER_PAGE per page.
+     *
+     * @return array{hasReviews: bool, average: float, totalCount: int, distribution: array<int, int>, reviews: array, pagination: array}
+     */
+    public function getAllReviewsData(Tenant $tenant, int $page = 1): array
+    {
+        $ratingService = app(RatingService::class);
+        $stats = $ratingService->getCookRatingStats($tenant->id);
+        $totalCount = $stats['total'];
+        $average = $stats['average'];
+
+        if ($totalCount === 0) {
+            return [
+                'hasReviews' => false,
+                'average' => 0.0,
+                'totalCount' => 0,
+                'distribution' => [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0],
+                'reviews' => [],
+                'pagination' => [
+                    'currentPage' => 1,
+                    'lastPage' => 1,
+                    'total' => 0,
+                    'hasMore' => false,
+                ],
+            ];
+        }
+
+        // Star distribution
+        $distributionRaw = Rating::query()
+            ->where('tenant_id', $tenant->id)
+            ->selectRaw('stars, COUNT(*) as count')
+            ->groupBy('stars')
+            ->pluck('count', 'stars')
+            ->toArray();
+
+        $distribution = [];
+        for ($i = Rating::MAX_STARS; $i >= Rating::MIN_STARS; $i--) {
+            $distribution[$i] = (int) ($distributionRaw[$i] ?? 0);
+        }
+
+        // Paginated reviews
+        $paginator = Rating::query()
+            ->where('tenant_id', $tenant->id)
+            ->with('user:id,name')
+            ->orderByDesc('created_at')
+            ->paginate(self::ALL_REVIEWS_PER_PAGE, ['*'], 'page', $page);
+
+        $reviews = $paginator->getCollection()
+            ->map(fn (Rating $rating) => $ratingService->formatReviewForDisplay($rating))
+            ->toArray();
+
+        return [
+            'hasReviews' => true,
+            'average' => $average,
+            'totalCount' => $totalCount,
+            'distribution' => $distribution,
+            'reviews' => $reviews,
+            'pagination' => [
+                'currentPage' => $paginator->currentPage(),
+                'lastPage' => $paginator->lastPage(),
+                'total' => $paginator->total(),
+                'hasMore' => $paginator->hasMorePages(),
+            ],
+        ];
+    }
+
+    /**
      * Build the sections configuration for the landing page.
      *
      * BR-133: Sections render in order: hero, meals grid, about/bio,
@@ -1390,9 +1551,10 @@ class TenantLandingService
      * Each section indicates whether it has data to show, allowing
      * child features (F-127 through F-134) to populate them.
      *
+     * @param  array  $ratingsDisplay  Pre-computed ratings data from getRatingsDisplayData()
      * @return array<string, array{id: string, label: string, hasData: bool}>
      */
-    private function buildSections(Tenant $tenant): array
+    private function buildSections(Tenant $tenant, array $ratingsDisplay = []): array
     {
         $hasBio = ! empty($tenant->description);
         $hasCoverImages = $tenant->getMedia('cover-images')->isNotEmpty();
@@ -1400,6 +1562,9 @@ class TenantLandingService
         $hasSchedule = $tenant->cookSchedules()->exists();
         $hasDeliveryAreas = $tenant->deliveryAreas()->exists()
             || PickupLocation::where('tenant_id', $tenant->id)->exists();
+
+        // F-130 BR-167/BR-173: Ratings section has data when at least one review exists.
+        $hasRatings = ! empty($ratingsDisplay) && ($ratingsDisplay['totalCount'] ?? 0) > 0;
 
         return [
             'hero' => [
@@ -1420,7 +1585,7 @@ class TenantLandingService
             'ratings' => [
                 'id' => 'ratings',
                 'label' => __('Ratings'),
-                'hasData' => false, // Populated by F-130
+                'hasData' => $hasRatings,
             ],
             'testimonials' => [
                 'id' => 'testimonials',

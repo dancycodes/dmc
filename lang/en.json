@@ -2612,5 +2612,17 @@
     "Preparation time cannot exceed 1440 minutes (24 hours).": "Preparation time cannot exceed 1440 minutes (24 hours).",
     "Est. prep: :time": "Est. prep: :time",
     "Est. prep: ~": "Est. prep: ~",
-    "hr": "hr"
+    "hr": "hr",
+    "See all :count reviews": "See all :count reviews",
+    "Be the first to order and leave a review!": "Be the first to order and leave a review!",
+    "What our customers are saying.": "What our customers are saying.",
+    "out of 5": "out of 5",
+    "Read less": "Read less",
+    "Back to :name": "Back to :name",
+    "Ratings & Reviews": "Ratings & Reviews",
+    "No reviews yet": "No reviews yet",
+    "View Meals": "View Meals",
+    "Page :current of :total": "Page :current of :total",
+    "Previous": "Previous",
+    "Next": "Next"
 }
