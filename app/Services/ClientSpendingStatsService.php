@@ -115,7 +115,7 @@ class ClientSpendingStatsService
 
         $tenants = Tenant::query()
             ->whereIn('id', $tenantIds)
-            ->get(['id', 'name_en', 'name_fr', 'is_active', 'slug', 'domain'])
+            ->get(['id', 'name_en', 'name_fr', 'is_active', 'slug', 'custom_domain'])
             ->keyBy('id');
 
         return $countsByTenantId->map(function (array $item) use ($tenants) {
@@ -214,7 +214,7 @@ class ClientSpendingStatsService
 
         $tenants = Tenant::query()
             ->whereIn('id', $tenantIds)
-            ->get(['id', 'slug', 'domain'])
+            ->get(['id', 'slug', 'custom_domain'])
             ->keyBy('id');
 
         return $topEntries->map(function (array $entry) use ($meals, $tenants) {
