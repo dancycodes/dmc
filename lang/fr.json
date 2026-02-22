@@ -2672,5 +2672,7 @@
     "You are not authorized to send messages for this order.": "Vous n'\u00eates pas autoris\u00e9 \u00e0 envoyer des messages pour cette commande.",
     "You do not have permission to send order messages.": "Vous n'avez pas la permission d'envoyer des messages de commande.",
     "Send message": "Envoyer le message",
-    "Enter to send \u00b7 Shift+Enter for new line": "Entr\u00e9e pour envoyer \u00b7 Maj+Entr\u00e9e pour nouvelle ligne"
+    "Enter to send \u00b7 Shift+Enter for new line": "Entr\u00e9e pour envoyer \u00b7 Maj+Entr\u00e9e pour nouvelle ligne",
+    "New Message": "Nouveau message",
+    ":name: :preview": ":name: :preview"
 }

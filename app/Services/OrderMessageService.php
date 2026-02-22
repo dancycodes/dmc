@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Order;
 use App\Models\OrderMessage;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 
 class OrderMessageService
 {
@@ -149,10 +150,34 @@ class OrderMessageService
 
         $message->load('sender');
 
+        // F-190: Dispatch message notifications to recipient(s)
+        $this->dispatchMessageNotification($order, $message);
+
         return [
             'message' => $message,
             'formatted' => $this->formatMessage($message, $sender),
         ];
+    }
+
+    /**
+     * Dispatch F-190 message notifications.
+     *
+     * Called after a message is stored. Uses MessageNotificationService
+     * to resolve recipients and dispatch push + DB notifications.
+     * Wrapped in try/catch so a notification failure never blocks the send.
+     */
+    private function dispatchMessageNotification(Order $order, OrderMessage $message): void
+    {
+        try {
+            $service = app(\App\Services\MessageNotificationService::class);
+            $service->notifyNewMessage($order, $message);
+        } catch (\Throwable $e) {
+            Log::warning('F-190: Failed to dispatch message notification', [
+                'order_id' => $order->id,
+                'message_id' => $message->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
