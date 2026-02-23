@@ -32,11 +32,8 @@
                         $navActiveClass = 'text-sm font-medium text-primary transition-colors duration-200';
                         $navDefaultClass = 'text-sm font-medium text-on-surface hover:text-on-surface-strong transition-colors duration-200';
                     @endphp
-                    <a href="{{ url('/') }}" class="{{ request()->is('/') || request()->is('discover') ? $navActiveClass : $navDefaultClass }}" @if(request()->is('/') || request()->is('discover')) aria-current="page" @endif>
+                    <a href="{{ url('/') }}" class="{{ request()->is('/') ? $navActiveClass : $navDefaultClass }}" @if(request()->is('/')) aria-current="page" @endif>
                         {{ __('Home') }}
-                    </a>
-                    <a href="{{ url('/discover') }}" class="{{ request()->is('discover') ? $navActiveClass : $navDefaultClass }}">
-                        {{ __('Discover Cooks') }}
                     </a>
                     @auth
                         @php
@@ -160,15 +157,10 @@
                     $mobileActiveClass = 'flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium bg-primary-subtle text-primary transition-colors duration-200';
                     $mobileDefaultClass = 'flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-alt transition-colors duration-200';
                 @endphp
-                <a href="{{ url('/') }}" @click="mobileMenuOpen = false" class="{{ request()->is('/') || request()->is('discover') ? $mobileActiveClass : $mobileDefaultClass }}" @if(request()->is('/') || request()->is('discover')) aria-current="page" @endif>
+                <a href="{{ url('/') }}" @click="mobileMenuOpen = false" class="{{ request()->is('/') ? $mobileActiveClass : $mobileDefaultClass }}" @if(request()->is('/')) aria-current="page" @endif>
                     {{-- Home icon --}}
                     <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
                     {{ __('Home') }}
-                </a>
-                <a href="{{ url('/discover') }}" @click="mobileMenuOpen = false" class="{{ request()->is('discover') ? $mobileActiveClass : $mobileDefaultClass }}" @if(request()->is('discover')) aria-current="page" @endif>
-                    {{-- Search icon --}}
-                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
-                    {{ __('Discover Cooks') }}
                 </a>
 
                 <div class="border-t border-outline dark:border-outline my-2"></div>
