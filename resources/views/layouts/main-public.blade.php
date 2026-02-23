@@ -28,39 +28,43 @@
 
                 {{-- Desktop Navigation --}}
                 <nav class="hidden lg:flex items-center gap-6" aria-label="{{ __('Main navigation') }}">
-                    <a href="{{ url('/') }}" class="text-sm font-medium text-on-surface hover:text-on-surface-strong transition-colors duration-200">
+                    @php
+                        $navActiveClass = 'text-sm font-medium text-primary transition-colors duration-200';
+                        $navDefaultClass = 'text-sm font-medium text-on-surface hover:text-on-surface-strong transition-colors duration-200';
+                    @endphp
+                    <a href="{{ url('/') }}" class="{{ request()->is('/') || request()->is('discover') ? $navActiveClass : $navDefaultClass }}" @if(request()->is('/') || request()->is('discover')) aria-current="page" @endif>
                         {{ __('Home') }}
                     </a>
-                    <a href="{{ url('/discover') }}" class="text-sm font-medium text-on-surface hover:text-on-surface-strong transition-colors duration-200">
+                    <a href="{{ url('/discover') }}" class="{{ request()->is('discover') ? $navActiveClass : $navDefaultClass }}">
                         {{ __('Discover Cooks') }}
                     </a>
                     @auth
-                        <a href="{{ url('/my-orders') }}" class="text-sm font-medium text-on-surface hover:text-on-surface-strong transition-colors duration-200 inline-flex items-center gap-1.5">
+                        @php
+                            $clientActiveOrderCount = \App\Models\Order::query()->where('client_id', auth()->id())->whereIn('status', \App\Services\ClientOrderService::ACTIVE_STATUSES)->count();
+                        @endphp
+                        <a href="{{ url('/my-orders') }}" class="{{ request()->is('my-orders*') ? $navActiveClass : $navDefaultClass }} inline-flex items-center gap-1.5" @if(request()->is('my-orders*')) aria-current="page" @endif>
                             {{ __('My Orders') }}
-                            @php
-                                $clientActiveOrderCount = \App\Models\Order::query()->where('client_id', auth()->id())->whereIn('status', \App\Services\ClientOrderService::ACTIVE_STATUSES)->count();
-                            @endphp
                             @if($clientActiveOrderCount > 0)
                                 <span class="min-w-[18px] h-[18px] rounded-full bg-primary text-on-primary text-[10px] font-bold flex items-center justify-center px-1">{{ $clientActiveOrderCount }}</span>
                             @endif
                         </a>
-                        <a href="{{ url('/my-wallet') }}" class="text-sm font-medium text-on-surface hover:text-on-surface-strong transition-colors duration-200">
+                        <a href="{{ url('/my-wallet') }}" class="{{ request()->is('my-wallet*') ? $navActiveClass : $navDefaultClass }}" @if(request()->is('my-wallet*')) aria-current="page" @endif>
                             {{ __('My Wallet') }}
                         </a>
-                        <a href="{{ url('/my-transactions') }}" class="text-sm font-medium text-on-surface hover:text-on-surface-strong transition-colors duration-200">
+                        <a href="{{ url('/my-transactions') }}" class="{{ request()->is('my-transactions*') ? $navActiveClass : $navDefaultClass }}" @if(request()->is('my-transactions*')) aria-current="page" @endif>
                             {{ __('Transactions') }}
                         </a>
-                        <a href="{{ url('/my-complaints') }}" class="text-sm font-medium text-on-surface hover:text-on-surface-strong transition-colors duration-200">
+                        <a href="{{ url('/my-complaints') }}" class="{{ request()->is('my-complaints*') ? $navActiveClass : $navDefaultClass }}" @if(request()->is('my-complaints*')) aria-current="page" @endif>
                             {{ __('Complaints') }}
                         </a>
-                        <a href="{{ url('/my-favorites') }}" class="text-sm font-medium text-on-surface hover:text-on-surface-strong transition-colors duration-200 inline-flex items-center gap-1">
+                        <a href="{{ url('/my-favorites') }}" class="{{ request()->is('my-favorites*') ? $navActiveClass : $navDefaultClass }} inline-flex items-center gap-1" @if(request()->is('my-favorites*')) aria-current="page" @endif>
                             {{-- Heart icon (Lucide xs=14) --}}
                             <svg class="w-3.5 h-3.5 text-danger" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
                             </svg>
                             {{ __('Favorites') }}
                         </a>
-                        <a href="{{ url('/my-stats') }}" class="text-sm font-medium text-on-surface hover:text-on-surface-strong transition-colors duration-200">
+                        <a href="{{ url('/my-stats') }}" class="{{ request()->is('my-stats*') ? $navActiveClass : $navDefaultClass }}" @if(request()->is('my-stats*')) aria-current="page" @endif>
                             {{ __('My Stats') }}
                         </a>
                     @endauth
@@ -152,12 +156,16 @@
             x-cloak
         >
             <nav class="px-4 py-4 space-y-1" x-data x-navigate aria-label="{{ __('Mobile navigation') }}">
-                <a href="{{ url('/') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-alt transition-colors duration-200">
+                @php
+                    $mobileActiveClass = 'flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium bg-primary-subtle text-primary transition-colors duration-200';
+                    $mobileDefaultClass = 'flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-alt transition-colors duration-200';
+                @endphp
+                <a href="{{ url('/') }}" @click="mobileMenuOpen = false" class="{{ request()->is('/') || request()->is('discover') ? $mobileActiveClass : $mobileDefaultClass }}" @if(request()->is('/') || request()->is('discover')) aria-current="page" @endif>
                     {{-- Home icon --}}
                     <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
                     {{ __('Home') }}
                 </a>
-                <a href="{{ url('/discover') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-alt transition-colors duration-200">
+                <a href="{{ url('/discover') }}" @click="mobileMenuOpen = false" class="{{ request()->is('discover') ? $mobileActiveClass : $mobileDefaultClass }}" @if(request()->is('discover')) aria-current="page" @endif>
                     {{-- Search icon --}}
                     <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
                     {{ __('Discover Cooks') }}
@@ -166,7 +174,7 @@
                 <div class="border-t border-outline dark:border-outline my-2"></div>
 
                 @auth
-                    <a href="{{ url('/my-orders') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-alt transition-colors duration-200">
+                    <a href="{{ url('/my-orders') }}" @click="mobileMenuOpen = false" class="{{ request()->is('my-orders*') ? $mobileActiveClass : $mobileDefaultClass }}" @if(request()->is('my-orders*')) aria-current="page" @endif>
                         {{-- ClipboardList icon --}}
                         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M12 11h4"></path><path d="M12 16h4"></path><path d="M8 11h.01"></path><path d="M8 16h.01"></path></svg>
                         {{ __('My Orders') }}
@@ -174,34 +182,34 @@
                             <span class="min-w-[18px] h-[18px] rounded-full bg-primary text-on-primary text-[10px] font-bold flex items-center justify-center px-1 ml-auto">{{ $clientActiveOrderCount }}</span>
                         @endif
                     </a>
-                    <a href="{{ url('/my-wallet') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-alt transition-colors duration-200">
+                    <a href="{{ url('/my-wallet') }}" @click="mobileMenuOpen = false" class="{{ request()->is('my-wallet*') ? $mobileActiveClass : $mobileDefaultClass }}" @if(request()->is('my-wallet*')) aria-current="page" @endif>
                         {{-- Wallet icon (Lucide) --}}
                         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"></path><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"></path></svg>
                         {{ __('My Wallet') }}
                     </a>
-                    <a href="{{ url('/my-transactions') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-alt transition-colors duration-200">
+                    <a href="{{ url('/my-transactions') }}" @click="mobileMenuOpen = false" class="{{ request()->is('my-transactions*') ? $mobileActiveClass : $mobileDefaultClass }}" @if(request()->is('my-transactions*')) aria-current="page" @endif>
                         {{-- Receipt icon (Lucide) --}}
                         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"></path><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><path d="M12 17.5v-11"></path></svg>
                         {{ __('Transactions') }}
                     </a>
-                    <a href="{{ url('/my-complaints') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-alt transition-colors duration-200">
+                    <a href="{{ url('/my-complaints') }}" @click="mobileMenuOpen = false" class="{{ request()->is('my-complaints*') ? $mobileActiveClass : $mobileDefaultClass }}" @if(request()->is('my-complaints*')) aria-current="page" @endif>
                         {{-- Shield alert icon (Lucide) --}}
                         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg>
                         {{ __('My Complaints') }}
                     </a>
-                    <a href="{{ url('/my-favorites') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-alt transition-colors duration-200">
+                    <a href="{{ url('/my-favorites') }}" @click="mobileMenuOpen = false" class="{{ request()->is('my-favorites*') ? $mobileActiveClass : $mobileDefaultClass }}" @if(request()->is('my-favorites*')) aria-current="page" @endif>
                         {{-- Heart icon (Lucide md=20) --}}
                         <svg class="w-5 h-5 text-danger" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
                         </svg>
                         {{ __('Favorites') }}
                     </a>
-                    <a href="{{ url('/my-stats') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-alt transition-colors duration-200">
+                    <a href="{{ url('/my-stats') }}" @click="mobileMenuOpen = false" class="{{ request()->is('my-stats*') ? $mobileActiveClass : $mobileDefaultClass }}" @if(request()->is('my-stats*')) aria-current="page" @endif>
                         {{-- BarChart3 icon (Lucide md=20) --}}
                         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg>
                         {{ __('My Stats') }}
                     </a>
-                    <a href="{{ url('/profile') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-alt transition-colors duration-200">
+                    <a href="{{ url('/profile') }}" @click="mobileMenuOpen = false" class="{{ request()->is('profile*') ? $mobileActiveClass : $mobileDefaultClass }}" @if(request()->is('profile*')) aria-current="page" @endif>
                         {{-- User icon --}}
                         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                         {{ __('Profile') }}
