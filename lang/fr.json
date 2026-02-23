@@ -33,7 +33,7 @@
     "6XXXXXXXX": "6XXXXXXXX",
     "Dashboard": "Tableau de bord",
     "Home": "Accueil",
-    "Settings": "Parametres",
+    "Settings": "Paramètres",
     "Profile": "Profil",
     "Powered by": "Propulsé par",
     "Your favorite home-cooked meals, delivered.": "Vos plats faits maison préférés, livrés.",
@@ -2694,5 +2694,11 @@
     "Discover Cooks": "Découvrir des cuisiniers",
     "Removed from favorites": "Retiré des favoris",
     "Remove from favorites": "Retirer des favoris",
-    "Favorites tabs": "Onglets des favoris"
+    "Favorites tabs": "Onglets des favoris",
+    "Revenue Analytics": "Analyses des revenus",
+    "Cook Performance": "Performance des cuisiniers",
+    "Growth Metrics": "Métriques de croissance",
+    "Announcements": "Annonces",
+    "Created": "Créé",
+    "Domain": "Domaine"
 }

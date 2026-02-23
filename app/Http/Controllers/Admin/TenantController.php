@@ -46,6 +46,7 @@ class TenantController extends Controller
         };
 
         $query = Tenant::query()
+            ->with(['cook'])
             ->search($search)
             ->status($status)
             ->orderBy($sortColumn, $sortDir);
