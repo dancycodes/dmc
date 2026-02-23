@@ -100,11 +100,11 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [LoginController::class, 'login'])->middleware(['honeypot', 'throttle:login']);
 
     Route::get('/forgot-password', [PasswordResetController::class, 'showRequestForm'])->name('password.request');
-    Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->name('password.email')->middleware(['throttle:password-reset']);
+    Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->name('password.email')->middleware(['honeypot', 'throttle:password-reset']);
 
     // Password reset execution (F-027)
     Route::get('/reset-password/{token}', [PasswordResetController::class, 'showResetForm'])->name('password.reset');
-    Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])->name('password.update')->middleware(['throttle:strict']);
+    Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])->name('password.update')->middleware(['honeypot', 'throttle:strict']);
 });
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');

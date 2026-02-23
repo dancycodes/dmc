@@ -24,6 +24,7 @@
     </div>
 
     <form x-show="!submitted" @submit.prevent="submitting = true; $action('{{ route('password.email') }}')" class="space-y-4">
+        <x-honeypot />
 
         {{-- Email --}}
         <div class="space-y-1.5">
