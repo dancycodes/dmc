@@ -21,7 +21,6 @@
     x-data="{
         current: $root.preference || localStorage.getItem('dmc-theme') || 'system',
         theme: $root.preference || localStorage.getItem('dmc-theme') || 'system',
-        saving: false,
         isAuthenticated: {{ $isAuthenticated ? 'true' : 'false' }},
         switchTheme(newTheme) {
             if (newTheme === this.current || this.saving) return;
@@ -38,12 +37,12 @@
                 document.documentElement.setAttribute('data-theme', resolved);
             }
             if (this.isAuthenticated) {
-                this.saving = true;
                 $action('{{ $themeUpdateUrl }}', { include: ['theme'] })
             }
         }
     }"
     x-sync="['theme']"
+    x-indicator="saving"
     x-init="$watch('$root.preference', (val) => { if (val) { current = val; theme = val; } })"
     class="relative"
     role="radiogroup"
