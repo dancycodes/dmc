@@ -246,11 +246,15 @@
 
     {{-- Footer --}}
     <footer class="bg-surface-alt dark:bg-surface-alt border-t border-outline dark:border-outline mt-auto">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div class="flex items-center gap-2">
                     <span class="w-6 h-6 rounded bg-primary text-on-primary flex items-center justify-center font-bold text-xs">DM</span>
                     <span class="text-sm text-on-surface">&copy; {{ date('Y') }} {{ config('app.name', 'DancyMeals') }}. {{ __('All rights reserved.') }}</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <x-theme-switcher />
+                    <x-language-switcher />
                 </div>
             </div>
         </div>
