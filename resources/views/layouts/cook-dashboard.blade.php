@@ -347,14 +347,8 @@
             @endif
         </nav>
 
-        {{-- Sidebar Footer: Theme, Language, User info --}}
+        {{-- Sidebar Footer: User info --}}
         <div class="border-t border-outline dark:border-outline p-3 shrink-0 space-y-3">
-            {{-- Theme and Language switchers (hidden on mobile — shown in header instead) --}}
-            <div x-show="!sidebarCollapsed" class="hidden sm:flex items-center gap-2">
-                <x-theme-switcher />
-                <x-language-switcher />
-            </div>
-
             @auth
                 <div class="flex items-center gap-3" :class="sidebarCollapsed ? 'justify-center' : ''">
                     <div class="w-8 h-8 rounded-full bg-primary-subtle flex items-center justify-center text-primary font-semibold text-sm shrink-0">

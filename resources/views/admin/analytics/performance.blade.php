@@ -310,7 +310,7 @@
                                     {{-- Cook Name --}}
                                     <td class="px-4 py-3">
                                         <a
-                                            href="{{ route('admin.tenants.show', $cook->tenant_id) }}"
+                                            href="{{ route('admin.tenants.show', $cook->slug) }}"
                                             class="font-medium text-on-surface-strong hover:text-primary transition-colors"
                                         >
                                             {{ $cook->cook_name }}
@@ -400,7 +400,7 @@
                         <div class="flex items-start justify-between gap-2">
                             <div class="min-w-0">
                                 <a
-                                    href="{{ route('admin.tenants.show', $cook->tenant_id) }}"
+                                    href="{{ route('admin.tenants.show', $cook->slug) }}"
                                     class="font-semibold text-on-surface-strong hover:text-primary transition-colors truncate block"
                                 >
                                     {{ $cook->cook_name }}

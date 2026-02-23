@@ -28,6 +28,16 @@
     x-init="$nextTick(() => document.documentElement.classList.add('theme-transition'))"
     class="bg-surface text-on-surface font-sans min-h-screen flex flex-col items-center justify-center px-4 py-8 sm:px-6"
 >
+    {{-- Back to Homepage link (top-left, for non-tenant visitors) --}}
+    @if(!isset($tenant) || !$tenant)
+        <div class="fixed top-4 left-4 z-50">
+            <a href="{{ config('app.url') }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-on-surface hover:text-on-surface-strong transition-colors duration-200">
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+                {{ __('Home') }}
+            </a>
+        </div>
+    @endif
+
     {{-- Theme & Language Switchers (top-right) --}}
     <div class="fixed top-4 right-4 z-50 flex items-center gap-2">
         <x-theme-switcher />

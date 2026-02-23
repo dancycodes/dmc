@@ -351,6 +351,8 @@
     {{-- ============================================ --}}
     {{-- ABOUT / BIO SECTION                          --}}
     {{-- ============================================ --}}
+    {{-- Only render when the cook has set a bio --}}
+    @if($sections['about']['hasData'])
     <section id="about" class="scroll-mt-16 py-12 sm:py-16 bg-surface-alt dark:bg-surface-alt">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-8 sm:mb-12">
@@ -359,30 +361,22 @@
                 </h2>
             </div>
 
-            @if($sections['about']['hasData'])
-                <div class="max-w-3xl mx-auto">
-                    <div class="bg-surface dark:bg-surface rounded-lg border border-outline dark:border-outline p-6 sm:p-8 shadow-card">
-                        <div class="flex items-start gap-4">
-                            <div class="w-12 h-12 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-lg shrink-0">
-                                {{ mb_strtoupper(mb_substr($cookProfile['name'], 0, 1)) }}
-                            </div>
-                            <div>
-                                <h3 class="text-lg font-semibold text-on-surface-strong">{{ $cookProfile['name'] }}</h3>
-                                <p class="mt-2 text-on-surface leading-relaxed whitespace-pre-line">{{ $cookProfile['bio'] }}</p>
-                            </div>
+            <div class="max-w-3xl mx-auto">
+                <div class="bg-surface dark:bg-surface rounded-lg border border-outline dark:border-outline p-6 sm:p-8 shadow-card">
+                    <div class="flex items-start gap-4">
+                        <div class="w-12 h-12 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-lg shrink-0">
+                            {{ mb_strtoupper(mb_substr($cookProfile['name'], 0, 1)) }}
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-on-surface-strong">{{ $cookProfile['name'] }}</h3>
+                            <p class="mt-2 text-on-surface leading-relaxed whitespace-pre-line">{{ $cookProfile['bio'] }}</p>
                         </div>
                     </div>
                 </div>
-            @else
-                <div class="text-center py-8">
-                    <div class="w-16 h-16 rounded-full bg-surface dark:bg-surface flex items-center justify-center mx-auto mb-4 border border-outline dark:border-outline">
-                        <svg class="w-8 h-8 text-on-surface opacity-40" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
-                    </div>
-                    <p class="text-on-surface opacity-60">{{ __('More details coming soon.') }}</p>
-                </div>
-            @endif
+            </div>
         </div>
     </section>
+    @endif
 
     {{-- ============================================ --}}
     {{-- RATINGS SECTION — F-130: Ratings Summary     --}}
@@ -450,7 +444,9 @@
     {{-- BR-189: "Available Now" badge                --}}
     {{-- BR-190: "Next available" badge               --}}
     {{-- BR-193: Times in Africa/Douala timezone      --}}
+    {{-- Only rendered when the cook has a schedule   --}}
     {{-- ============================================ --}}
+    @if($scheduleDisplay['hasSchedule'])
     <section id="schedule" class="scroll-mt-16 py-12 sm:py-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-8 sm:mb-12">
@@ -465,6 +461,7 @@
             @include('tenant._schedule-section', ['scheduleDisplay' => $scheduleDisplay])
         </div>
     </section>
+    @endif
 
     {{-- ============================================ --}}
     {{-- DELIVERY AREAS SECTION — F-133: Delivery    --}}
@@ -477,7 +474,9 @@
     {{-- BR-200: Fallback with WhatsApp contact        --}}
     {{-- BR-201: Expandable/collapsible on mobile      --}}
     {{-- BR-202/BR-203: Localized text and names       --}}
+    {{-- Only rendered when delivery areas exist      --}}
     {{-- ============================================ --}}
+    @if($deliveryDisplay['hasDeliveryAreas'])
     <section id="delivery" class="scroll-mt-16 py-12 sm:py-16 bg-surface-alt dark:bg-surface-alt">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-8 sm:mb-12">
@@ -492,6 +491,7 @@
             @include('tenant._delivery-section', ['deliveryDisplay' => $deliveryDisplay])
         </div>
     </section>
+    @endif
 
     {{-- ============================================ --}}
     {{-- F-212: Cancellation Policy                   --}}

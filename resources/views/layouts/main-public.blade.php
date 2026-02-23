@@ -244,10 +244,6 @@
                     <span class="w-6 h-6 rounded bg-primary text-on-primary flex items-center justify-center font-bold text-xs">DM</span>
                     <span class="text-sm text-on-surface">&copy; {{ date('Y') }} {{ config('app.name', 'DancyMeals') }}. {{ __('All rights reserved.') }}</span>
                 </div>
-                <div class="flex items-center gap-4">
-                    <x-theme-switcher />
-                    <x-language-switcher />
-                </div>
             </div>
         </div>
     </footer>
