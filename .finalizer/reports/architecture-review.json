@@ -1,0 +1,93 @@
+{
+  "phase": "ARCHITECTURE_REVIEW",
+  "status": "passed",
+  "safe_improvements": {
+    "count": 5,
+    "list": [
+      {
+        "description": "Fix gale()->redirect()->back() anti-pattern in 15 controllers (30+ instances)",
+        "files_changed": [
+          "app/Http/Controllers/*.php"
+        ],
+        "category": "reactivity"
+      },
+      {
+        "description": "Add My Kitchen nav link for cooks/managers on main domain",
+        "files_changed": [
+          "resources/views/layouts/main-public.blade.php"
+        ],
+        "category": "navigation"
+      },
+      {
+        "description": "Add Public Page and DancyMeals links in cook dashboard sidebar",
+        "files_changed": [
+          "resources/views/layouts/cook-dashboard.blade.php"
+        ],
+        "category": "navigation"
+      },
+      {
+        "description": "Fix profile dropdown broken on tenant public page (x-navigate on container)",
+        "files_changed": [
+          "resources/views/layouts/tenant-public.blade.php"
+        ],
+        "category": "ux"
+      },
+      {
+        "description": "Fix admin tenant detail showing 0 for orders/revenue/active meals (stubs)",
+        "files_changed": [
+          "app/Http/Controllers/Admin/TenantController.php"
+        ],
+        "category": "spec"
+      }
+    ]
+  },
+  "architecture_proposals": [
+    {
+      "title": "Activity log flooded with manager_section_accessed noise",
+      "scope": "activity logging",
+      "effort": "low"
+    },
+    {
+      "title": "Discovery page cook cards show 0 meals despite live meals",
+      "scope": "DiscoveryService",
+      "effort": "low"
+    },
+    {
+      "title": "x-sync racing condition on modal confirmation inputs",
+      "scope": "destructive modals",
+      "effort": "medium"
+    },
+    {
+      "title": "Stat cards stale on tab switch in analytics",
+      "scope": "Analytics controllers",
+      "effort": "medium"
+    },
+    {
+      "title": "selling_unit column naming inconsistency",
+      "scope": "DB schema",
+      "effort": "medium"
+    },
+    {
+      "title": "Push notification prompt shows on every page load",
+      "scope": "push notification component",
+      "effort": "low"
+    },
+    {
+      "title": "Tenant isolation uses named scope (HIGH risk of data leakage)",
+      "scope": "all tenant-scoped models",
+      "effort": "high"
+    },
+    {
+      "title": "Cook wallet negative balance on refund (business rule unclear)",
+      "scope": "RefundService, WalletService",
+      "effort": "high"
+    },
+    {
+      "title": "Commission calculation basis: grand_total vs subtotal (ambiguous)",
+      "scope": "CommissionService",
+      "effort": "medium"
+    }
+  ],
+  "bugs_found_and_fixed": 5,
+  "console_errors_found": 0
+}

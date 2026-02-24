@@ -86,9 +86,12 @@
                         $navItems = [
                             ['id' => 'hero', 'label' => __('Home'), 'icon' => '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline>'],
                             ['id' => 'meals', 'label' => __('Meals'), 'icon' => '<rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect>'],
-                            ['id' => 'about', 'label' => __('About'), 'icon' => '<circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path>'],
-                            ['id' => 'contact', 'label' => __('Contact'), 'icon' => '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>'],
                         ];
+                        // Only show About nav item when the cook has a bio
+                        if (isset($sections) && ($sections['about']['hasData'] ?? false)) {
+                            $navItems[] = ['id' => 'about', 'label' => __('About'), 'icon' => '<circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path>'];
+                        }
+                        $navItems[] = ['id' => 'contact', 'label' => __('Contact'), 'icon' => '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>'];
                     @endphp
                     @foreach($navItems as $item)
                         <button
@@ -120,7 +123,7 @@
                     <x-language-switcher />
 
                     @auth
-                        <div class="flex items-center gap-3 ml-2" x-data x-navigate>
+                        <div class="flex items-center gap-3 ml-2" x-data>
                             {{-- BR-129: Authenticated user sees name with dropdown --}}
                             <div x-data="{ userMenuOpen: false }" class="relative">
                                 <button
@@ -255,10 +258,12 @@
                     <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect></svg>
                     {{ __('Meals') }}
                 </button>
+                @if(isset($sections) && ($sections['about']['hasData'] ?? false))
                 <button @click="scrollTo('about')" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors duration-200" :class="activeSection === 'about' ? 'text-primary bg-primary-subtle' : 'text-on-surface hover:bg-surface-alt'">
                     <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
                     {{ __('About') }}
                 </button>
+                @endif
                 <button @click="scrollTo('contact')" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors duration-200" :class="activeSection === 'contact' ? 'text-primary bg-primary-subtle' : 'text-on-surface hover:bg-surface-alt'">
                     <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                     {{ __('Contact') }}
@@ -334,8 +339,7 @@
                     <p class="text-xs text-on-surface opacity-60 mt-1">&copy; {{ date('Y') }} {{ __('All rights reserved.') }}</p>
                 </div>
                 <div class="flex items-center gap-4">
-                    <x-theme-switcher />
-                    <x-language-switcher />
+                    {{-- Theme/language controls are in the header; not duplicated here --}}
                 </div>
             </div>
         </div>

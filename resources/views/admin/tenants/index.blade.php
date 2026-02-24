@@ -256,7 +256,11 @@
                                     {{-- Cook --}}
                                     <td class="px-4 py-3">
                                         <a href="{{ url('/vault-entry/tenants/'.$tenant->slug) }}" class="block">
-                                            <span class="text-sm text-on-surface/50 italic">{{ __('Unassigned') }}</span>
+                                            @if($tenant->cook)
+                                                <span class="text-sm text-on-surface">{{ $tenant->cook->name }}</span>
+                                            @else
+                                                <span class="text-sm text-on-surface/50 italic">{{ __('Unassigned') }}</span>
+                                            @endif
                                         </a>
                                     </td>
 

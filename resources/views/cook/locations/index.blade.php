@@ -1261,5 +1261,37 @@
             </div>
         @endif
     </div>
+
+    {{-- F-092/F-093: Pickup Locations Section Link --}}
+    <div class="mt-10">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <div>
+                <h2 class="text-xl font-semibold text-on-surface-strong">{{ __('Pickup Locations') }}</h2>
+                <p class="text-sm text-on-surface mt-1">{{ __('Manage locations where clients can pick up their orders.') }}</p>
+            </div>
+            <a
+                href="{{ url('/dashboard/locations/pickup') }}"
+                x-navigate
+                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-surface-alt border border-outline text-on-surface text-sm font-medium hover:bg-surface hover:border-primary hover:text-primary transition-colors duration-200"
+            >
+                {{-- Lucide: map-pin --}}
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                {{ __('Manage Pickup Locations') }}
+                {{-- Lucide: arrow-right --}}
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+            </a>
+        </div>
+        <div class="p-4 rounded-xl border border-outline bg-surface-alt">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-secondary-subtle flex items-center justify-center shrink-0">
+                    {{-- Lucide: map-pin --}}
+                    <svg class="w-4 h-4 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                </div>
+                <p class="text-sm text-on-surface">
+                    {{ trans_choice('{0} No pickup locations yet|{1} :count pickup location configured|[2,*] :count pickup locations configured', $pickupLocationCount, ['count' => $pickupLocationCount]) }}
+                </p>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection

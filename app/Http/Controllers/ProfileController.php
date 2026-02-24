@@ -145,7 +145,7 @@ class ProfileController extends Controller
                 ->log(__('Profile was updated'));
         }
 
-        return gale()->redirect('/profile/edit')->back()
+        return gale()->redirect('/profile/edit')
             ->with('toast', [
                 'type' => 'success',
                 'message' => __('Profile updated successfully.'),

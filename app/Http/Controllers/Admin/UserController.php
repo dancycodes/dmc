@@ -246,7 +246,7 @@ class UserController extends Controller
         ]);
 
         if ($request->isGale()) {
-            return gale()->redirect(url('/vault-entry/users/'.$user->id))->back('/vault-entry/users/'.$user->id);
+            return gale()->redirect(url('/vault-entry/users/'.$user->id));
         }
 
         return redirect('/vault-entry/users/'.$user->id);

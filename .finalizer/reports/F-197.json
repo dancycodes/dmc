@@ -1,0 +1,17 @@
+{
+  "feature": "F-197",
+  "status": "passed",
+  "bugs_found": 1,
+  "bugs_fixed": 1,
+  "bugs_fixed_list": [
+    {
+      "description": "Favorite meals showed Price TBD due to wrong column name is_active (should be is_available) and falsy null check on integer price",
+      "file": "app/Services/FavoritesService.php",
+      "fix": "Fixed column name to is_available, added leftJoinSub for min component price, fixed null check to !== null",
+      "category": "display"
+    }
+  ],
+  "ux_improvements": [],
+  "unfixable": [],
+  "console_errors_found": 0
+}

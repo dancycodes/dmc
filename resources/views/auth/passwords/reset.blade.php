@@ -61,6 +61,7 @@
         </p>
 
         <form @submit.prevent="submitting = true; $action('{{ route('password.update') }}')" class="space-y-4">
+            <x-honeypot />
 
             {{-- Email (read-only for context) --}}
             <div class="space-y-1.5">

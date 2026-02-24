@@ -139,7 +139,6 @@ class ComplaintController extends Controller
             }
 
             return gale()->redirect('/vault-entry/complaints/'.$complaint->id)
-                ->back()
                 ->with('toast', [
                     'type' => 'error',
                     'message' => __('This complaint has already been resolved.'),
@@ -170,7 +169,6 @@ class ComplaintController extends Controller
                 }
 
                 return gale()->redirect('/vault-entry/complaints/'.$complaint->id)
-                    ->back()
                     ->withErrors(['refund_amount' => __('Refund cannot exceed order amount.')])
                     ->withInput();
             }
@@ -190,7 +188,6 @@ class ComplaintController extends Controller
         }
 
         return gale()->redirect('/vault-entry/complaints/'.$complaint->id)
-            ->back()
             ->with('toast', [
                 'type' => 'success',
                 'message' => __('Complaint resolved successfully.'),

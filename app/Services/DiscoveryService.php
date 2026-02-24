@@ -212,7 +212,7 @@ class DiscoveryService
                     ->from('cook_schedules')
                     ->whereRaw('cook_schedules.tenant_id = tenants.id')
                     ->where('cook_schedules.day_of_week', $dayOfWeek)
-                    ->where('cook_schedules.is_active', true)
+                    ->where('cook_schedules.is_available', true)
                     ->where('cook_schedules.open_time', '<=', $currentTime)
                     ->where('cook_schedules.close_time', '>=', $currentTime);
             });
@@ -223,7 +223,7 @@ class DiscoveryService
                     ->from('cook_schedules')
                     ->whereRaw('cook_schedules.tenant_id = tenants.id')
                     ->where('cook_schedules.day_of_week', $dayOfWeek)
-                    ->where('cook_schedules.is_active', true)
+                    ->where('cook_schedules.is_available', true)
                     ->where('cook_schedules.close_time', '>=', $currentTime);
             });
         }

@@ -40,16 +40,42 @@
             </div>
 
             <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
-                {{-- F-211: Show "Go back to dashboard" link on tenant domains for authenticated users --}}
-                @if(tenant() && auth()->check())
-                    <a href="{{ url('/dashboard') }}"
-                       class="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-primary dark:bg-primary text-on-primary dark:text-on-primary font-medium text-sm hover:bg-primary-hover dark:hover:bg-primary-hover transition-colors duration-200">
-                        <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                        </svg>
-                        {{ __('Go back to dashboard') }}
-                    </a>
+                @if(auth()->check())
+                    @php
+                        $user = auth()->user();
+                        $isTenantDomain = tenant() !== null;
+                        $hasAdminAccess = $user->can('can-access-admin-panel');
+                        $hasCookAccess = $isTenantDomain && ($user->hasRole('cook') || $user->hasRole('manager'));
+                    @endphp
+                    @if($isTenantDomain && $hasCookAccess)
+                        <a href="{{ url('/dashboard') }}"
+                           class="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-primary dark:bg-primary text-on-primary dark:text-on-primary font-medium text-sm hover:bg-primary-hover dark:hover:bg-primary-hover transition-colors duration-200">
+                            <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                            </svg>
+                            {{ __('Go back to dashboard') }}
+                        </a>
+                    @elseif($hasAdminAccess)
+                        @php $mainDomain = app(\App\Services\TenantService::class)::mainDomain(); @endphp
+                        <a href="{{ (app()->isProduction() ? 'https' : 'https') . '://' . $mainDomain . '/vault-entry' }}"
+                           class="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-primary dark:bg-primary text-on-primary dark:text-on-primary font-medium text-sm hover:bg-primary-hover dark:hover:bg-primary-hover transition-colors duration-200">
+                            <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                            </svg>
+                            {{ __('Go to Admin Panel') }}
+                        </a>
+                    @else
+                        <a href="{{ url('/') }}"
+                           class="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-primary dark:bg-primary text-on-primary dark:text-on-primary font-medium text-sm hover:bg-primary-hover dark:hover:bg-primary-hover transition-colors duration-200">
+                            <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                            </svg>
+                            {{ __('Return to Homepage') }}
+                        </a>
+                    @endif
                 @else
                     <a href="{{ url('/') }}"
                        class="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-primary dark:bg-primary text-on-primary dark:text-on-primary font-medium text-sm hover:bg-primary-hover dark:hover:bg-primary-hover transition-colors duration-200">

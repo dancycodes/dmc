@@ -1,0 +1,17 @@
+{
+  "feature": "F-128",
+  "status": "passed",
+  "bugs_found": 1,
+  "bugs_fixed": 1,
+  "bugs_fixed_list": [
+    {
+      "description": "Sold Out badge shown on available meal because is_available column was not selected in component eager loading, causing in-memory filter to return empty collection",
+      "file": "app/Services/TenantLandingService.php",
+      "fix": "Added is_available to select clause in all 3 component eager-loading queries",
+      "category": "spec"
+    }
+  ],
+  "ux_improvements": [],
+  "unfixable": [],
+  "console_errors_found": 0
+}

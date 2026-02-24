@@ -100,10 +100,12 @@ class TenantThemeService
             $css .= ':root { '.$this->formatCssVars($lightVars).' }';
         }
 
-        // Dark mode overrides
+        // Dark mode overrides — use html[data-theme="dark"] for higher specificity
+        // than app.css which uses [data-theme="dark"], ensuring tenant overrides win
+        // even though the tenant style block is placed before @vite in the <head>.
         $darkVars = $this->buildDarkModeVars($preset);
         if (! empty($darkVars)) {
-            $css .= ' [data-theme="dark"] { '.$this->formatCssVars($darkVars).' }';
+            $css .= ' html[data-theme="dark"] { '.$this->formatCssVars($darkVars).' }';
         }
 
         return $css;

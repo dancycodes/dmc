@@ -83,8 +83,7 @@ class CommissionController extends Controller
             ]);
 
             if ($request->isGale()) {
-                return gale()->redirect(url('/vault-entry/tenants/'.$tenant->slug.'/commission'))
-                    ->back('/vault-entry/tenants/'.$tenant->slug.'/commission');
+                return gale()->redirect(url('/vault-entry/tenants/'.$tenant->slug.'/commission'));
             }
 
             return redirect('/vault-entry/tenants/'.$tenant->slug.'/commission');
@@ -108,8 +107,7 @@ class CommissionController extends Controller
         ]);
 
         if ($request->isGale()) {
-            return gale()->redirect(url('/vault-entry/tenants/'.$tenant->slug.'/commission'))
-                ->back('/vault-entry/tenants/'.$tenant->slug.'/commission');
+            return gale()->redirect(url('/vault-entry/tenants/'.$tenant->slug.'/commission'));
         }
 
         return redirect('/vault-entry/tenants/'.$tenant->slug.'/commission');
@@ -138,8 +136,7 @@ class CommissionController extends Controller
             ]);
 
             if ($request->isGale()) {
-                return gale()->redirect(url('/vault-entry/tenants/'.$tenant->slug.'/commission'))
-                    ->back('/vault-entry/tenants/'.$tenant->slug.'/commission');
+                return gale()->redirect(url('/vault-entry/tenants/'.$tenant->slug.'/commission'));
             }
 
             return redirect('/vault-entry/tenants/'.$tenant->slug.'/commission');
@@ -159,8 +156,7 @@ class CommissionController extends Controller
         ]);
 
         if ($request->isGale()) {
-            return gale()->redirect(url('/vault-entry/tenants/'.$tenant->slug.'/commission'))
-                ->back('/vault-entry/tenants/'.$tenant->slug.'/commission');
+            return gale()->redirect(url('/vault-entry/tenants/'.$tenant->slug.'/commission'));
         }
 
         return redirect('/vault-entry/tenants/'.$tenant->slug.'/commission');

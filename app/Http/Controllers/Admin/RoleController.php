@@ -261,7 +261,7 @@ class RoleController extends Controller
         $permissionsUrl = url('/vault-entry/roles/'.$role->id.'/permissions');
 
         if ($request->isGale()) {
-            return gale()->redirect($permissionsUrl)->back($permissionsUrl);
+            return gale()->redirect($permissionsUrl);
         }
 
         return redirect($permissionsUrl);
@@ -451,7 +451,7 @@ class RoleController extends Controller
         ]);
 
         if ($request->isGale()) {
-            return gale()->redirect(url('/vault-entry/roles'))->back('/vault-entry/roles');
+            return gale()->redirect(url('/vault-entry/roles'));
         }
 
         return redirect('/vault-entry/roles');
@@ -901,7 +901,7 @@ class RoleController extends Controller
         ]);
 
         if ($request->isGale()) {
-            return gale()->redirect(url('/vault-entry/roles'))->back('/vault-entry/roles');
+            return gale()->redirect(url('/vault-entry/roles'));
         }
 
         return redirect('/vault-entry/roles');

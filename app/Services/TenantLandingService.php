@@ -219,7 +219,7 @@ class TenantLandingService
             ->where('is_available', true)
             ->with([
                 'images' => fn ($q) => $q->orderBy('position')->limit(1),
-                'components' => fn ($q) => $q->where('is_available', true)->select('id', 'meal_id', 'price'),
+                'components' => fn ($q) => $q->where('is_available', true)->select('id', 'meal_id', 'price', 'is_available'),
                 'tags' => fn ($q) => $q->select('tags.id', 'tags.name_en', 'tags.name_fr'),
             ]);
 
@@ -265,7 +265,7 @@ class TenantLandingService
             ->where('is_available', true)
             ->with([
                 'images' => fn ($q) => $q->orderBy('position')->limit(1),
-                'components' => fn ($q) => $q->where('is_available', true)->select('id', 'meal_id', 'price'),
+                'components' => fn ($q) => $q->where('is_available', true)->select('id', 'meal_id', 'price', 'is_available'),
                 'tags' => fn ($q) => $q->select('tags.id', 'tags.name_en', 'tags.name_fr'),
             ]);
 
@@ -392,7 +392,7 @@ class TenantLandingService
             ->where('is_available', true)
             ->with([
                 'images' => fn ($q) => $q->orderBy('position')->limit(1),
-                'components' => fn ($q) => $q->where('is_available', true)->select('id', 'meal_id', 'price'),
+                'components' => fn ($q) => $q->where('is_available', true)->select('id', 'meal_id', 'price', 'is_available'),
                 'tags' => fn ($q) => $q->select('tags.id', 'tags.name_en', 'tags.name_fr'),
             ]);
 
@@ -991,13 +991,25 @@ class TenantLandingService
                 $townName = $area->town->{'name_'.$locale} ?? $area->town->name_en;
                 $deliveryTowns[$area->town->id] = [
                     'name' => $townName,
-                    'quarters' => $area->deliveryAreaQuarters->map(function ($daq) use ($locale) {
+                    'quarters' => $area->deliveryAreaQuarters->map(function ($daq) use ($locale, $tenant) {
                         $quarterName = $daq->quarter ? ($daq->quarter->{'name_'.$locale} ?? $daq->quarter->name_en) : '';
+
+                        // BR-197: Use group fee if quarter belongs to a group (consistent with landing page)
+                        $group = QuarterGroup::query()
+                            ->where('tenant_id', $tenant->id)
+                            ->whereHas('quarters', function ($q) use ($daq) {
+                                $q->where('quarters.id', $daq->quarter_id);
+                            })
+                            ->first();
+
+                        $effectiveFee = $group ? $group->delivery_fee : $daq->delivery_fee;
 
                         return [
                             'name' => $quarterName,
-                            'fee' => $daq->delivery_fee,
-                            'formattedFee' => self::formatPrice($daq->delivery_fee),
+                            'fee' => $effectiveFee,
+                            'formattedFee' => $effectiveFee === 0
+                                ? __('Free delivery')
+                                : self::formatPrice($effectiveFee),
                         ];
                     })->toArray(),
                 ];

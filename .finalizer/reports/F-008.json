@@ -1,0 +1,1 @@
+{"feature":"F-008","status":"passed","bugs_found":0,"bugs_fixed":0,"bugs_fixed_list":[],"ux_improvements":[],"unfixable":[],"console_errors_found":0,"observations":"All language switching scenarios pass. Note: /discover route returns 404 — out of scope for F-008, will be caught in F-066."}

@@ -1,0 +1,17 @@
+{
+  "feature": "F-066",
+  "status": "passed",
+  "bugs_found": 1,
+  "bugs_fixed": 1,
+  "bugs_fixed_list": [
+    {
+      "description": "DiscoveryService availability filter crashed with 500 due to cook_schedules.is_active column not existing (should be is_available)",
+      "file": "app/Services/DiscoveryService.php",
+      "fix": "Changed is_active to is_available at lines 215 and 226 in applyAvailabilityFilter()",
+      "category": "spec"
+    }
+  ],
+  "ux_improvements": [],
+  "unfixable": [],
+  "console_errors_found": 0
+}

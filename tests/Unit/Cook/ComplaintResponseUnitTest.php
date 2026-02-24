@@ -373,9 +373,9 @@ it('allows cook to respond to their tenant complaint', function () {
     expect($service->canRespond($complaint, $cook))->toBeTrue();
 });
 
-it('allows manager with can-manage-orders to respond', function () {
+it('allows manager with can-manage-complaints to respond', function () {
     $manager = test()->createUserWithRole('manager');
-    $manager->givePermissionTo('can-manage-orders');
+    $manager->givePermissionTo('can-manage-complaints');
     $tenant = Tenant::factory()->create();
     $complaint = Complaint::factory()->clientSubmitted()->create([
         'tenant_id' => $tenant->id,

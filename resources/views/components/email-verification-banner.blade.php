@@ -97,6 +97,7 @@
                             @click="dismissed = true"
                             class="w-7 h-7 rounded-lg flex items-center justify-center text-on-surface/60 hover:text-on-surface hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors duration-200"
                             :title="'{{ __('Dismiss') }}'"
+                            :aria-label="'{{ __('Dismiss') }}'"
                         >
                             {{-- X icon (Lucide, xs=14px) --}}
                             <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

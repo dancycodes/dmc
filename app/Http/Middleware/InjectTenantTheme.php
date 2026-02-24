@@ -28,8 +28,12 @@ class InjectTenantTheme
     {
         $tenant = tenant();
 
-        $tenantThemeCss = $this->tenantThemeService->generateInlineCss($tenant);
-        $tenantFontLink = $this->tenantThemeService->getFontLinkTag($tenant);
+        // BR-084: Tenant theme applies to the public-facing site only.
+        // Cook/manager dashboard routes must always use the DancyMeals default theme.
+        $isDashboardRoute = $request->is('dashboard') || $request->is('dashboard/*');
+
+        $tenantThemeCss = $isDashboardRoute ? '' : $this->tenantThemeService->generateInlineCss($tenant);
+        $tenantFontLink = $isDashboardRoute ? '' : $this->tenantThemeService->getFontLinkTag($tenant);
 
         View::share('tenantThemeCss', $tenantThemeCss);
         View::share('tenantFontLink', $tenantFontLink);

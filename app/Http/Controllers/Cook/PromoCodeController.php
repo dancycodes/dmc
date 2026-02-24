@@ -183,9 +183,12 @@ class PromoCodeController extends Controller
         if ($request->isGale()) {
             // Reload promo code list and close the modal
             $promoCodes = $this->promoCodeService->getPromoCodesForTenant($tenant);
+            $statusFilter = 'all';
+            $sortBy = 'created_at';
+            $sortDir = 'desc';
 
             return gale()
-                ->fragment('cook.promo-codes.index', 'promo-list', compact('promoCodes'))
+                ->fragment('cook.promo-codes.index', 'promo-list', compact('promoCodes', 'statusFilter', 'sortBy', 'sortDir'))
                 ->state('showCreateModal', false)
                 ->state('code', '')
                 ->state('discount_type', PromoCode::TYPE_PERCENTAGE)
@@ -477,9 +480,12 @@ class PromoCodeController extends Controller
 
         if ($request->isGale()) {
             $promoCodes = $this->promoCodeService->getPromoCodesForTenant($tenant);
+            $statusFilter = 'all';
+            $sortBy = 'created_at';
+            $sortDir = 'desc';
 
             return gale()
-                ->fragment('cook.promo-codes.index', 'promo-list', compact('promoCodes'))
+                ->fragment('cook.promo-codes.index', 'promo-list', compact('promoCodes', 'statusFilter', 'sortBy', 'sortDir'))
                 ->state('showEditModal', false)
                 ->state('editId', 0)
                 ->dispatch('toast', [

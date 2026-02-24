@@ -78,7 +78,7 @@ class EmailVerificationController extends Controller
                 ->state('cooldownActive', true);
         }
 
-        return gale()->redirect('/')->back()
+        return gale()->redirect('/verify-email')
             ->with('toast', [
                 'type' => 'success',
                 'message' => __('Verification email sent.'),

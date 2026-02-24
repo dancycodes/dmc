@@ -85,7 +85,7 @@ class ProfilePhotoController extends Controller
             ])
             ->log(__('Profile photo was uploaded'));
 
-        return gale()->redirect('/profile/photo')->back()
+        return gale()->redirect('/profile/photo')
             ->with('toast', [
                 'type' => 'success',
                 'message' => __('Profile photo updated.'),
@@ -103,7 +103,7 @@ class ProfilePhotoController extends Controller
         $user = Auth::user();
 
         if (! $user->profile_photo_path) {
-            return gale()->redirect('/profile/photo')->back()
+            return gale()->redirect('/profile/photo')
                 ->with('toast', [
                     'type' => 'info',
                     'message' => __('No profile photo to remove.'),
@@ -129,7 +129,7 @@ class ProfilePhotoController extends Controller
             ])
             ->log(__('Profile photo was removed'));
 
-        return gale()->redirect('/profile/photo')->back()
+        return gale()->redirect('/profile/photo')
             ->with('toast', [
                 'type' => 'success',
                 'message' => __('Profile photo removed.'),

@@ -1,0 +1,1 @@
+{"feature":"F-004","status":"passed","bugs_found":0,"bugs_fixed":0,"bugs_fixed_list":[],"ux_improvements":[],"unfixable":[],"console_errors_found":0,"observations":"[ARCH] Meal model uses scopeForTenant() named scope rather than global scope for tenant isolation. Intentional design but requires every controller to explicitly call the scope or data leakage is possible."}

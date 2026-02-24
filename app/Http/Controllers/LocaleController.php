@@ -43,6 +43,6 @@ class LocaleController extends Controller
             return gale()->reload();
         }
 
-        return gale()->redirect('/')->back();
+        return gale()->redirect()->back('/');
     }
 }

@@ -1,0 +1,1 @@
+{"feature":"F-005","status":"passed","bugs_found":0,"bugs_fixed":0,"bugs_fixed_list":[],"ux_improvements":[],"unfixable":[],"console_errors_found":0,"observations":"[ARCH] Password strength rule (mixedCase+numbers) is stricter than spec BR-029 (min 8 chars). Beneficial but diverges from spec."}

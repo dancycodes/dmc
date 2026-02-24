@@ -1,0 +1,17 @@
+{
+  "feature": "F-129",
+  "status": "passed",
+  "bugs_found": 1,
+  "bugs_fixed": 1,
+  "bugs_fixed_list": [
+    {
+      "description": "Meal detail delivery fee showed raw quarter fee instead of group fee",
+      "file": "app/Services/TenantLandingService.php",
+      "fix": "Added QuarterGroup lookup in buildLocationsDetail() to use group delivery_fee",
+      "category": "display"
+    }
+  ],
+  "ux_improvements": [],
+  "unfixable": [],
+  "console_errors_found": 0
+}

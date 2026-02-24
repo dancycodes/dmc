@@ -1,0 +1,1 @@
+{"feature":"F-077","status":"passed","bugs_found":1,"bugs_fixed":1,"bugs_fixed_list":[{"description":"Active Meals showed 0 — meal was soft-deleted by prior test agent","file":"database","fix":"Restored meal via tinker: Meal::withTrashed()->find(1)->restore()","category":"display"}],"ux_improvements":[],"unfixable":[],"console_errors_found":0}

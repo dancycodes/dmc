@@ -58,7 +58,7 @@ class AddressController extends Controller
 
         // Already default — no change needed
         if ($address->is_default) {
-            return gale()->redirect('/profile/addresses')->back()
+            return gale()->redirect('/profile/addresses')
                 ->with('toast', [
                     'type' => 'info',
                     'message' => __('This address is already your default.'),
@@ -83,7 +83,7 @@ class AddressController extends Controller
             ])
             ->log(__('Default address updated'));
 
-        return gale()->redirect('/profile/addresses')->back()
+        return gale()->redirect('/profile/addresses')
             ->with('toast', [
                 'type' => 'success',
                 'message' => __('Default address updated.'),
@@ -186,7 +186,7 @@ class AddressController extends Controller
             ])
             ->log(__('Delivery address added'));
 
-        return gale()->redirect('/profile/addresses')->back()
+        return gale()->redirect('/profile/addresses')
             ->with('toast', [
                 'type' => 'success',
                 'message' => __('Address saved successfully.'),
@@ -305,7 +305,7 @@ class AddressController extends Controller
             ])
             ->log(__('Delivery address updated'));
 
-        return gale()->redirect('/profile/addresses')->back()
+        return gale()->redirect('/profile/addresses')
             ->with('toast', [
                 'type' => 'success',
                 'message' => __('Address updated successfully.'),
@@ -339,7 +339,7 @@ class AddressController extends Controller
                 return gale()->state('deleteError', __('This address is used by pending orders and cannot be deleted. You can edit it instead.'));
             }
 
-            return gale()->redirect('/profile/addresses')->back()
+            return gale()->redirect('/profile/addresses')
                 ->with('toast', [
                     'type' => 'error',
                     'message' => __('This address is used by pending orders and cannot be deleted. You can edit it instead.'),
@@ -374,15 +374,7 @@ class AddressController extends Controller
             ])
             ->log(__('Delivery address deleted'));
 
-        if ($request->isGale()) {
-            return gale()->redirect('/profile/addresses')->back()
-                ->with('toast', [
-                    'type' => 'success',
-                    'message' => __('Address deleted.'),
-                ]);
-        }
-
-        return gale()->redirect('/profile/addresses')->back()
+        return gale()->redirect('/profile/addresses')
             ->with('toast', [
                 'type' => 'success',
                 'message' => __('Address deleted.'),

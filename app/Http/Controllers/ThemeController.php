@@ -31,7 +31,7 @@ class ThemeController extends Controller
             return gale()->state('themeSaved', true);
         }
 
-        return gale()->redirect('/')->back()->with('status', __('Theme preference updated.'));
+        return gale()->redirect()->back('/')->with('status', __('Theme preference updated.'));
     }
 
     /**

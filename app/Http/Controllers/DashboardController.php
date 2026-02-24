@@ -2,6 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Complaint;
+use App\Models\Order;
+use App\Models\Tenant;
+use App\Models\User;
 use App\Services\CookDashboardService;
 use App\Services\ManagerDashboardService;
 use App\Services\TenantLandingService;
@@ -15,7 +19,21 @@ class DashboardController extends Controller
      */
     public function adminDashboard(Request $request): mixed
     {
-        return gale()->view('admin.dashboard', [], web: true);
+        $totalTenants = Tenant::query()->count();
+        $totalUsers = User::query()->count();
+        $activeOrders = Order::query()
+            ->whereIn('status', ['pending', 'confirmed', 'preparing', 'ready', 'picked_up'])
+            ->count();
+        $openComplaints = Complaint::query()
+            ->where('status', 'open')
+            ->count();
+
+        return gale()->view('admin.dashboard', [
+            'totalTenants' => $totalTenants,
+            'totalUsers' => $totalUsers,
+            'activeOrders' => $activeOrders,
+            'openComplaints' => $openComplaints,
+        ], web: true);
     }
 
     /**
