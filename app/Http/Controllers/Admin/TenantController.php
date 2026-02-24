@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreTenantRequest;
 use App\Http\Requests\Admin\UpdateTenantRequest;
+use App\Models\Meal;
+use App\Models\Order;
 use App\Models\Tenant;
 use App\Services\TenantService;
 use Illuminate\Http\Request;
@@ -95,12 +97,16 @@ class TenantController extends Controller
         // BR-073: Commission rate from settings, default 10%
         $commissionRate = $tenant->getSetting('commission_rate', 10);
 
-        // BR-070: Total revenue and order count (stubbed — orders table not yet created)
-        $totalOrders = 0;
-        $totalRevenue = 0;
+        // BR-070: Total order count and revenue from completed orders
+        $totalOrders = Order::where('tenant_id', $tenant->id)->count();
+        $totalRevenue = Order::where('tenant_id', $tenant->id)
+            ->where('status', 'completed')
+            ->sum('grand_total');
 
-        // BR-071: Active meals count (stubbed — meals table not yet created)
-        $activeMeals = 0;
+        // BR-071: Active meals count (meals with status "live")
+        $activeMeals = Meal::where('tenant_id', $tenant->id)
+            ->where('status', 'live')
+            ->count();
 
         // F-049: Load the assigned cook
         $tenant->load('cook');
