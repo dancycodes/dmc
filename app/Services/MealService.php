@@ -355,7 +355,7 @@ class MealService
 
         // Count completed orders for confirmation context (forward-compatible)
         $completedOrderCount = 0;
-        if (Schema::hasTable('orders')) {
+        if (Schema::hasTable('orders') && Schema::hasColumn('orders', 'meal_id')) {
             $completedOrderCount = $meal->orders()
                 ->where('status', 'completed')
                 ->count();
