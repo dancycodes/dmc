@@ -121,12 +121,22 @@ class FavoritesService
             ->where('favorite_meals.user_id', $user->id)
             ->join('meals', 'favorite_meals.meal_id', '=', 'meals.id')
             ->leftJoin('tenants', 'meals.tenant_id', '=', 'tenants.id')
+            ->leftJoinSub(
+                DB::table('meal_components')
+                    ->select('meal_id', DB::raw('MIN(meal_components.price) as min_price'))
+                    ->where('meal_components.is_available', true)
+                    ->groupBy('meal_components.meal_id'),
+                'comp_prices',
+                'comp_prices.meal_id',
+                '=',
+                'meals.id'
+            )
             ->select([
                 'favorite_meals.meal_id',
                 'favorite_meals.created_at as favorited_at',
                 'meals.name_en',
                 'meals.name_fr',
-                'meals.price',
+                DB::raw('COALESCE(comp_prices.min_price, meals.price) as price'),
                 'meals.status',
                 'meals.is_active',
                 'meals.deleted_at',
@@ -170,7 +180,7 @@ class FavoritesService
                 'meal_id' => (int) $row->meal_id,
                 'name_en' => $row->name_en,
                 'name_fr' => $row->name_fr,
-                'price' => $row->price ? (int) $row->price : null,
+                'price' => $row->price !== null ? (int) $row->price : null,
                 'image' => $primaryImages[(int) $row->meal_id] ?? null,
                 'meal_url' => $mealUrl,
                 'cook_name_en' => $row->tenant_name_en,
