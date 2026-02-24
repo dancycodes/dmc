@@ -56,7 +56,7 @@ class PaymentMethodController extends Controller
 
         // Already default — no change needed
         if ($paymentMethod->is_default) {
-            return gale()->redirect('/profile/payment-methods')->back()
+            return gale()->redirect('/profile/payment-methods')
                 ->with('toast', [
                     'type' => 'info',
                     'message' => __('This payment method is already your default.'),
@@ -81,7 +81,7 @@ class PaymentMethodController extends Controller
             ])
             ->log(__('Default payment method updated'));
 
-        return gale()->redirect('/profile/payment-methods')->back()
+        return gale()->redirect('/profile/payment-methods')
             ->with('toast', [
                 'type' => 'success',
                 'message' => __('Default payment method updated.'),
@@ -227,7 +227,7 @@ class PaymentMethodController extends Controller
             ])
             ->log(__('Payment method added'));
 
-        return gale()->redirect('/profile/payment-methods')->back()
+        return gale()->redirect('/profile/payment-methods')
             ->with('toast', [
                 'type' => 'success',
                 'message' => __('Payment method saved.'),
@@ -365,7 +365,7 @@ class PaymentMethodController extends Controller
             ])
             ->log(__('Payment method updated'));
 
-        return gale()->redirect('/profile/payment-methods')->back()
+        return gale()->redirect('/profile/payment-methods')
             ->with('toast', [
                 'type' => 'success',
                 'message' => __('Payment method updated.'),
@@ -420,7 +420,7 @@ class PaymentMethodController extends Controller
             ])
             ->log(__('Payment method deleted'));
 
-        return gale()->redirect('/profile/payment-methods')->back()
+        return gale()->redirect('/profile/payment-methods')
             ->with('toast', [
                 'type' => 'success',
                 'message' => __('Payment method deleted.'),
