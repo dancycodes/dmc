@@ -347,8 +347,31 @@
             @endif
         </nav>
 
-        {{-- Sidebar Footer: User info --}}
+        {{-- Sidebar Footer: External links + User info --}}
         <div class="border-t border-outline dark:border-outline p-3 shrink-0 space-y-3">
+            {{-- Quick links: view public kitchen page + back to main domain --}}
+            <div x-show="!sidebarCollapsed" class="flex items-center gap-2" x-cloak>
+                <a
+                    href="{{ $currentTenant ? $currentTenant->getUrl() : url('/') }}"
+                    x-navigate-skip
+                    class="flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium text-on-surface hover:bg-surface hover:text-primary border border-outline transition-colors duration-200"
+                    title="{{ __('View your public kitchen page') }}"
+                >
+                    {{-- ExternalLink icon (Lucide xs=12) --}}
+                    <svg class="w-3 h-3 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg>
+                    {{ __('Public Page') }}
+                </a>
+                <a
+                    href="{{ config('app.url') }}"
+                    x-navigate-skip
+                    class="flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium text-on-surface hover:bg-surface hover:text-primary border border-outline transition-colors duration-200"
+                    title="{{ __('Go to DancyMeals main site') }}"
+                >
+                    {{-- Home icon (Lucide xs=12) --}}
+                    <svg class="w-3 h-3 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    DancyMeals
+                </a>
+            </div>
             @auth
                 <div class="flex items-center gap-3" :class="sidebarCollapsed ? 'justify-center' : ''">
                     <div class="w-8 h-8 rounded-full bg-primary-subtle flex items-center justify-center text-primary font-semibold text-sm shrink-0">
