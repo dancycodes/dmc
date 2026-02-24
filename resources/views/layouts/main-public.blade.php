@@ -38,6 +38,12 @@
                     @auth
                         @php
                             $clientActiveOrderCount = \App\Models\Order::query()->where('client_id', auth()->id())->whereIn('status', \App\Services\ClientOrderService::ACTIVE_STATUSES)->count();
+                            // My Kitchen link: shown for cooks (own tenant) and managers (assigned tenant)
+                            $myKitchenTenant = \App\Models\Tenant::where('cook_id', auth()->id())->first()
+                                ?? \App\Models\Tenant::join('tenant_managers', 'tenants.id', '=', 'tenant_managers.tenant_id')
+                                    ->where('tenant_managers.user_id', auth()->id())
+                                    ->select('tenants.*')
+                                    ->first();
                         @endphp
                         <a href="{{ url('/my-orders') }}" class="{{ request()->is('my-orders*') ? $navActiveClass : $navDefaultClass }} inline-flex items-center gap-1.5" @if(request()->is('my-orders*')) aria-current="page" @endif>
                             {{ __('My Orders') }}
@@ -64,6 +70,13 @@
                         <a href="{{ url('/my-stats') }}" class="{{ request()->is('my-stats*') ? $navActiveClass : $navDefaultClass }}" @if(request()->is('my-stats*')) aria-current="page" @endif>
                             {{ __('My Stats') }}
                         </a>
+                        @if($myKitchenTenant)
+                            <a href="{{ $myKitchenTenant->getUrl() . '/dashboard' }}" x-navigate-skip class="{{ $navDefaultClass }} inline-flex items-center gap-1">
+                                {{-- ChefHat icon (Lucide xs=14) --}}
+                                <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21a1 1 0 0 0 1-1v-5.35c0-.457.316-.844.727-1.041a4 4 0 0 0-2.134-7.589 5 5 0 0 0-9.186 0 4 4 0 0 0-2.134 7.588c.411.198.727.585.727 1.041V20a1 1 0 0 0 1 1Z"/><path d="M6 17h12"/></svg>
+                                {{ __('My Kitchen') }}
+                            </a>
+                        @endif
                     @endauth
                 </nav>
 
@@ -201,6 +214,13 @@
                         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg>
                         {{ __('My Stats') }}
                     </a>
+                    @if(isset($myKitchenTenant) && $myKitchenTenant)
+                        <a href="{{ $myKitchenTenant->getUrl() . '/dashboard' }}" x-navigate-skip @click="mobileMenuOpen = false" class="{{ $mobileDefaultClass }}">
+                            {{-- ChefHat icon (Lucide md=20) --}}
+                            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21a1 1 0 0 0 1-1v-5.35c0-.457.316-.844.727-1.041a4 4 0 0 0-2.134-7.589 5 5 0 0 0-9.186 0 4 4 0 0 0-2.134 7.588c.411.198.727.585.727 1.041V20a1 1 0 0 0 1 1Z"/><path d="M6 17h12"/></svg>
+                            {{ __('My Kitchen') }}
+                        </a>
+                    @endif
                     <a href="{{ url('/profile') }}" @click="mobileMenuOpen = false" class="{{ request()->is('profile*') ? $mobileActiveClass : $mobileDefaultClass }}" @if(request()->is('profile*')) aria-current="page" @endif>
                         {{-- User icon --}}
                         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>

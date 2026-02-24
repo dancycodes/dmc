@@ -89,7 +89,7 @@ class LanguagePreferenceController extends Controller
                 ->log(__('Language preference was updated'));
         }
 
-        return gale()->redirect('/profile/language')->back()
+        return gale()->redirect('/profile/language')
             ->with('toast', [
                 'type' => 'success',
                 'message' => __('Language preference updated. The change will apply on the next page.'),

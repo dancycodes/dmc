@@ -158,7 +158,6 @@ class PayoutController extends Controller
         }
 
         return gale()->redirect('/vault-entry/payouts')
-            ->back()
             ->with('toast', [
                 'type' => 'success',
                 'message' => $message,
@@ -175,7 +174,6 @@ class PayoutController extends Controller
         }
 
         return gale()->redirect('/vault-entry/payouts/'.$task->id)
-            ->back()
             ->with('toast', [
                 'type' => 'error',
                 'message' => $message,

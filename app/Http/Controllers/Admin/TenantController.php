@@ -257,7 +257,7 @@ class TenantController extends Controller
         ]);
 
         if ($request->isGale()) {
-            return gale()->redirect(url('/vault-entry/tenants/'.$tenant->slug))->back('/vault-entry/tenants/'.$tenant->slug);
+            return gale()->redirect(url('/vault-entry/tenants/'.$tenant->slug));
         }
 
         return redirect('/vault-entry/tenants/'.$tenant->slug);
@@ -413,7 +413,7 @@ class TenantController extends Controller
         ]);
 
         if ($request->isGale()) {
-            return gale()->redirect(url('/vault-entry/tenants'))->back('/vault-entry/tenants');
+            return gale()->redirect(url('/vault-entry/tenants'));
         }
 
         return redirect('/vault-entry/tenants');
@@ -473,7 +473,7 @@ class TenantController extends Controller
         ]);
 
         if ($request->isGale()) {
-            return gale()->redirect(url('/vault-entry/tenants/'.$tenant->slug))->back('/vault-entry/tenants/'.$tenant->slug);
+            return gale()->redirect(url('/vault-entry/tenants/'.$tenant->slug));
         }
 
         return redirect('/vault-entry/tenants/'.$tenant->slug);

@@ -159,10 +159,10 @@ class OrderController extends Controller
 
         if (! $targetStatus) {
             if ($request->isGale()) {
-                return gale()->redirect('/')->back()->with('error', __('No valid status transition available.'));
+                return gale()->redirect('/dashboard/orders/'.$orderId)->with('error', __('No valid status transition available.'));
             }
 
-            return redirect()->back()->with('error', __('No valid status transition available.'));
+            return redirect()->route('cook.orders.show', $orderId)->with('error', __('No valid status transition available.'));
         }
 
         $result = $statusService->updateStatus($order, $targetStatus, $user);
@@ -178,10 +178,10 @@ class OrderController extends Controller
         }
 
         if ($request->isGale()) {
-            return gale()->redirect('/')->back()->with('error', $result['message']);
+            return gale()->redirect('/dashboard/orders/'.$orderId)->with('error', $result['message']);
         }
 
-        return redirect()->back()->with('error', $result['message']);
+        return redirect()->route('cook.orders.show', $orderId)->with('error', $result['message']);
     }
 
     /**

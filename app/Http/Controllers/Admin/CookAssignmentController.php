@@ -151,8 +151,7 @@ class CookAssignmentController extends Controller
         ]);
 
         if ($request->isGale()) {
-            return gale()->redirect(url('/vault-entry/tenants/'.$tenant->slug))
-                ->back('/vault-entry/tenants/'.$tenant->slug);
+            return gale()->redirect(url('/vault-entry/tenants/'.$tenant->slug));
         }
 
         return redirect('/vault-entry/tenants/'.$tenant->slug);
