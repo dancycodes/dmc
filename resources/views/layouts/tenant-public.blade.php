@@ -123,7 +123,7 @@
                     <x-language-switcher />
 
                     @auth
-                        <div class="flex items-center gap-3 ml-2" x-data x-navigate>
+                        <div class="flex items-center gap-3 ml-2" x-data>
                             {{-- BR-129: Authenticated user sees name with dropdown --}}
                             <div x-data="{ userMenuOpen: false }" class="relative">
                                 <button
