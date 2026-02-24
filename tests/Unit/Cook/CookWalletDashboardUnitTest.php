@@ -407,6 +407,13 @@ test('manager with can-manage-cook-wallet permission can access wallet', functio
     $manager = createUser('manager');
     $manager->givePermissionTo('can-manage-cook-wallet');
 
+    \Illuminate\Support\Facades\DB::table('tenant_managers')->insert([
+        'tenant_id' => $tenant->id,
+        'user_id' => $manager->id,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
     $mainDomain = parse_url(config('app.url'), PHP_URL_HOST);
 
     $this->actingAs($manager);

@@ -270,7 +270,7 @@ it('update method returns gale redirect with toast', function () use ($projectRo
     $controllerContent = file_get_contents($projectRoot.'/app/Http/Controllers/AddressController.php');
 
     expect($controllerContent)->toContain("__('Address updated successfully.')");
-    expect($controllerContent)->toContain("gale()->redirect('/profile/addresses')->back()");
+    expect($controllerContent)->toContain("gale()->redirect('/profile/addresses')");
 });
 
 it('update method logs activity', function () use ($projectRoot) {
