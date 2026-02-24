@@ -546,7 +546,7 @@
                                     >
                                         <option value="">{{ __('Select a town...') }}</option>
                                         <template x-for="area in deliveryAreas" :key="area.id">
-                                            <option :value="area.town_id" x-text="area.town_name"></option>
+                                            <option :value="area.town_id" :selected="String(area.town_id) === String(edit_town_id)" x-text="area.town_name"></option>
                                         </template>
                                     </select>
                                     <p x-message="edit_town_id" class="mt-1 text-xs text-danger"></p>
@@ -563,7 +563,7 @@
                                     >
                                         <option value="">{{ __('Select a quarter...') }}</option>
                                         <template x-for="q in getEditQuartersForTown()" :key="q.quarter_id">
-                                            <option :value="q.quarter_id" x-text="q.quarter_name"></option>
+                                            <option :value="q.quarter_id" :selected="String(q.quarter_id) === String(edit_quarter_id)" x-text="q.quarter_name"></option>
                                         </template>
                                     </select>
                                     <p x-message="edit_quarter_id" class="mt-1 text-xs text-danger"></p>

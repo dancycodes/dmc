@@ -30,11 +30,13 @@ class TownController extends Controller
         $deliveryAreas = $deliveryAreaService->getDeliveryAreasData($tenant);
         $quarterGroups = $deliveryAreaService->getQuarterGroupsData($tenant);
         $quartersForGroupAssignment = $deliveryAreaService->getQuartersForGroupAssignment($tenant);
+        $pickupLocationCount = $tenant->pickupLocations()->count();
 
         return gale()->view('cook.locations.index', [
             'deliveryAreas' => $deliveryAreas,
             'quarterGroups' => $quarterGroups,
             'quartersForGroupAssignment' => $quartersForGroupAssignment,
+            'pickupLocationCount' => $pickupLocationCount,
         ], web: true);
     }
 
