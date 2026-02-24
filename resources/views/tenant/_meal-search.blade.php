@@ -40,7 +40,8 @@
         },
         clearSearch() {
             this.query = '';
-            this.triggerSearch();
+            /* BR-219: Wait for Alpine to flush x-model to DOM before filters read the input value */
+            $nextTick(() => this.triggerSearch());
         }
     }"
     x-on:apply-sort.window="currentSort = $event.detail.sort; if (!hasFilters) { triggerSearch(); }"
