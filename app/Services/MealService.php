@@ -142,7 +142,9 @@ class MealService
             ];
         }
 
-        // Strip HTML tags from description (XSS prevention)
+        // Strip HTML tags from names and description (XSS prevention)
+        $nameEn = strip_tags($nameEn);
+        $nameFr = strip_tags($nameFr);
         $descriptionEn = strip_tags($descriptionEn);
         $descriptionFr = strip_tags($descriptionFr);
 
@@ -203,7 +205,9 @@ class MealService
             ];
         }
 
-        // Strip HTML tags from description (XSS prevention)
+        // Strip HTML tags from names and description (XSS prevention)
+        $nameEn = strip_tags($nameEn);
+        $nameFr = strip_tags($nameFr);
         $descriptionEn = strip_tags($descriptionEn);
         $descriptionFr = strip_tags($descriptionFr);
 

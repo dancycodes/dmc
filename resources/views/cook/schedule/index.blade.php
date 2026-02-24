@@ -221,13 +221,22 @@
     {{-- Add Schedule Button --}}
     <div class="flex items-center justify-between mb-6">
         <h2 class="text-lg font-semibold text-on-surface-strong">{{ __('Weekly Schedule') }}</h2>
-        <button
-            @click="showAddForm = !showAddForm"
-            class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-hover text-on-primary rounded-lg text-sm font-medium transition-colors duration-200 shadow-sm"
-        >
-            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
-            <span x-text="showAddForm ? '{{ __('Cancel') }}' : '{{ __('Add Schedule') }}'"></span>
-        </button>
+        <div class="flex items-center gap-2">
+            <a
+                href="{{ url('/dashboard/schedule/templates') }}"
+                class="inline-flex items-center gap-2 px-4 py-2.5 bg-surface-alt hover:bg-surface border border-border text-on-surface rounded-lg text-sm font-medium transition-colors duration-200"
+            >
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+                {{ __('Templates') }}
+            </a>
+            <button
+                @click="showAddForm = !showAddForm"
+                class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-hover text-on-primary rounded-lg text-sm font-medium transition-colors duration-200 shadow-sm"
+            >
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+                <span x-text="showAddForm ? '{{ __('Cancel') }}' : '{{ __('Add Schedule') }}'"></span>
+            </button>
+        </div>
     </div>
 
     {{-- Add Schedule Form --}}
