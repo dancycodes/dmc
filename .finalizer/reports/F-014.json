@@ -1,0 +1,1 @@
+{"feature":"F-014","status":"passed","bugs_found":0,"bugs_fixed":0,"bugs_fixed_list":[],"ux_improvements":[],"unfixable":[],"console_errors_found":0,"observations":"[ARCH] Push prompt shows after 2s delay on any page. BR-106 suggests 'after a meaningful user action' — current approach is pragmatic but could be stricter."}

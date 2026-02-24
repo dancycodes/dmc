@@ -1,0 +1,22 @@
+{
+  "feature": "F-110",
+  "status": "passed",
+  "bugs_found": 1,
+  "bugs_fixed": 1,
+  "bugs_fixed_list": [
+    {
+      "description": "strip_tags not applied to meal name_en/name_fr in MealService",
+      "file": "app/Services/MealService.php",
+      "fix": "Added strip_tags() to name fields in createMeal() and updateMeal()",
+      "category": "spec"
+    }
+  ],
+  "ux_improvements": [
+    {
+      "description": "No link from schedule page to templates section",
+      "fix": "Added Templates link button to schedule index"
+    }
+  ],
+  "unfixable": [],
+  "console_errors_found": 0
+}

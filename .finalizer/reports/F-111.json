@@ -1,0 +1,17 @@
+{
+  "feature": "F-111",
+  "status": "passed",
+  "bugs_found": 1,
+  "bugs_fixed": 1,
+  "bugs_fixed_list": [
+    {
+      "description": "MealService::deleteMeal() crashed on orders.meal_id column that doesn't exist (JSONB items_snapshot)",
+      "file": "app/Services/MealService.php",
+      "fix": "Added Schema::hasColumn('orders','meal_id') guard",
+      "category": "spec"
+    }
+  ],
+  "ux_improvements": [],
+  "unfixable": [],
+  "console_errors_found": 0
+}

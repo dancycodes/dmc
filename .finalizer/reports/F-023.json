@@ -1,0 +1,1 @@
+{"feature":"F-023","status":"passed","bugs_found":1,"bugs_fixed":1,"bugs_fixed_list":[{"description":"Dismiss button missing aria-label attribute","file":"resources/views/components/email-verification-banner.blade.php","fix":"Added :aria-label binding to dismiss button","category":"ux"}],"ux_improvements":[],"unfixable":[],"console_errors_found":0}
