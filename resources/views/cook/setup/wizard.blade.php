@@ -24,6 +24,7 @@
         activeStep: {{ $activeStep }},
         setupComplete: {{ $setupComplete ? 'true' : 'false' }},
         canGoLive: {{ $requirements['can_go_live'] ? 'true' : 'false' }},
+        reqActiveMeal: {{ $requirements['active_meal'] ? 'true' : 'false' }},
         goLiveError: '',
         showGoLiveConfirm: false
     }"
@@ -270,17 +271,18 @@
                     </span>
                 </div>
 
-                {{-- Active Meal --}}
+                {{-- Active Meal (reactive: updates when meal is saved in step 4) --}}
                 <div class="flex items-center gap-3">
-                    <div class="w-6 h-6 rounded-full flex items-center justify-center shrink-0
-                        {{ $requirements['active_meal'] ? 'bg-success text-on-success' : 'bg-surface border border-outline dark:border-outline text-on-surface/40' }}">
-                        @if($requirements['active_meal'])
+                    <div class="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+                         :class="reqActiveMeal ? 'bg-success text-on-success' : 'bg-surface border border-outline dark:border-outline text-on-surface/40'">
+                        <template x-if="reqActiveMeal">
                             <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
-                        @else
+                        </template>
+                        <template x-if="!reqActiveMeal">
                             <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle></svg>
-                        @endif
+                        </template>
                     </div>
-                    <span class="text-sm {{ $requirements['active_meal'] ? 'text-on-surface-strong' : 'text-on-surface' }}">
+                    <span class="text-sm" :class="reqActiveMeal ? 'text-on-surface-strong' : 'text-on-surface'">
                         {{ __('At least 1 active meal with components') }}
                     </span>
                 </div>
@@ -305,11 +307,11 @@
                 {{ __('Go Live') }}
             </button>
 
-            @if(!$requirements['can_go_live'])
+            <template x-if="!canGoLive">
                 <p class="mt-3 text-center text-xs text-on-surface/60">
                     {{ __('Complete all requirements above to enable the Go Live button.') }}
                 </p>
-            @endif
+            </template>
         </div>
 
         {{-- Go Live Confirmation Modal --}}

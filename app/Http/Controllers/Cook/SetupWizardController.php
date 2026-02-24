@@ -1069,6 +1069,7 @@ class SetupWizardController extends Controller
                 ->state('mealsData', $mealsData)
                 ->state('hasMeal', true)
                 ->state('canGoLive', $requirements['can_go_live'])
+                ->state('reqActiveMeal', $requirements['active_meal'])
                 ->state('meal_name_en', '')
                 ->state('meal_name_fr', '')
                 ->state('meal_description_en', '')
